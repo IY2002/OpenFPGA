@@ -109,15 +109,16 @@ class DeviceRRGSB {
       coordinate); /* Resize the rr_switch_block array if needed */
   void add_rr_gsb(
     const vtr::Point<size_t>& coordinate,
-    const RRGSB& rr_gsb); /* Add a switch block to the array, which will
+    const RRGSB& rr_gsb, const size_t& layer); /* Add a switch block to the array, which will
                              automatically identify and update the lists of
                              unique mirrors and rotatable mirrors */
   RRGSB& get_mutable_gsb(
     const vtr::Point<size_t>&
-      coordinate); /* Get a rr switch block in the array with a coordinate */
+      coordinate, const size_t& layer); /* Get a rr switch block in the array with a coordinate */
   RRGSB& get_mutable_gsb(
     const size_t& x,
-    const size_t& y); /* Get a rr switch block in the array with a coordinate */
+    const size_t& y,
+    const size_t& layer); /* Get a rr switch block in the array with a coordinate */
   void build_unique_module(
     const RRGraphView& rr_graph); /* Add a switch block to the array, which will
                                      automatically identify and update the lists
@@ -166,11 +167,11 @@ when read_unique_blocks command invoked */
   bool validate_cb_type(const t_rr_type& cb_type) const;
 
  private: /* Internal builders */
-  void add_gsb_unique_module(const vtr::Point<size_t>& coordinate);
+  void add_gsb_unique_module(const vtr::Point<size_t>& coordinate, const size_t& layer);
   void add_cb_unique_module(const t_rr_type& cb_type,
-                            const vtr::Point<size_t>& coordinate);
+                            const vtr::Point<size_t>& coordinate, const size_t& layer);
   void set_cb_unique_module_id(const t_rr_type& cb_type,
-                               const vtr::Point<size_t>& coordinate, size_t id);
+                               const vtr::Point<size_t>& coordinate, const size_t& layer, size_t id);
   void build_sb_unique_module(
     const RRGraphView& rr_graph); /* Add a switch block to the array, which will
                                      automatically identify and update the lists

@@ -330,24 +330,24 @@ void DeviceRRGSB::resize_upon_need(const vtr::Point<size_t>& coordinate) {
 /* Add a switch block to the array, which will automatically identify and
  * update the lists of unique mirrors and rotatable mirrors */
 void DeviceRRGSB::add_rr_gsb(const vtr::Point<size_t>& coordinate,
-                             const RRGSB& rr_gsb) {
+                             const RRGSB& rr_gsb, const size_t& layer) {
   /* Resize upon needs*/
   resize_upon_need(coordinate);
 
   /* Add the switch block into array */
-  rr_gsb_[coordinate.x()][coordinate.y()] = rr_gsb;
+  rr_gsb_[layer][coordinate.x()][coordinate.y()] = rr_gsb;
 }
 
 /* Get a rr switch block in the array with a coordinate */
-RRGSB& DeviceRRGSB::get_mutable_gsb(const vtr::Point<size_t>& coordinate) {
+RRGSB& DeviceRRGSB::get_mutable_gsb(const vtr::Point<size_t>& coordinate, const size_t& layer) {
   VTR_ASSERT(validate_coordinate(coordinate));
-  return rr_gsb_[coordinate.x()][coordinate.y()];
+  return rr_gsb_[layer][coordinate.x()][coordinate.y()];
 }
 
 /* Get a rr switch block in the array with a coordinate */
-RRGSB& DeviceRRGSB::get_mutable_gsb(const size_t& x, const size_t& y) {
+RRGSB& DeviceRRGSB::get_mutable_gsb(const size_t& x, const size_t& y, const size_t& layer) {
   vtr::Point<size_t> coordinate(x, y);
-  return get_mutable_gsb(coordinate);
+  return get_mutable_gsb(coordinate, layer);
 }
 
 /* Add a switch block to the array, which will automatically identify and
@@ -357,35 +357,37 @@ void DeviceRRGSB::build_cb_unique_module(const RRGraphView& rr_graph,
   /* Make sure a clean start */
   clear_cb_unique_module(cb_type);
 
-  for (size_t ix = 0; ix < rr_gsb_.size(); ++ix) {
-    for (size_t iy = 0; iy < rr_gsb_[ix].size(); ++iy) {
-      bool is_unique_module = true;
-      vtr::Point<size_t> gsb_coordinate(ix, iy);
+  for (size_t ilayer = 0; ilayer < rr_gsb_.size(); ilayer++){
+    for (size_t ix = 0; ix < rr_gsb_[ilayer].size(); ++ix) {
+      for (size_t iy = 0; iy < rr_gsb_[ilayer][ix].size(); ++iy) {
+        bool is_unique_module = true;
+        vtr::Point<size_t> gsb_coordinate(ix, iy);
 
-      /* Bypass non-exist CB */
-      if (false == rr_gsb_[ix][iy].is_cb_exist(cb_type)) {
-        continue;
-      }
-
-      /* Traverse the unique_mirror list and check it is an mirror of another
-       */
-      for (size_t id = 0; id < get_num_cb_unique_module(cb_type); ++id) {
-        const RRGSB& unique_module = get_cb_unique_module(cb_type, id);
-        if (true == is_cb_mirror(rr_graph, device_annotation_, rr_gsb_[ix][iy],
-                                 unique_module, cb_type)) {
-          /* This is a mirror, raise the flag and we finish */
-          is_unique_module = false;
-          /* Record the id of unique mirror */
-          set_cb_unique_module_id(cb_type, gsb_coordinate, id);
-          break;
+        /* Bypass non-exist CB */
+        if (false == rr_gsb_[ilayer][ix][iy].is_cb_exist(cb_type)) {
+          continue;
         }
-      }
-      /* Add to list if this is a unique mirror*/
-      if (true == is_unique_module) {
-        add_cb_unique_module(cb_type, gsb_coordinate);
-        /* Record the id of unique mirror */
-        set_cb_unique_module_id(cb_type, gsb_coordinate,
-                                get_num_cb_unique_module(cb_type) - 1);
+
+        /* Traverse the unique_mirror list and check it is an mirror of another
+        */
+        for (size_t id = 0; id < get_num_cb_unique_module(cb_type); ++id) {
+          const RRGSB& unique_module = get_cb_unique_module(cb_type, id);
+          if (true == is_cb_mirror(rr_graph, device_annotation_, rr_gsb_[ilayer][ix][iy],
+                                  unique_module, cb_type)) {
+            /* This is a mirror, raise the flag and we finish */
+            is_unique_module = false;
+            /* Record the id of unique mirror */
+            set_cb_unique_module_id(cb_type, gsb_coordinate, ilayer, id);
+            break;
+          }
+        }
+        /* Add to list if this is a unique mirror*/
+        if (true == is_unique_module) {
+          add_cb_unique_module(cb_type, gsb_coordinate, ilayer);
+          /* Record the id of unique mirror */
+          set_cb_unique_module_id(cb_type, gsb_coordinate, ilayer,
+                                  get_num_cb_unique_module(cb_type) - 1);
+        }
       }
     }
   }
@@ -398,34 +400,39 @@ void DeviceRRGSB::build_sb_unique_module(const RRGraphView& rr_graph) {
   clear_sb_unique_module();
 
   /* Build the unique module */
-  for (size_t ix = 0; ix < rr_gsb_.size(); ++ix) {
-    for (size_t iy = 0; iy < rr_gsb_[ix].size(); ++iy) {
-      bool is_unique_module = true;
-      vtr::Point<size_t> sb_coordinate(ix, iy);
+  for (size_t ilayer = 0; ilayer <  rr_gsb_.size(); ++ilayer){
+    for (size_t ix = 0; ix < rr_gsb_[ilayer].size(); ++ix) {
+      for (size_t iy = 0; iy < rr_gsb_[ilayer][ix].size(); ++iy) {
+        bool is_unique_module = true;
+        vtr::Point<size_t> sb_coordinate(ix, iy);
 
-      /* Traverse the unique_mirror list and check it is an mirror of another
-       */
-      for (size_t id = 0; id < get_num_sb_unique_module(); ++id) {
-        /* Check if the two modules have the same submodules,
-         * if so, these two modules are the same, indicating the sb is not
-         * unique. else the sb is unique
-         */
-        const RRGSB& unique_module = get_sb_unique_module(id);
-        if (true == is_sb_mirror(rr_graph, device_annotation_, rr_gsb_[ix][iy],
-                                 unique_module)) {
-          /* This is a mirror, raise the flag and we finish */
-          is_unique_module = false;
-          /* Record the id of unique mirror */
-          sb_unique_module_id_[ix][iy] = id;
-          break;
+        /* Traverse the unique_mirror list and check it is an mirror of another
+        */
+        for (size_t id = 0; id < get_num_sb_unique_module(); ++id) {
+          /* Check if the two modules have the same submodules,
+          * if so, these two modules are the same, indicating the sb is not
+          * unique. else the sb is unique
+          */
+          const RRGSB& unique_module = get_sb_unique_module(id);
+          if (true == is_sb_mirror(rr_graph, device_annotation_, rr_gsb_[ilayer][ix][iy],
+                                  unique_module)) {
+            /* This is a mirror, raise the flag and we finish */
+            is_unique_module = false;
+            /* Record the id of unique mirror */
+            sb_unique_module_id_[ilayer][ix][iy] = id;
+            break;
+          }
         }
-      }
 
-      /* Add to list if this is a unique mirror*/
-      if (true == is_unique_module) {
-        sb_unique_module_.push_back(sb_coordinate);
-        /* Record the id of unique mirror */
-        sb_unique_module_id_[ix][iy] = sb_unique_module_.size() - 1;
+        /* Add to list if this is a unique mirror*/
+        if (true == is_unique_module) {
+          PointWithLayer new_point;
+          new_point.coordinates = sb_coordinate;
+          new_point.layer = ilayer;
+          sb_unique_module_.push_back(new_point);
+          /* Record the id of unique mirror */
+          sb_unique_module_id_[ilayer][ix][iy] = sb_unique_module_.size() - 1;
+        }
       }
     }
   }
@@ -439,41 +446,44 @@ void DeviceRRGSB::build_gsb_unique_module() {
   /* Make sure a clean start */
   clear_gsb_unique_module();
 
-  for (size_t ix = 0; ix < rr_gsb_.size(); ++ix) {
-    for (size_t iy = 0; iy < rr_gsb_[ix].size(); ++iy) {
-      bool is_unique_module = true;
-      vtr::Point<size_t> gsb_coordinate(ix, iy);
+  for(size_t ilayer=0; ilayer < rr_gsb_.size(); ++ilayer){
+    for (size_t ix = 0; ix < rr_gsb_[ilayer].size(); ++ix) {
+      for (size_t iy = 0; iy < rr_gsb_[ilayer][ix].size(); ++iy) {
+        bool is_unique_module = true;
+        vtr::Point<size_t> gsb_coordinate(ix, iy);
 
-      /* Traverse the unique_mirror list and check it is an mirror of another
-       */
-      for (size_t id = 0; id < get_num_gsb_unique_module(); ++id) {
-        /* We have alreay built sb and cb unique module list
-         * We just need to check if the unique module id of SBs, CBX and CBY
-         * are the same or not
-         */
-        const vtr::Point<size_t>& gsb_unique_module_coordinate =
-          gsb_unique_module_[id];
-        if ((sb_unique_module_id_[ix][iy] ==
-             sb_unique_module_id_[gsb_unique_module_coordinate.x()]
-                                 [gsb_unique_module_coordinate.y()]) &&
-            (cbx_unique_module_id_[ix][iy] ==
-             cbx_unique_module_id_[gsb_unique_module_coordinate.x()]
+        /* Traverse the unique_mirror list and check it is an mirror of another
+        */
+        for (size_t id = 0; id < get_num_gsb_unique_module(); ++id) {
+          /* We have alreay built sb and cb unique module list
+          * We just need to check if the unique module id of SBs, CBX and CBY
+          * are the same or not
+          */
+          const vtr::Point<size_t>& gsb_unique_module_coordinate =
+            gsb_unique_module_[id].coordinates;
+          size_t gsb_unique_module_layer = gsb_unique_module_[id].layer;
+          if ((sb_unique_module_id_[ilayer][ix][iy] ==
+              sb_unique_module_id_[gsb_unique_module_layer][gsb_unique_module_coordinate.x()]
                                   [gsb_unique_module_coordinate.y()]) &&
-            (cby_unique_module_id_[ix][iy] ==
-             cby_unique_module_id_[gsb_unique_module_coordinate.x()]
-                                  [gsb_unique_module_coordinate.y()])) {
-          /* This is a mirror, raise the flag and we finish */
-          is_unique_module = false;
-          /* Record the id of unique mirror */
-          gsb_unique_module_id_[ix][iy] = id;
-          break;
+              (cbx_unique_module_id_[ilayer][ix][iy] ==
+              cbx_unique_module_id_[gsb_unique_module_layer][gsb_unique_module_coordinate.x()]
+                                    [gsb_unique_module_coordinate.y()]) &&
+              (cby_unique_module_id_[ilayer][ix][iy] ==
+              cby_unique_module_id_[gsb_unique_module_layer][gsb_unique_module_coordinate.x()]
+                                    [gsb_unique_module_coordinate.y()])) {
+            /* This is a mirror, raise the flag and we finish */
+            is_unique_module = false;
+            /* Record the id of unique mirror */
+            gsb_unique_module_id_[ilayer][ix][iy] = id;
+            break;
+          }
         }
-      }
-      /* Add to list if this is a unique mirror*/
-      if (true == is_unique_module) {
-        add_gsb_unique_module(gsb_coordinate);
-        /* Record the id of unique mirror */
-        gsb_unique_module_id_[ix][iy] = get_num_gsb_unique_module() - 1;
+        /* Add to list if this is a unique mirror*/
+        if (true == is_unique_module) {
+          add_gsb_unique_module(gsb_coordinate, ilayer);
+          /* Record the id of unique mirror */
+          gsb_unique_module_id_[ilayer][ix][iy] = get_num_gsb_unique_module() - 1;
+        }
       }
     }
   }
@@ -490,19 +500,25 @@ void DeviceRRGSB::build_unique_module(const RRGraphView& rr_graph) {
                                 build_gsb_unique_module*/
 }
 
-void DeviceRRGSB::add_gsb_unique_module(const vtr::Point<size_t>& coordinate) {
-  gsb_unique_module_.push_back(coordinate);
+void DeviceRRGSB::add_gsb_unique_module(const vtr::Point<size_t>& coordinate, const size_t& layer) {
+  PointWithLayer new_point;
+  new_point.coordinates = coordinate;
+  new_point.layer = layer;
+  gsb_unique_module_.push_back(new_point);
 }
 
 void DeviceRRGSB::add_cb_unique_module(const t_rr_type& cb_type,
-                                       const vtr::Point<size_t>& coordinate) {
+                                       const vtr::Point<size_t>& coordinate, const size_t& layer) {
   VTR_ASSERT(validate_cb_type(cb_type));
+  PointWithLayer new_point;
+  new_point.coordinates = coordinate;
+  new_point.layer = layer;
   switch (cb_type) {
     case CHANX:
-      cbx_unique_module_.push_back(coordinate);
+      cbx_unique_module_.push_back(new_point);
       return;
     case CHANY:
-      cby_unique_module_.push_back(coordinate);
+      cby_unique_module_.push_back(new_point);
       return;
     default:
       VTR_LOG_ERROR("Invalid type of connection block!\n");
@@ -512,16 +528,17 @@ void DeviceRRGSB::add_cb_unique_module(const t_rr_type& cb_type,
 
 void DeviceRRGSB::set_cb_unique_module_id(const t_rr_type& cb_type,
                                           const vtr::Point<size_t>& coordinate,
+                                          const size_t& layer,
                                           size_t id) {
   VTR_ASSERT(validate_cb_type(cb_type));
   size_t x = coordinate.x();
   size_t y = coordinate.y();
   switch (cb_type) {
     case CHANX:
-      cbx_unique_module_id_[x][y] = id;
+      cbx_unique_module_id_[layer][x][y] = id;
       return;
     case CHANY:
-      cby_unique_module_id_[x][y] = id;
+      cby_unique_module_id_[layer][x][y] = id;
       return;
     default:
       VTR_LOG_ERROR("Invalid type of connection block!\n");
@@ -566,38 +583,57 @@ void DeviceRRGSB::clear_unique_modules() {
 
 void DeviceRRGSB::clear_gsb() {
   /* clean gsb array */
-  for (size_t x = 0; x < rr_gsb_.size(); ++x) {
-    rr_gsb_[x].clear();
+  for (size_t layer = 0; layer < rr_gsb_.size(); ++layer){
+    for (size_t x = 0; x < rr_gsb_[0].size(); ++x){
+      rr_gsb_[layer][x].clear();
+    }
+    rr_gsb_[layer].clear();
   }
   rr_gsb_.clear();
 }
 
 void DeviceRRGSB::clear_gsb_unique_module_id() {
   /* clean rr_switch_block array */
-  for (size_t x = 0; x < rr_gsb_.size(); ++x) {
-    gsb_unique_module_id_[x].clear();
+  for (size_t layer = 0; layer < rr_gsb_.size(); ++layer){
+    for (size_t x = 0; x < rr_gsb_.size(); ++x) {
+      gsb_unique_module_id_[layer][x].clear();
+    }
+    gsb_unique_module_id_[layer].clear();
   }
+  gsb_unique_module_id_.clear();
 }
 
 void DeviceRRGSB::clear_sb_unique_module_id() {
   /* clean rr_switch_block array */
-  for (size_t x = 0; x < rr_gsb_.size(); ++x) {
-    sb_unique_module_id_[x].clear();
+  for (size_t layer = 0; layer < rr_gsb_.size(); ++layer){
+    for (size_t x = 0; x < rr_gsb_.size(); ++x) {
+      sb_unique_module_id_[layer][x].clear();
+    }
+    sb_unique_module_id_[layer].clear();
   }
+  sb_unique_module_id_.clear();
 }
 
 void DeviceRRGSB::clear_cb_unique_module_id(const t_rr_type& cb_type) {
   VTR_ASSERT(validate_cb_type(cb_type));
   switch (cb_type) {
     case CHANX:
-      for (size_t x = 0; x < rr_gsb_.size(); ++x) {
-        cbx_unique_module_id_[x].clear();
+      for (size_t layer = 0; layer < rr_gsb_.size(); ++layer){
+        for (size_t x = 0; x < rr_gsb_.size(); ++x) {
+          cbx_unique_module_id_[layer][x].clear();
+        }
+        cbx_unique_module_id_[layer].clear();
       }
+      cbx_unique_module_id_.clear();
       return;
     case CHANY:
-      for (size_t x = 0; x < rr_gsb_.size(); ++x) {
-        cby_unique_module_id_[x].clear();
+      for (size_t layer = 0; layer < rr_gsb_.size(); ++layer){
+        for (size_t x = 0; x < rr_gsb_.size(); ++x) {
+          cby_unique_module_id_[layer][x].clear();
+        }
+        cby_unique_module_id_[layer].clear();
       }
+      cby_unique_module_id_.clear();
       return;
     default:
       VTR_LOG_ERROR("Invalid type of connection block!\n");
