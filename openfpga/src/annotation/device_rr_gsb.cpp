@@ -32,24 +32,24 @@ vtr::Point<size_t> DeviceRRGSB::get_gsb_range() const {
 }
 
 /* Get a rr switch block in the array with a coordinate */
-const RRGSB& DeviceRRGSB::get_gsb(const vtr::Point<size_t>& coordinate) const {
+const RRGSB& DeviceRRGSB::get_gsb(const vtr::Point<size_t>& coordinate, const size_t& layer) const {
   VTR_ASSERT(validate_coordinate(coordinate));
-  return rr_gsb_[coordinate.x()][coordinate.y()];
+  return rr_gsb_[layer][coordinate.x()][coordinate.y()];
 }
 
 /* Get a rr switch block in the array with a coordinate */
-const RRGSB& DeviceRRGSB::get_gsb(const size_t& x, const size_t& y) const {
+const RRGSB& DeviceRRGSB::get_gsb(const size_t& x, const size_t& y, const size_t& layer) const {
   vtr::Point<size_t> coordinate(x, y);
-  return get_gsb(coordinate);
+  return get_gsb(coordinate, layer);
 }
 
 /* Get a rr switch block in the array with a coordinate */
 const RRGSB& DeviceRRGSB::get_gsb_by_cb_coordinate(
-  const vtr::Point<size_t>& coordinate) const {
+  const vtr::Point<size_t>& coordinate, const size_t& layer) const {
   vtr::Point<size_t> gsb_coord = coordinate;
   VTR_ASSERT(validate_coordinate(gsb_coord));
 
-  return rr_gsb_[gsb_coord.x()][gsb_coord.y()];
+  return rr_gsb_[layer][gsb_coord.x()][gsb_coord.y()];
 }
 
 /* get the number of unique mirrors of switch blocks */
@@ -70,22 +70,22 @@ bool DeviceRRGSB::is_compressed() const { return is_compressed_; }
 
 /* Identify if a GSB actually exists at a location */
 bool DeviceRRGSB::is_gsb_exist(const RRGraphView& rr_graph,
-                               const vtr::Point<size_t> coord) const {
+                               const vtr::Point<size_t> coord, const size_t layer) const {
   /* Out of range, does not exist */
   if (false == validate_coordinate(coord)) {
     return false;
   }
 
   /* If the GSB is empty, it does not exist */
-  if (true == get_gsb(coord).is_cb_exist(CHANX)) {
+  if (true == get_gsb(coord, layer).is_cb_exist(CHANX)) {
     return true;
   }
 
-  if (true == get_gsb(coord).is_cb_exist(CHANY)) {
+  if (true == get_gsb(coord, layer).is_cb_exist(CHANY)) {
     return true;
   }
 
-  if (true == get_gsb(coord).is_sb_exist(rr_graph)) {
+  if (true == get_gsb(coord, layer).is_sb_exist(rr_graph)) {
     return true;
   }
 
@@ -98,25 +98,30 @@ size_t DeviceRRGSB::get_num_sb_unique_module() const {
 }
 
 /* get the coordinate of unique mirrors of switch blocks */
-vtr::Point<size_t> DeviceRRGSB::get_sb_unique_block_coord(size_t id) const {
+PointWithLayer DeviceRRGSB::get_sb_unique_block_coord(size_t id) const {
   return sb_unique_module_[id];
 }
 
 /* get the coordinates of the instances of a unique switch block */
-std::vector<vtr::Point<size_t>> DeviceRRGSB::get_sb_unique_block_instance_coord(
-  const vtr::Point<size_t>& unique_block_coord) const {
+std::vector<PointWithLayer> DeviceRRGSB::get_sb_unique_block_instance_coord(
+  const vtr::Point<size_t>& unique_block_coord, const size_t& layer) const {
   auto unique_module_id =
-    sb_unique_module_id_[unique_block_coord.x()][unique_block_coord.y()];
-  std::vector<vtr::Point<size_t>> instance_map;
-  for (size_t location_x = 0; location_x < sb_unique_module_id_.size();
-       ++location_x) {
-    for (size_t location_y = 0; location_y < sb_unique_module_id_[0].size();
-         ++location_y) {
-      auto unique_module_id_instance =
-        sb_unique_module_id_[location_x][location_y];
-      if (unique_module_id_instance == unique_module_id) {
-        vtr::Point<size_t> instance_coord(location_x, location_y);
-        instance_map.push_back(instance_coord);
+    sb_unique_module_id_[layer][unique_block_coord.x()][unique_block_coord.y()];
+  std::vector<PointWithLayer> instance_map;
+  for (size_t location_layer = 0; location_layer < sb_unique_module_id_.size(); ++location_layer){
+    for (size_t location_x = 0; location_x < sb_unique_module_id_[0].size();
+        ++location_x) {
+      for (size_t location_y = 0; location_y < sb_unique_module_id_[0][0].size();
+          ++location_y) {
+        auto unique_module_id_instance =
+          sb_unique_module_id_[location_layer][location_x][location_y];
+        if (unique_module_id_instance == unique_module_id) {
+          PointWithLayer new_point;
+          vtr::Point<size_t> instance_coord(location_x, location_y);
+          new_point.coordinates = instance_coord;
+          new_point.layer = location_layer;
+          instance_map.push_back(new_point);
+        }
       }
     }
   }
@@ -124,27 +129,32 @@ std::vector<vtr::Point<size_t>> DeviceRRGSB::get_sb_unique_block_instance_coord(
 }
 
 /* get the coordinate of unique mirrors of connection blocks of CHANX type */
-vtr::Point<size_t> DeviceRRGSB::get_cbx_unique_block_coord(size_t id) const {
+PointWithLayer DeviceRRGSB::get_cbx_unique_block_coord(size_t id) const {
   return cbx_unique_module_[id];
 }
 
 /* get the coordinates of the instances of a unique connection block of CHANX
  * type */
-std::vector<vtr::Point<size_t>>
+std::vector<PointWithLayer>
 DeviceRRGSB::get_cbx_unique_block_instance_coord(
-  const vtr::Point<size_t>& unique_block_coord) const {
+  const vtr::Point<size_t>& unique_block_coord, const size_t& layer) const {
   auto unique_module_id =
-    cbx_unique_module_id_[unique_block_coord.x()][unique_block_coord.y()];
-  std::vector<vtr::Point<size_t>> instance_map;
-  for (size_t location_x = 0; location_x < cbx_unique_module_id_.size();
-       ++location_x) {
-    for (size_t location_y = 0; location_y < cbx_unique_module_id_[0].size();
-         ++location_y) {
-      auto unique_module_id_instance =
-        cbx_unique_module_id_[location_x][location_y];
-      if (unique_module_id_instance == unique_module_id) {
-        vtr::Point<size_t> instance_coord(location_x, location_y);
-        instance_map.push_back(instance_coord);
+    cbx_unique_module_id_[layer][unique_block_coord.x()][unique_block_coord.y()];
+  std::vector<PointWithLayer> instance_map;
+  for (size_t location_layer = 0; location_layer < cbx_unique_module_id_.size(); ++location_layer){  
+    for (size_t location_x = 0; location_x < cbx_unique_module_id_[0].size();
+        ++location_x) {
+      for (size_t location_y = 0; location_y < cbx_unique_module_id_[0][0].size();
+          ++location_y) {
+        auto unique_module_id_instance =
+          cbx_unique_module_id_[location_layer][location_x][location_y];
+        if (unique_module_id_instance == unique_module_id) {
+          vtr::Point<size_t> instance_coord(location_x, location_y);
+          PointWithLayer new_point;
+          new_point.coordinates = instance_coord;
+          new_point.layer = location_layer;
+          instance_map.push_back(new_point);
+        }
       }
     }
   }
@@ -152,27 +162,32 @@ DeviceRRGSB::get_cbx_unique_block_instance_coord(
 }
 
 /* get the coordinate of unique mirrors of connection blocks of CHANY type */
-vtr::Point<size_t> DeviceRRGSB::get_cby_unique_block_coord(size_t id) const {
+PointWithLayer DeviceRRGSB::get_cby_unique_block_coord(size_t id) const {
   return cby_unique_module_[id];
 }
 
 /* get the coordinates of the instances of a unique connection block of CHANY
  * type */
-std::vector<vtr::Point<size_t>>
+std::vector<PointWithLayer>
 DeviceRRGSB::get_cby_unique_block_instance_coord(
-  const vtr::Point<size_t>& unique_block_coord) const {
+  const vtr::Point<size_t>& unique_block_coord, const size_t& layer) const {
   auto unique_module_id =
-    cby_unique_module_id_[unique_block_coord.x()][unique_block_coord.y()];
-  std::vector<vtr::Point<size_t>> instance_map;
-  for (size_t location_x = 0; location_x < cby_unique_module_id_.size();
-       ++location_x) {
-    for (size_t location_y = 0; location_y < cby_unique_module_id_[0].size();
-         ++location_y) {
-      auto unique_module_id_instance =
-        cby_unique_module_id_[location_x][location_y];
-      if (unique_module_id_instance == unique_module_id) {
-        vtr::Point<size_t> instance_coord(location_x, location_y);
-        instance_map.push_back(instance_coord);
+    cby_unique_module_id_[layer][unique_block_coord.x()][unique_block_coord.y()];
+  std::vector<PointWithLayer> instance_map;
+  for (size_t location_layer = 0; location_layer < cby_unique_module_id_.size(); ++location_layer){
+    for (size_t location_x = 0; location_x < cby_unique_module_id_[0].size();
+        ++location_x) {
+      for (size_t location_y = 0; location_y < cby_unique_module_id_[0][0].size();
+          ++location_y) {
+        auto unique_module_id_instance =
+          cby_unique_module_id_[location_layer][location_x][location_y];
+        if (unique_module_id_instance == unique_module_id) {
+          vtr::Point<size_t> instance_coord(location_x, location_y);
+          PointWithLayer new_point;
+          new_point.coordinates = instance_coord;
+          new_point.layer = location_layer;
+          instance_map.push_back(new_point);
+        }
       }
     }
   }
@@ -188,14 +203,14 @@ size_t DeviceRRGSB::get_num_gsb_unique_module() const {
 const RRGSB& DeviceRRGSB::get_gsb_unique_module(const size_t& index) const {
   VTR_ASSERT(validate_gsb_unique_module_index(index));
 
-  return rr_gsb_[gsb_unique_module_[index].x()][gsb_unique_module_[index].y()];
+  return rr_gsb_[gsb_unique_module_[index].layer][gsb_unique_module_[index].coordinates.x()][gsb_unique_module_[index].coordinates.y()];
 }
 
 /* Get a rr switch block which a unique mirror */
 const RRGSB& DeviceRRGSB::get_sb_unique_module(const size_t& index) const {
   VTR_ASSERT(validate_sb_unique_module_index(index));
 
-  return rr_gsb_[sb_unique_module_[index].x()][sb_unique_module_[index].y()];
+  return rr_gsb_[sb_unique_module_[index].layer][sb_unique_module_[index].coordinates.x()][sb_unique_module_[index].coordinates.y()];
 }
 
 /* Get a rr switch block which a unique mirror */
@@ -205,11 +220,13 @@ const RRGSB& DeviceRRGSB::get_cb_unique_module(const t_rr_type& cb_type,
   VTR_ASSERT(validate_cb_type(cb_type));
   switch (cb_type) {
     case CHANX:
-      return rr_gsb_[cbx_unique_module_[index].x()]
-                    [cbx_unique_module_[index].y()];
+      return rr_gsb_[cbx_unique_module_[index].layer]
+                    [cbx_unique_module_[index].coordinates.x()]
+                    [cbx_unique_module_[index].coordinates.y()];
     case CHANY:
-      return rr_gsb_[cby_unique_module_[index].x()]
-                    [cby_unique_module_[index].y()];
+      return rr_gsb_[cby_unique_module_[index].layer]
+                    [cby_unique_module_[index].coordinates.x()]
+                    [cby_unique_module_[index].coordinates.y()];
     default:
       VTR_LOG_ERROR("Invalid type of connection block!\n");
       exit(1);
@@ -234,39 +251,59 @@ const RRGSB& DeviceRRGSB::get_sb_unique_module(
  ***********************************************************************/
 
 /* Pre-allocate the rr_switch_block array that the device requires */
-void DeviceRRGSB::reserve(const vtr::Point<size_t>& coordinate) {
-  rr_gsb_.resize(coordinate.x());
+void DeviceRRGSB::reserve(const vtr::Point<size_t>& coordinate, const size_t& layer) {
+  rr_gsb_.resize(layer);
 
-  gsb_unique_module_id_.resize(coordinate.x());
+  gsb_unique_module_id_.resize(layer);
 
-  sb_unique_module_id_.resize(coordinate.x());
+  sb_unique_module_id_.resize(layer);
 
-  cbx_unique_module_id_.resize(coordinate.x());
-  cby_unique_module_id_.resize(coordinate.x());
+  cbx_unique_module_id_.resize(layer);
+  cby_unique_module_id_.resize(layer);
 
-  for (size_t x = 0; x < coordinate.x(); ++x) {
-    rr_gsb_[x].resize(coordinate.y());
+  for (size_t cur_layer = 0; cur_layer < layer; ++cur_layer){
+    rr_gsb_[cur_layer].resize(coordinate.x());
 
-    gsb_unique_module_id_[x].resize(coordinate.y());
+    gsb_unique_module_id_[cur_layer].resize(coordinate.x());
 
-    sb_unique_module_id_[x].resize(coordinate.y());
+    sb_unique_module_id_[cur_layer].resize(coordinate.x());
 
-    cbx_unique_module_id_[x].resize(coordinate.y());
-    cby_unique_module_id_[x].resize(coordinate.y());
+    cbx_unique_module_id_[cur_layer].resize(coordinate.x());
+    cby_unique_module_id_[cur_layer].resize(coordinate.x());
+
+    for (size_t x = 0; x < coordinate.x(); ++x) {
+      rr_gsb_[cur_layer][x].resize(coordinate.y());
+
+      gsb_unique_module_id_[cur_layer][x].resize(coordinate.y());
+
+      sb_unique_module_id_[cur_layer][x].resize(coordinate.y());
+
+      cbx_unique_module_id_[cur_layer][x].resize(coordinate.y());
+      cby_unique_module_id_[cur_layer][x].resize(coordinate.y());
+    }
   }
 }
 
 void DeviceRRGSB::reserve_unique_modules() {
   /* As rr_gsb_ has been built, it has valid size. Will reserve space for
    * unique blocks according to rr_gsb_'s size*/
+
+  //Space for each layer
   sb_unique_module_id_.resize(rr_gsb_.size());
   cbx_unique_module_id_.resize(rr_gsb_.size());
   cby_unique_module_id_.resize(rr_gsb_.size());
 
-  for (std::size_t i = 0; i < rr_gsb_.size(); ++i) {
-    sb_unique_module_id_[i].resize(rr_gsb_[i].size());
-    cbx_unique_module_id_[i].resize(rr_gsb_[i].size());
-    cby_unique_module_id_[i].resize(rr_gsb_[i].size());
+  for (std::size_t layer = 0; layer < rr_gsb_.size(); ++layer) {
+    // space for each X coord
+    sb_unique_module_id_[layer].resize(rr_gsb_[layer].size());
+    cbx_unique_module_id_[layer].resize(rr_gsb_[layer].size());
+    cby_unique_module_id_[layer].resize(rr_gsb_[layer].size());
+    for (size_t x = 0; x < rr_gsb_[layer].size(); ++x){
+      // space for each y coord
+      sb_unique_module_id_[layer][x].resize(rr_gsb_[layer][x].size());
+      cbx_unique_module_id_[layer][x].resize(rr_gsb_[layer][x].size());
+      cby_unique_module_id_[layer][x].resize(rr_gsb_[layer][x].size());
+    }
   }
 }
 

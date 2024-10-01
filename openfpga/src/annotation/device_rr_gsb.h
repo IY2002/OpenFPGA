@@ -40,34 +40,34 @@ class DeviceRRGSB {
  public: /* Accessors */
   vtr::Point<size_t> get_gsb_range()
     const; /* get the max coordinate of the switch block array */
-  const RRGSB& get_gsb(const vtr::Point<size_t>& coordinate)
+  const RRGSB& get_gsb(const vtr::Point<size_t>& coordinate, const size_t& layer)
     const; /* Get a rr switch block in the array with a coordinate */
-  const RRGSB& get_gsb(const size_t& x, const size_t& y)
+  const RRGSB& get_gsb(const size_t& x, const size_t& y, const size_t& layer)
     const; /* Get a rr switch block in the array with a coordinate */
   /* Get a gsb using its connection block coordinate */
   const RRGSB& get_gsb_by_cb_coordinate(
-    const vtr::Point<size_t>& coordinate) const;
+    const vtr::Point<size_t>& coordinate, const size_t& layer) const;
   size_t get_num_gsb_unique_module()
     const; /* get the number of unique mirrors of GSB */
 
   size_t get_num_sb_unique_module()
     const; /* get the number of unique mirrors of SB */
-  vtr::Point<size_t> get_sb_unique_block_coord(
+  PointWithLayer get_sb_unique_block_coord(
     size_t id) const; /* get the coordinate of a unique switch block */
-  std::vector<vtr::Point<size_t>> get_sb_unique_block_instance_coord(
-    const vtr::Point<size_t>& unique_block_coord)
+  std::vector<PointWithLayer> get_sb_unique_block_instance_coord(
+    const vtr::Point<size_t>& unique_block_coord, const size_t& layer)
     const; /* get the coordinates of the instances of a unique switch block */
 
-  vtr::Point<size_t> get_cbx_unique_block_coord(size_t id)
+  PointWithLayer get_cbx_unique_block_coord(size_t id)
     const; /* get the coordinate of a unique connection block of CHANX type */
-  std::vector<vtr::Point<size_t>> get_cbx_unique_block_instance_coord(
-    const vtr::Point<size_t>& unique_block_coord)
+  std::vector<PointWithLayer> get_cbx_unique_block_instance_coord(
+    const vtr::Point<size_t>& unique_block_coord, const size_t& layer)
     const; /* get the coordinates of the instances of a unique connection block
               of CHANX type*/
-  vtr::Point<size_t> get_cby_unique_block_coord(size_t id)
+  PointWithLayer get_cby_unique_block_coord(size_t id)
     const; /* get the coordinate of a unique connection block of CHANY type */
-  std::vector<vtr::Point<size_t>> get_cby_unique_block_instance_coord(
-    const vtr::Point<size_t>& unique_block_coord)
+  std::vector<PointWithLayer> get_cby_unique_block_instance_coord(
+    const vtr::Point<size_t>& unique_block_coord, const size_t& layer)
     const; /* get the coordinates of the instances of a unique connection block
               of CHANY type */
 
@@ -85,7 +85,7 @@ class DeviceRRGSB {
   size_t get_num_cb_unique_module(const t_rr_type& cb_type)
     const; /* get the number of unique mirrors of CBs */
   bool is_gsb_exist(const RRGraphView& rr_graph,
-                    const vtr::Point<size_t> coord) const;
+                    const vtr::Point<size_t> coord, const size_t layer) const;
   /* Get the index of the unique Switch block module with a given GSB
    * coordinate. Note: Do NOT use sb coordinate!!! */
   size_t get_sb_unique_module_index(const vtr::Point<size_t>& coordinate) const;
@@ -100,7 +100,7 @@ class DeviceRRGSB {
                                      automatically identify and update the lists
                                      of unique mirrors and rotatable mirrors */
   void reserve(
-    const vtr::Point<size_t>& coordinate); /* Pre-allocate the rr_switch_block
+    const vtr::Point<size_t>& coordinate, const size_t& layer); /* Pre-allocate the rr_switch_block
                                               array that the device requires */
   void reserve_unique_modules(); /* Pre-allocate the rr_sb_unique_module_id
                       matrix that the device requires */
