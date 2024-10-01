@@ -15,6 +15,12 @@
 /* namespace openfpga begins */
 namespace openfpga {
 
+// Struct for holding 3D RRGSB Unique Modules
+struct PointWithLayer{
+  vtr::Point<size_t> coordinates;
+  size_t layer;
+};
+
 /********************************************************************
  * Object Device Routing Resource Switch Block
  * This includes:
@@ -176,28 +182,30 @@ when read_unique_blocks command invoked */
                    identify and update the lists of unique side module */
 
  private: /* Internal Data */
-  std::vector<std::vector<RRGSB>> rr_gsb_;
+
+  /* 3D array to hold RRGSBs, addressible via [layer][x][y] */
+  std::vector<std::vector<std::vector<RRGSB>>> rr_gsb_;
   bool is_compressed_ =
     false; /* True if the unique blocks have been preloaded or built */
 
-  std::vector<std::vector<size_t>>
-    gsb_unique_module_id_; /* A map from rr_gsb to its unique mirror */
-  std::vector<vtr::Point<size_t>> gsb_unique_module_;
+  std::vector<std::vector<std::vector<size_t>>>
+    gsb_unique_module_id_; /* A map from rr_gsb to its unique mirror, addressible via [layer][x][y] */
+  std::vector<PointWithLayer> gsb_unique_module_;
 
-  std::vector<std::vector<size_t>>
-    sb_unique_module_id_; /* A map from rr_gsb to its unique mirror */
-  std::vector<vtr::Point<size_t>> sb_unique_module_;
+  std::vector<std::vector<std::vector<size_t>>>
+    sb_unique_module_id_; /* A map from rr_gsb to its unique mirror, addressible via [layer][x][y]  */
+  std::vector<PointWithLayer> sb_unique_module_;
 
-  std::vector<std::vector<size_t>>
-    cbx_unique_module_id_; /* A map from rr_gsb to its unique mirror */
-  std::vector<vtr::Point<size_t>>
+  std::vector<std::vector<std::vector<size_t>>>
+    cbx_unique_module_id_; /* A map from rr_gsb to its unique mirror, addressible via [layer][x][y]  */
+  std::vector<PointWithLayer>
     cbx_unique_module_; /* For each side of connection block, we identify a list
                            of unique modules based on its connection. This is a
                            matrix [0..num_module] */
 
-  std::vector<std::vector<size_t>>
-    cby_unique_module_id_; /* A map from rr_gsb to its unique mirror */
-  std::vector<vtr::Point<size_t>>
+  std::vector<std::vector<std::vector<size_t>>>
+    cby_unique_module_id_; /* A map from rr_gsb to its unique mirror, addressible via [layer][x][y]  */
+  std::vector<PointWithLayer>
     cby_unique_module_; /* For each side of connection block, we identify a list
                            of unique modules based on its connection. This is a
                            matrix [0..num_module] */
