@@ -33,7 +33,7 @@ vtr::Point<size_t> DeviceRRGSB::get_gsb_range() const {
 
 /* Get a rr switch block in the array with a coordinate */
 const RRGSB& DeviceRRGSB::get_gsb(const vtr::Point<size_t>& coordinate, const size_t& layer) const {
-  VTR_ASSERT(validate_coordinate(coordinate));
+  VTR_ASSERT(validate_coordinate(coordinate, layer));
   return rr_gsb_[layer][coordinate.x()][coordinate.y()];
 }
 
@@ -47,7 +47,7 @@ const RRGSB& DeviceRRGSB::get_gsb(const size_t& x, const size_t& y, const size_t
 const RRGSB& DeviceRRGSB::get_gsb_by_cb_coordinate(
   const vtr::Point<size_t>& coordinate, const size_t& layer) const {
   vtr::Point<size_t> gsb_coord = coordinate;
-  VTR_ASSERT(validate_coordinate(gsb_coord));
+  VTR_ASSERT(validate_coordinate(gsb_coord, layer));
 
   return rr_gsb_[layer][gsb_coord.x()][gsb_coord.y()];
 }
@@ -72,7 +72,7 @@ bool DeviceRRGSB::is_compressed() const { return is_compressed_; }
 bool DeviceRRGSB::is_gsb_exist(const RRGraphView& rr_graph,
                                const vtr::Point<size_t> coord, const size_t layer) const {
   /* Out of range, does not exist */
-  if (false == validate_coordinate(coord)) {
+  if (false == validate_coordinate(coord, layer)) {
     return false;
   }
 
@@ -235,15 +235,15 @@ const RRGSB& DeviceRRGSB::get_cb_unique_module(const t_rr_type& cb_type,
 
 /* Give a coordinate of a rr switch block, and return its unique mirror */
 const RRGSB& DeviceRRGSB::get_cb_unique_module(
-  const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate) const {
+  const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate, const size_t& layer) const {
   return get_cb_unique_module(cb_type,
-                              get_cb_unique_module_index(cb_type, coordinate));
+                              get_cb_unique_module_index(cb_type, coordinate, layer));
 }
 
 /* Give a coordinate of a rr switch block, and return its unique mirror */
 const RRGSB& DeviceRRGSB::get_sb_unique_module(
-  const vtr::Point<size_t>& coordinate) const {
-  return get_sb_unique_module(get_sb_unique_module_index(coordinate));
+  const vtr::Point<size_t>& coordinate, const size_t& layer) const {
+  return get_sb_unique_module(get_sb_unique_module_index(coordinate, layer));
 }
 
 /************************************************************************
@@ -308,14 +308,23 @@ void DeviceRRGSB::reserve_unique_modules() {
 }
 
 /* Resize rr_switch_block array is needed*/
-void DeviceRRGSB::resize_upon_need(const vtr::Point<size_t>& coordinate) {
-  if (coordinate.x() + 1 > rr_gsb_.size()) {
-    rr_gsb_.resize(coordinate.x() + 1);
+void DeviceRRGSB::resize_upon_need(const vtr::Point<size_t>& coordinate, const size_t& layer) {
+  if (layer + 1 > rr_gsb_.size()){
+    rr_gsb_.resize(layer + 1);
 
-    sb_unique_module_id_.resize(coordinate.x() + 1);
+    sb_unique_module_id_.resize(layer + 1);
 
-    cbx_unique_module_id_.resize(coordinate.x() + 1);
-    cby_unique_module_id_.resize(coordinate.x() + 1);
+    cbx_unique_module_id_.resize(layer + 1);
+    cby_unique_module_id_.resize(layer + 1);
+  }
+  
+  if (coordinate.x() + 1 > rr_gsb_[layer].size()) {
+    rr_gsb_[layer].resize(coordinate.x() + 1);
+
+    sb_unique_module_id_[layer].resize(coordinate.x() + 1);
+
+    cbx_unique_module_id_[layer].resize(coordinate.x() + 1);
+    cby_unique_module_id_[layer].resize(coordinate.x() + 1);
   }
 
   if (coordinate.y() + 1 > rr_gsb_[coordinate.x()].size()) {
@@ -332,7 +341,7 @@ void DeviceRRGSB::resize_upon_need(const vtr::Point<size_t>& coordinate) {
 void DeviceRRGSB::add_rr_gsb(const vtr::Point<size_t>& coordinate,
                              const RRGSB& rr_gsb, const size_t& layer) {
   /* Resize upon needs*/
-  resize_upon_need(coordinate);
+  resize_upon_need(coordinate, layer);
 
   /* Add the switch block into array */
   rr_gsb_[layer][coordinate.x()][coordinate.y()] = rr_gsb;
@@ -340,7 +349,7 @@ void DeviceRRGSB::add_rr_gsb(const vtr::Point<size_t>& coordinate,
 
 /* Get a rr switch block in the array with a coordinate */
 RRGSB& DeviceRRGSB::get_mutable_gsb(const vtr::Point<size_t>& coordinate, const size_t& layer) {
-  VTR_ASSERT(validate_coordinate(coordinate));
+  VTR_ASSERT(validate_coordinate(coordinate, layer));
   return rr_gsb_[layer][coordinate.x()][coordinate.y()];
 }
 
@@ -673,11 +682,14 @@ void DeviceRRGSB::clear_cb_unique_module(const t_rr_type& cb_type) {
  ***********************************************************************/
 /* Validate if the (x,y) is the range of this device */
 bool DeviceRRGSB::validate_coordinate(
-  const vtr::Point<size_t>& coordinate) const {
-  if (coordinate.x() >= rr_gsb_.capacity()) {
+  const vtr::Point<size_t>& coordinate, const size_t& layer) const {
+  if (layer > rr_gsb_.capacity()){
     return false;
   }
-  return (coordinate.y() < rr_gsb_[coordinate.x()].capacity());
+  if (coordinate.x() >= rr_gsb_[0].capacity()) {
+    return false;
+  }
+  return (coordinate.y() < rr_gsb_[layer][coordinate.x()].capacity());
 }
 
 /* Validate if the index in the range of unique_mirror vector*/
@@ -711,27 +723,27 @@ bool DeviceRRGSB::validate_cb_type(const t_rr_type& cb_type) const {
 }
 
 size_t DeviceRRGSB::get_sb_unique_module_index(
-  const vtr::Point<size_t>& coordinate) const {
-  VTR_ASSERT(validate_coordinate(coordinate));
+  const vtr::Point<size_t>& coordinate, const size_t& layer) const {
+  VTR_ASSERT(validate_coordinate(coordinate, layer));
   size_t sb_unique_module_id =
-    sb_unique_module_id_[coordinate.x()][coordinate.y()];
+    sb_unique_module_id_[layer][coordinate.x()][coordinate.y()];
   return sb_unique_module_id;
 }
 
 size_t DeviceRRGSB::get_cb_unique_module_index(
-  const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate) const {
+  const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate, const size_t& layer) const {
   VTR_ASSERT(validate_cb_type(cb_type));
-  VTR_ASSERT(validate_coordinate(coordinate));
+  VTR_ASSERT(validate_coordinate(coordinate, layer));
   size_t cb_unique_module_id;
 
   switch (cb_type) {
     case CHANX:
       cb_unique_module_id =
-        cbx_unique_module_id_[coordinate.x()][coordinate.y()];
+        cbx_unique_module_id_[layer][coordinate.x()][coordinate.y()];
       break;
     case CHANY:
       cb_unique_module_id =
-        cby_unique_module_id_[coordinate.x()][coordinate.y()];
+        cby_unique_module_id_[layer][coordinate.x()][coordinate.y()];
       break;
     default:
       VTR_LOG_ERROR("Invalid type of connection block!\n");
@@ -747,76 +759,88 @@ size_t DeviceRRGSB::get_cb_unique_module_index(
 /* preload unique cbx blocks and their corresponding instance information. This
  * function will be called when read_unique_blocks command invoked */
 void DeviceRRGSB::preload_unique_cbx_module(
-  const vtr::Point<size_t>& block_coordinate,
-  const std::vector<vtr::Point<size_t>>& instance_coords) {
+  const PointWithLayer& block_coordinate,
+  const std::vector<PointWithLayer>& instance_coords) {
   /*check whether the preloaded value exceeds the limit */
-  size_t limit_x = cbx_unique_module_id_.size();
-  size_t limit_y = cbx_unique_module_id_[0].size();
-  VTR_ASSERT(block_coordinate.x() < limit_x);
-  VTR_ASSERT(block_coordinate.y() < limit_y);
-  add_cb_unique_module(CHANX, block_coordinate);
+  size_t limit_layer = cbx_unique_module_id_.size();
+  size_t limit_x = cbx_unique_module_id_[0].size();
+  size_t limit_y = cbx_unique_module_id_[0][0].size();
+  VTR_ASSERT(block_coordinate.layer < limit_layer);
+  VTR_ASSERT(block_coordinate.coordinates.x() < limit_x);
+  VTR_ASSERT(block_coordinate.coordinates.y() < limit_y);
+  add_cb_unique_module(CHANX, block_coordinate.coordinates, block_coordinate.layer);
   /* preload the unique block */
-  set_cb_unique_module_id(CHANX, block_coordinate,
+  set_cb_unique_module_id(CHANX, block_coordinate.coordinates, block_coordinate.layer,
                           get_num_cb_unique_module(CHANX) - 1);
 
   /* preload the instances of the unique block. Instance will have the same id
    * as the unique block */
   for (auto instance_location : instance_coords) {
-    VTR_ASSERT(instance_location.x() < limit_x);
-    VTR_ASSERT(instance_location.y() < limit_y);
+    VTR_ASSERT(instance_location.layer < limit_layer);
+    VTR_ASSERT(instance_location.coordinates.x() < limit_x);
+    VTR_ASSERT(instance_location.coordinates.y() < limit_y);
     set_cb_unique_module_id(
-      CHANX, instance_location,
-      cbx_unique_module_id_[block_coordinate.x()][block_coordinate.y()]);
+      CHANX, instance_location.coordinates, instance_location.layer,
+      cbx_unique_module_id_[block_coordinate.layer][block_coordinate.coordinates.x()][block_coordinate.coordinates.y()]);
   }
 }
 
 /* preload unique cby blocks and their corresponding instance information. This
  * function will be called when read_unique_blocks command invoked */
 void DeviceRRGSB::preload_unique_cby_module(
-  const vtr::Point<size_t>& block_coordinate,
-  const std::vector<vtr::Point<size_t>>& instance_coords) {
+  const PointWithLayer& block_coordinate,
+  const std::vector<PointWithLayer>& instance_coords) {
   /*check whether the preloaded value exceeds the limit */
-  size_t limit_x = cby_unique_module_id_.size();
-  size_t limit_y = cby_unique_module_id_[0].size();
+  size_t limit_layer = cby_unique_module_id_.size();
+  size_t limit_x = cby_unique_module_id_[0].size();
+  size_t limit_y = cby_unique_module_id_[0][0].size();
 
-  VTR_ASSERT(block_coordinate.x() < limit_x);
-  VTR_ASSERT(block_coordinate.y() < limit_y);
-  add_cb_unique_module(CHANY, block_coordinate);
+  VTR_ASSERT(block_coordinate.layer < limit_layer);
+  VTR_ASSERT(block_coordinate.coordinates.x() < limit_x);
+  VTR_ASSERT(block_coordinate.coordinates.y() < limit_y);
+  add_cb_unique_module(CHANY, block_coordinate.coordinates, block_coordinate.layer);
   /* preload the unique block */
-  set_cb_unique_module_id(CHANY, block_coordinate,
+  set_cb_unique_module_id(CHANY, block_coordinate.coordinates, block_coordinate.layer,
                           get_num_cb_unique_module(CHANY) - 1);
 
   /* preload the instances of the unique block. Instance will have the same id
    * as the unique block */
   for (auto instance_location : instance_coords) {
-    VTR_ASSERT(instance_location.x() < limit_x);
-    VTR_ASSERT(instance_location.y() < limit_y);
+    VTR_ASSERT(instance_location.layer < limit_layer);
+    VTR_ASSERT(instance_location.coordinates.x() < limit_x);
+    VTR_ASSERT(instance_location.coordinates.y() < limit_y);
     set_cb_unique_module_id(
-      CHANY, instance_location,
-      cby_unique_module_id_[block_coordinate.x()][block_coordinate.y()]);
+      CHANY, instance_location.coordinates, instance_location.layer,
+      cby_unique_module_id_[block_coordinate.layer][block_coordinate.coordinates.x()][block_coordinate.coordinates.y()]);
   }
 }
 
 /* preload unique sb blocks and their corresponding instance information. This
  * function will be called when read_unique_blocks command invoked */
 void DeviceRRGSB::preload_unique_sb_module(
-  const vtr::Point<size_t>& block_coordinate,
-  const std::vector<vtr::Point<size_t>>& instance_coords) {
+  const PointWithLayer& block_coordinate,
+  const std::vector<PointWithLayer>& instance_coords) {
   /*check whether the preloaded value exceeds the limit */
-  VTR_ASSERT(block_coordinate.x() < sb_unique_module_id_.size());
-  VTR_ASSERT(block_coordinate.y() < sb_unique_module_id_[0].size());
+  size_t limit_layer = sb_unique_module_id_.size();
+  size_t limit_x = sb_unique_module_id_[0].size();
+  size_t limit_y = sb_unique_module_id_[0][0].size();
+
+  VTR_ASSERT(block_coordinate.layer < limit_layer);
+  VTR_ASSERT(block_coordinate.coordinates.x() < limit_x);
+  VTR_ASSERT(block_coordinate.coordinates.y() < limit_y);
+
   sb_unique_module_.push_back(block_coordinate);
   /* Record the id of unique module */
-  sb_unique_module_id_[block_coordinate.x()][block_coordinate.y()] =
+  sb_unique_module_id_[block_coordinate.layer][block_coordinate.coordinates.x()][block_coordinate.coordinates.y()] =
     sb_unique_module_.size() - 1;
 
   /* each mirror instance of the unique module will have the same module id as
    * the unique module */
   for (auto instance_location : instance_coords) {
-    VTR_ASSERT(instance_location.x() < sb_unique_module_id_.size());
-    VTR_ASSERT(instance_location.y() < sb_unique_module_id_[0].size());
-    sb_unique_module_id_[instance_location.x()][instance_location.y()] =
-      sb_unique_module_id_[block_coordinate.x()][block_coordinate.y()];
+    VTR_ASSERT(instance_location.coordinates.x() < sb_unique_module_id_.size());
+    VTR_ASSERT(instance_location.coordinates.y() < sb_unique_module_id_[0].size());
+    sb_unique_module_id_[instance_location.layer][instance_location.coordinates.x()][instance_location.coordinates.y()] =
+      sb_unique_module_id_[block_coordinate.layer][block_coordinate.coordinates.x()][block_coordinate.coordinates.y()];
   }
 }
 } /* End namespace openfpga*/

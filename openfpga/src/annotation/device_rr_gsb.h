@@ -75,24 +75,24 @@ class DeviceRRGSB {
     const size_t& index) const; /* Get a rr-gsb which is a unique mirror */
   const RRGSB& get_sb_unique_module(const size_t& index)
     const; /* Get a rr switch block which a unique mirror */
-  const RRGSB& get_sb_unique_module(const vtr::Point<size_t>& coordinate)
+  const RRGSB& get_sb_unique_module(const vtr::Point<size_t>& coordinate, const size_t& layer)
     const; /* Get a rr switch block which a unique mirror */
   const RRGSB& get_cb_unique_module(const t_rr_type& cb_type,
                                     const size_t& index)
     const; /* Get a rr switch block which a unique mirror */
   const RRGSB& get_cb_unique_module(const t_rr_type& cb_type,
-                                    const vtr::Point<size_t>& coordinate) const;
+                                    const vtr::Point<size_t>& coordinate, const size_t& layer) const;
   size_t get_num_cb_unique_module(const t_rr_type& cb_type)
     const; /* get the number of unique mirrors of CBs */
   bool is_gsb_exist(const RRGraphView& rr_graph,
                     const vtr::Point<size_t> coord, const size_t layer) const;
   /* Get the index of the unique Switch block module with a given GSB
    * coordinate. Note: Do NOT use sb coordinate!!! */
-  size_t get_sb_unique_module_index(const vtr::Point<size_t>& coordinate) const;
+  size_t get_sb_unique_module_index(const vtr::Point<size_t>& coordinate, const size_t& layer) const;
   /* Get the index of the unique Connection block module with a given GSB
    * coordinate. Note: Do NOT use sb coordinate!!! */
   size_t get_cb_unique_module_index(const t_rr_type& cb_type,
-                                    const vtr::Point<size_t>& coordinate) const;
+                                    const vtr::Point<size_t>& coordinate, const size_t& layer) const;
 
  public: /* Mutators */
   bool is_compressed() const;
@@ -106,7 +106,7 @@ class DeviceRRGSB {
                       matrix that the device requires */
   void resize_upon_need(
     const vtr::Point<size_t>&
-      coordinate); /* Resize the rr_switch_block array if needed */
+      coordinate, const size_t& layer); /* Resize the rr_switch_block array if needed */
   void add_rr_gsb(
     const vtr::Point<size_t>& coordinate,
     const RRGSB& rr_gsb, const size_t& layer); /* Add a switch block to the array, which will
@@ -125,19 +125,19 @@ class DeviceRRGSB {
                                      of unique mirrors and rotatable mirrors */
   void clear();                   /* clean the content */
   void preload_unique_cbx_module(
-    const vtr::Point<size_t>& block_coordinate,
-    const std::vector<vtr::Point<size_t>>&
+    const PointWithLayer& block_coordinate,
+    const std::vector<PointWithLayer>&
       instance_coords); /* preload unique CBX blocks and their corresponding
                            instance information. This function will be called
                            when read_unique_blocks command invoked */
   void preload_unique_cby_module(
-    const vtr::Point<size_t>& block_coordinate,
-    const std::vector<vtr::Point<size_t>>&
+    const PointWithLayer& block_coordinate,
+    const std::vector<PointWithLayer>&
       instance_coords); /* preload unique CBY blocks and their corresponding
 instance information. This function will be called
 when read_unique_blocks command invoked */
-  void preload_unique_sb_module(const vtr::Point<size_t>& block_coordinate,
-                                const std::vector<vtr::Point<size_t>>&
+  void preload_unique_sb_module(const PointWithLayer& block_coordinate,
+                                const std::vector<PointWithLayer>&
                                   instance_coords); /* preload unique SB blocks
                    and their corresponding instance information. This function
                    will be called when read_unique_blocks command invoked */
@@ -153,7 +153,7 @@ when read_unique_blocks command invoked */
   void clear_gsb_unique_module();    /* clean the content */
   void clear_gsb_unique_module_id(); /* clean the content */
  private:                            /* Validators */
-  bool validate_coordinate(const vtr::Point<size_t>& coordinate)
+  bool validate_coordinate(const vtr::Point<size_t>& coordinate, const size_t& layer)
     const; /* Validate if the (x,y) is the range of this device */
   bool validate_side(const e_side& side)
     const; /* validate if side is in the range of unique_side_module_ */
