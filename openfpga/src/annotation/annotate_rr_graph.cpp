@@ -416,35 +416,38 @@ void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
    */
   vtr::Point<size_t> gsb_range(vpr_device_ctx.grid.width() - 1,
                                vpr_device_ctx.grid.height() - 1);
+  size_t layers = vpr_device_ctx.grid.get_num_layers();
   if (vpr_device_ctx.arch->perimeter_cb) {
     gsb_range.set(vpr_device_ctx.grid.width(), vpr_device_ctx.grid.height());
   }
-  device_rr_gsb.reserve(gsb_range);
+  device_rr_gsb.reserve(gsb_range, layers);
 
-  VTR_LOGV(verbose_output, "Start annotation GSB up to [%lu][%lu]\n",
-           gsb_range.x(), gsb_range.y());
+  VTR_LOGV(verbose_output, "Start annotation GSB up to [%lu][%lu][%lu]\n",
+           layers, gsb_range.x(), gsb_range.y());
 
   size_t gsb_cnt = 0;
-  size_t layer = 0;
+  // size_t layer = 0;
   /* For each switch block, determine the size of array */
-  for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
-      /* Here we give the builder the fringe coordinates so that it can handle
-       * the GSBs at the borderside correctly sort drive_rr_nodes should be
-       * called if required by users
-       */
-      vtr::Point<size_t> sub_gsb_range(vpr_device_ctx.grid.width() - 1,
-                                       vpr_device_ctx.grid.height() - 1);
-      const RRGSB& rr_gsb = build_rr_gsb(
-        vpr_device_ctx, sub_gsb_range, layer, vtr::Point<size_t>(ix, iy),
-        vpr_device_ctx.arch->perimeter_cb, include_clock);
-      /* Add to device_rr_gsb */
-      vtr::Point<size_t> gsb_coordinate = rr_gsb.get_sb_coordinate();
-      device_rr_gsb.add_rr_gsb(gsb_coordinate, rr_gsb);
-      gsb_cnt++; /* Update counter */
-      /* Print info */
-      VTR_LOG("[%lu%] Backannotated GSB[%lu][%lu]\r",
-              100 * gsb_cnt / (gsb_range.x() * gsb_range.y()), ix, iy);
+  for (size_t ilayer = 0; ilayer < layers; ++ilayer){
+    for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
+        /* Here we give the builder the fringe coordinates so that it can handle
+        * the GSBs at the borderside correctly sort drive_rr_nodes should be
+        * called if required by users
+        */
+        vtr::Point<size_t> sub_gsb_range(vpr_device_ctx.grid.width() - 1,
+                                        vpr_device_ctx.grid.height() - 1);
+        const RRGSB& rr_gsb = build_rr_gsb(
+          vpr_device_ctx, sub_gsb_range, ilayer, vtr::Point<size_t>(ix, iy),
+          vpr_device_ctx.arch->perimeter_cb, include_clock);
+        /* Add to device_rr_gsb */
+        vtr::Point<size_t> gsb_coordinate = rr_gsb.get_sb_coordinate();
+        device_rr_gsb.add_rr_gsb(gsb_coordinate, rr_gsb, ilayer);
+        gsb_cnt++; /* Update counter */
+        /* Print info */
+        VTR_LOG("[%lu%] Backannotated GSB[%lu][%lu][%lu]\r",
+                100 * gsb_cnt / (gsb_range.x() * gsb_range.y()), ilayer, ix, iy);
+      }
     }
   }
   /* Report number of unique mirrors */
@@ -466,26 +469,29 @@ void sort_device_rr_gsb_chan_node_in_edges(const RRGraphView& rr_graph,
   /* Note that the GSB array is smaller than the grids by 1 column and 1 row!!!
    */
   vtr::Point<size_t> gsb_range = device_rr_gsb.get_gsb_range();
+  size_t layers = device_rr_gsb.get_gsb_layers();
 
-  VTR_LOGV(verbose_output, "Start sorting edges for GSBs up to [%lu][%lu]\n",
-           gsb_range.x(), gsb_range.y());
+  VTR_LOGV(verbose_output, "Start sorting edges for GSBs up to [%lu][%lu][%lu]\n",
+          layers, gsb_range.x(), gsb_range.y());
 
   size_t gsb_cnt = 0;
 
   /* For each switch block, determine the size of array */
-  for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
-      vtr::Point<size_t> gsb_coordinate(ix, iy);
-      RRGSB& rr_gsb = device_rr_gsb.get_mutable_gsb(gsb_coordinate);
-      rr_gsb.sort_chan_node_in_edges(rr_graph);
+  for (size_t ilayer = 0; ilayer < layers; ++ilayer){
+    for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
+        vtr::Point<size_t> gsb_coordinate(ix, iy);
+        RRGSB& rr_gsb = device_rr_gsb.get_mutable_gsb(gsb_coordinate, ilayer);
+        rr_gsb.sort_chan_node_in_edges(rr_graph);
 
-      gsb_cnt++; /* Update counter */
+        gsb_cnt++; /* Update counter */
 
-      /* Print info */
-      VTR_LOG(
-        "[%lu%] Sorted incoming edges for each routing track output node of "
-        "GSB[%lu][%lu]\r",
-        100 * gsb_cnt / (gsb_range.x() * gsb_range.y()), ix, iy);
+        /* Print info */
+        VTR_LOG(
+          "[%lu%] Sorted incoming edges for each routing track output node of "
+          "GSB[%lu][%lu][%lu]\r",
+          100 * gsb_cnt / (layers * gsb_range.x() * gsb_range.y()), ilayer, ix, iy);
+      }
     }
   }
 
@@ -493,7 +499,7 @@ void sort_device_rr_gsb_chan_node_in_edges(const RRGraphView& rr_graph,
   VTR_LOG(
     "Sorted incoming edges for each routing track output node of %d General "
     "Switch Blocks (GSBs).\n",
-    gsb_range.x() * gsb_range.y());
+    layers * gsb_range.x() * gsb_range.y());
 }
 
 /********************************************************************
@@ -509,26 +515,29 @@ void sort_device_rr_gsb_ipin_node_in_edges(const RRGraphView& rr_graph,
   /* Note that the GSB array is smaller than the grids by 1 column and 1 row!!!
    */
   vtr::Point<size_t> gsb_range = device_rr_gsb.get_gsb_range();
+  size_t layers = device_rr_gsb.get_gsb_layers();
 
-  VTR_LOGV(verbose_output, "Start sorting edges for GSBs up to [%lu][%lu]\n",
-           gsb_range.x(), gsb_range.y());
+  VTR_LOGV(verbose_output, "Start sorting edges for GSBs up to [%lu][%lu][%lu]\n",
+           layers, gsb_range.x(), gsb_range.y());
 
   size_t gsb_cnt = 0;
 
   /* For each switch block, determine the size of array */
-  for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
-      vtr::Point<size_t> gsb_coordinate(ix, iy);
-      RRGSB& rr_gsb = device_rr_gsb.get_mutable_gsb(gsb_coordinate);
-      rr_gsb.sort_ipin_node_in_edges(rr_graph);
+  for(size_t ilayer = 0; ilayer < layers; ++ilayer){
+    for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
+        vtr::Point<size_t> gsb_coordinate(ix, iy);
+        RRGSB& rr_gsb = device_rr_gsb.get_mutable_gsb(gsb_coordinate, ilayer);
+        rr_gsb.sort_ipin_node_in_edges(rr_graph);
 
-      gsb_cnt++; /* Update counter */
+        gsb_cnt++; /* Update counter */
 
-      /* Print info */
-      VTR_LOG(
-        "[%lu%] Sorted incoming edges for each input pin node of "
-        "GSB[%lu][%lu]\r",
-        100 * gsb_cnt / (gsb_range.x() * gsb_range.y()), ix, iy);
+        /* Print info */
+        VTR_LOG(
+          "[%lu%] Sorted incoming edges for each input pin node of "
+          "GSB[%lu][%lu][%lu]\r",
+          100 * gsb_cnt / (layers * gsb_range.x() * gsb_range.y()), ilayer, ix, iy);
+      }
     }
   }
 
@@ -536,7 +545,7 @@ void sort_device_rr_gsb_ipin_node_in_edges(const RRGraphView& rr_graph,
   VTR_LOG(
     "Sorted incoming edges for each input pin node of %d General Switch Blocks "
     "(GSBs).\n",
-    gsb_range.x() * gsb_range.y());
+    layers * gsb_range.x() * gsb_range.y());
 }
 
 /********************************************************************

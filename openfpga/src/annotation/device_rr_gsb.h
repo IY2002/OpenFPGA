@@ -15,7 +15,7 @@
 /* namespace openfpga begins */
 namespace openfpga {
 
-// Struct for holding 3D RRGSB Unique Modules
+// struct for holding 3D RRGSB locations
 struct PointWithLayer{
   vtr::Point<size_t> coordinates;
   size_t layer;
@@ -40,6 +40,8 @@ class DeviceRRGSB {
  public: /* Accessors */
   vtr::Point<size_t> get_gsb_range()
     const; /* get the max coordinate of the switch block array */
+  size_t get_gsb_layers() 
+  const; /* Get the number of layers with GSBs */
   const RRGSB& get_gsb(const vtr::Point<size_t>& coordinate, const size_t& layer)
     const; /* Get a rr switch block in the array with a coordinate */
   const RRGSB& get_gsb(const size_t& x, const size_t& y, const size_t& layer)
@@ -84,6 +86,11 @@ class DeviceRRGSB {
                                     const vtr::Point<size_t>& coordinate, const size_t& layer) const;
   size_t get_num_cb_unique_module(const t_rr_type& cb_type)
     const; /* get the number of unique mirrors of CBs */
+  const size_t get_sb_unique_module_layer(const size_t& index) const; /* Gets the layer of the unqiue SB at index */
+  const size_t get_cb_unique_module_layer(const t_rr_type& cb_type, const size_t& index) const; /* Gets the layer of the unqiue CB at index */
+  const size_t get_gsb_unique_module_layer(const size_t& index) const; /* Gets the layer of the unqiue GSB at index */
+
+  
   bool is_gsb_exist(const RRGraphView& rr_graph,
                     const vtr::Point<size_t> coord, const size_t layer) const;
   /* Get the index of the unique Switch block module with a given GSB
@@ -93,6 +100,13 @@ class DeviceRRGSB {
    * coordinate. Note: Do NOT use sb coordinate!!! */
   size_t get_cb_unique_module_index(const t_rr_type& cb_type,
                                     const vtr::Point<size_t>& coordinate, const size_t& layer) const;
+                                      /* Get the index of the unique Switch block module with a given GSB
+   * coordinate. Note: Do NOT use sb coordinate!!! */
+  size_t get_sb_unique_module_index(const vtr::Point<size_t>& coordinate) const;
+  /* Get the index of the unique Connection block module with a given GSB
+   * coordinate. Note: Do NOT use sb coordinate!!! */
+  size_t get_cb_unique_module_index(const t_rr_type& cb_type,
+                                    const vtr::Point<size_t>& coordinate) const;
 
  public: /* Mutators */
   bool is_compressed() const;

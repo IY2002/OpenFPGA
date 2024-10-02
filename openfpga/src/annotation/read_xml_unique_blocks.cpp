@@ -26,27 +26,36 @@
  *******************************************************************/
 namespace openfpga {
 /*read the instances' coordinate of a unique block from a xml file*/
-std::vector<vtr::Point<size_t>> read_xml_unique_instance_coords(
+std::vector<PointWithLayer> read_xml_unique_instance_coords(
   const pugi::xml_node& xml_block_info, const pugiutil::loc_data& loc_data) {
-  std::vector<vtr::Point<size_t>> instance_coords;
+  std::vector<PointWithLayer> instance_coords;
   for (pugi::xml_node xml_instance_info : xml_block_info.children()) {
     if (xml_instance_info.name() == std::string("instance")) {
       int instance_x = get_attribute(xml_instance_info, "x", loc_data).as_int();
       int instance_y = get_attribute(xml_instance_info, "y", loc_data).as_int();
+      int instance_layer = get_attribute(xml_instance_info, "layer", loc_data).as_int();
       vtr::Point<size_t> instance_coordinate(instance_x, instance_y);
-      instance_coords.push_back(instance_coordinate);
+      PointWithLayer new_point;
+      new_point.coordinates = instance_coordinate;
+      new_point.layer = instance_layer;
+
+      instance_coords.push_back(new_point);
     }
   }
   return instance_coords;
 }
 
 /*read the unique block coordinate from a xml file */
-vtr::Point<size_t> read_xml_unique_block_coord(
+PointWithLayer read_xml_unique_block_coord(
   const pugi::xml_node& xml_block_info, const pugiutil::loc_data& loc_data) {
   int block_x = get_attribute(xml_block_info, "x", loc_data).as_int();
   int block_y = get_attribute(xml_block_info, "y", loc_data).as_int();
+  int block_layer = get_attribute(xml_block_info, "layer", loc_data).as_int();
   vtr::Point<size_t> block_coordinate(block_x, block_y);
-  return block_coordinate;
+  PointWithLayer new_point;
+  new_point.coordinates = block_coordinate;
+  new_point.layer = block_layer;
+  return new_point;
 }
 
 /*report information of read unique blocks*/
@@ -118,9 +127,9 @@ int read_xml_unique_blocks(DeviceRRGSB& device_rr_gsb, const char* file_name,
       if (xml_block_info.name() == std::string("block")) {
         std::string type =
           get_attribute(xml_block_info, "type", loc_data).as_string();
-        vtr::Point<size_t> block_coordinate =
+        PointWithLayer block_coordinate =
           read_xml_unique_block_coord(xml_block_info, loc_data);
-        std::vector<vtr::Point<size_t>> instance_coords =
+        std::vector<PointWithLayer> instance_coords =
           read_xml_unique_instance_coords(xml_block_info, loc_data);
 
         /* get block coordinate and instance coordinate, try to setup

@@ -203,7 +203,7 @@ static void write_rr_gsb_chan_connection_to_xml(
 static void write_rr_switch_block_to_xml(
   const std::string fname_prefix, const DeviceGrid& vpr_device_grid,
   const VprDeviceAnnotation& vpr_device_annotation, const RRGraphView& rr_graph,
-  const RRGSB& rr_gsb, const RRGSBWriterOption& options) {
+  const RRGSB& rr_gsb, const RRGSBWriterOption& options, const size_t& layer) {
   /* Prepare file name */
   std::string fname(fname_prefix);
   vtr::Point<size_t> sb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
@@ -233,7 +233,7 @@ static void write_rr_switch_block_to_xml(
   check_file_stream(fname.c_str(), fp);
 
   /* Output location of the Switch Block */
-  fp << "<rr_sb x=\"" << rr_gsb.get_x() << "\" y=\"" << rr_gsb.get_y() << "\""
+  fp << "<rr_sb layer=\"" << layer << "\"" << " x=\"" << rr_gsb.get_x() << "\" y=\"" << rr_gsb.get_y() << "\""
      << " num_sides=\"" << rr_gsb.get_num_sides() << "\">" << std::endl;
 
   /* Output each side */
@@ -261,7 +261,8 @@ static void write_rr_connection_block_to_xml(const std::string fname_prefix,
                                              const RRGraphView& rr_graph,
                                              const RRGSB& rr_gsb,
                                              const t_rr_type& cb_type,
-                                             const RRGSBWriterOption& options) {
+                                             const RRGSBWriterOption& options, 
+                                             const size_t& layer) {
   /* Prepare file name */
   std::string fname(fname_prefix);
   vtr::Point<size_t> cb_coordinate(rr_gsb.get_cb_x(cb_type),
@@ -293,7 +294,7 @@ static void write_rr_connection_block_to_xml(const std::string fname_prefix,
   check_file_stream(fname.c_str(), fp);
 
   /* Output location of the Switch Block */
-  fp << "<rr_cb x=\"" << rr_gsb.get_cb_x(cb_type) << "\" y=\""
+  fp << "<rr_cb layer=\"" << layer << "\"" << " x=\"" << rr_gsb.get_cb_x(cb_type) << "\" y=\""
      << rr_gsb.get_cb_y(cb_type) << "\""
      << " num_sides=\"" << rr_gsb.get_num_sides() << "\">" << std::endl;
 
@@ -324,6 +325,7 @@ void write_device_rr_gsb_to_xml(
   create_directory(xml_dir_name);
 
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
+  size_t layers_range = device_rr_gsb.get_gsb_layers();
 
   size_t sb_counter = 0;
   std::map<t_rr_type, size_t> cb_counters = {{CHANX, 0}, {CHANY, 0}};
@@ -339,11 +341,12 @@ void write_device_rr_gsb_to_xml(
     for (size_t igsb = 0; igsb < device_rr_gsb.get_num_sb_unique_module();
          ++igsb) {
       const RRGSB& rr_gsb = device_rr_gsb.get_sb_unique_module(igsb);
+      const size_t layer = device_rr_gsb.get_sb_unique_module_layer(igsb);
       /* Write CBx, CBy, SB on need */
       if (options.include_sb_content()) {
         write_rr_switch_block_to_xml(xml_dir_name, vpr_device_grid,
                                      vpr_device_annotation, rr_graph, rr_gsb,
-                                     options);
+                                     options, layer);
       }
       sb_counter++;
     }
@@ -351,9 +354,10 @@ void write_device_rr_gsb_to_xml(
       for (size_t igsb = 0;
            igsb < device_rr_gsb.get_num_cb_unique_module(cb_type); ++igsb) {
         const RRGSB& rr_gsb = device_rr_gsb.get_cb_unique_module(cb_type, igsb);
+        const size_t cb_layer = device_rr_gsb.get_cb_unique_module_layer(cb_type, igsb);
         if (options.include_cb_content(cb_type)) {
           write_rr_connection_block_to_xml(xml_dir_name, rr_graph, rr_gsb,
-                                           cb_type, options);
+                                           cb_type, options, cb_layer);
           cb_counters[cb_type]++;
         }
       }
@@ -361,21 +365,23 @@ void write_device_rr_gsb_to_xml(
   } else {
     /* Output all GSB instances in the fabric (some instances may share the same
      * module) */
-    for (size_t ix = 0; ix < sb_range.x(); ++ix) {
-      for (size_t iy = 0; iy < sb_range.y(); ++iy) {
-        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-        /* Write CBx, CBy, SB on need */
-        if (options.include_sb_content()) {
-          write_rr_switch_block_to_xml(xml_dir_name, vpr_device_grid,
-                                       vpr_device_annotation, rr_graph, rr_gsb,
-                                       options);
-          sb_counter++;
-        }
-        for (t_rr_type cb_type : {CHANX, CHANY}) {
-          if (options.include_cb_content(cb_type)) {
-            write_rr_connection_block_to_xml(xml_dir_name, rr_graph, rr_gsb,
-                                             cb_type, options);
-            cb_counters[cb_type]++;
+    for(size_t ilayer = 0; ilayer < layers_range; ++ilayer){
+      for (size_t ix = 0; ix < sb_range.x(); ++ix) {
+        for (size_t iy = 0; iy < sb_range.y(); ++iy) {
+          const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+          /* Write CBx, CBy, SB on need */
+          if (options.include_sb_content()) {
+            write_rr_switch_block_to_xml(xml_dir_name, vpr_device_grid,
+                                        vpr_device_annotation, rr_graph, rr_gsb,
+                                        options, ilayer);
+            sb_counter++;
+          }
+          for (t_rr_type cb_type : {CHANX, CHANY}) {
+            if (options.include_cb_content(cb_type)) {
+              write_rr_connection_block_to_xml(xml_dir_name, rr_graph, rr_gsb,
+                                              cb_type, options, ilayer);
+              cb_counters[cb_type]++;
+            }
           }
         }
       }

@@ -18,11 +18,13 @@ namespace openfpga {
 size_t find_device_rr_gsb_num_cb_modules(const DeviceRRGSB& device_rr_gsb,
                                          const t_rr_type& cb_type) {
   size_t counter = 0;
-  for (size_t x = 0; x < device_rr_gsb.get_gsb_range().x(); ++x) {
-    for (size_t y = 0; y < device_rr_gsb.get_gsb_range().y(); ++y) {
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(x, y);
-      if (true == rr_gsb.is_cb_exist(cb_type)) {
-        counter++;
+  for(size_t layer = 0; layer < device_rr_gsb.get_gsb_layers(); ++layer){
+    for (size_t x = 0; x < device_rr_gsb.get_gsb_range().x(); ++x) {
+      for (size_t y = 0; y < device_rr_gsb.get_gsb_range().y(); ++y) {
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(x, y, layer);
+        if (true == rr_gsb.is_cb_exist(cb_type)) {
+          counter++;
+        }
       }
     }
   }
@@ -37,11 +39,13 @@ size_t find_device_rr_gsb_num_cb_modules(const DeviceRRGSB& device_rr_gsb,
 size_t find_device_rr_gsb_num_sb_modules(const DeviceRRGSB& device_rr_gsb,
                                          const RRGraphView& rr_graph) {
   size_t counter = 0;
-  for (size_t x = 0; x < device_rr_gsb.get_gsb_range().x(); ++x) {
-    for (size_t y = 0; y < device_rr_gsb.get_gsb_range().y(); ++y) {
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(x, y);
-      if (true == rr_gsb.is_sb_exist(rr_graph)) {
-        counter++;
+  for(size_t layer = 0; layer < device_rr_gsb.get_gsb_layers(); ++layer){
+    for (size_t x = 0; x < device_rr_gsb.get_gsb_range().x(); ++x) {
+      for (size_t y = 0; y < device_rr_gsb.get_gsb_range().y(); ++y) {
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(x, y, layer);
+        if (true == rr_gsb.is_sb_exist(rr_graph)) {
+          counter++;
+        }
       }
     }
   }
@@ -55,11 +59,13 @@ size_t find_device_rr_gsb_num_sb_modules(const DeviceRRGSB& device_rr_gsb,
 size_t find_device_rr_gsb_num_gsb_modules(const DeviceRRGSB& device_rr_gsb,
                                           const RRGraphView& rr_graph) {
   size_t counter = 0;
-  for (size_t x = 0; x < device_rr_gsb.get_gsb_range().x(); ++x) {
-    for (size_t y = 0; y < device_rr_gsb.get_gsb_range().y(); ++y) {
-      if (true ==
-          device_rr_gsb.is_gsb_exist(rr_graph, vtr::Point<size_t>(x, y))) {
-        counter++;
+  for(size_t layer = 0; layer < device_rr_gsb.get_gsb_layers(); ++layer){
+    for (size_t x = 0; x < device_rr_gsb.get_gsb_range().x(); ++x) {
+      for (size_t y = 0; y < device_rr_gsb.get_gsb_range().y(); ++y) {
+        if (true ==
+            device_rr_gsb.is_gsb_exist(rr_graph, vtr::Point<size_t>(x, y), layer)) {
+          counter++;
+        }
       }
     }
   }

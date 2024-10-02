@@ -21,14 +21,22 @@ DeviceRRGSB::DeviceRRGSB(const VprDeviceAnnotation& device_annotation)
  ***********************************************************************/
 /* get the max coordinate of the switch block array */
 vtr::Point<size_t> DeviceRRGSB::get_gsb_range() const {
+  size_t max_x = 0;
   size_t max_y = 0;
   /* Get the largest size of sub-arrays */
-  for (size_t x = 0; x < rr_gsb_.size(); ++x) {
-    max_y = std::max(max_y, rr_gsb_[x].size());
+  for (size_t layer = 0; layer < rr_gsb_.size(); ++layer) {
+    max_x = std::max(max_x, rr_gsb_[layer].size());
+    for (size_t x = 0; x < rr_gsb_[layer].size(); ++x){
+      max_y = std::max(max_y, rr_gsb_[layer][x].size());
+    }
   }
 
-  vtr::Point<size_t> coordinate(rr_gsb_.size(), max_y);
+  vtr::Point<size_t> coordinate(max_x, max_y);
   return coordinate;
+}
+
+size_t DeviceRRGSB::get_gsb_layers() const{
+  return rr_gsb_.size();
 }
 
 /* Get a rr switch block in the array with a coordinate */
@@ -206,11 +214,25 @@ const RRGSB& DeviceRRGSB::get_gsb_unique_module(const size_t& index) const {
   return rr_gsb_[gsb_unique_module_[index].layer][gsb_unique_module_[index].coordinates.x()][gsb_unique_module_[index].coordinates.y()];
 }
 
+/* Get layer of the unique GSB module at index*/
+const size_t DeviceRRGSB::get_gsb_unique_module_layer(const size_t& index) const {
+  VTR_ASSERT(validate_gsb_unique_module_index(index));
+
+  return gsb_unique_module_[index].layer;
+}
+
 /* Get a rr switch block which a unique mirror */
 const RRGSB& DeviceRRGSB::get_sb_unique_module(const size_t& index) const {
   VTR_ASSERT(validate_sb_unique_module_index(index));
 
   return rr_gsb_[sb_unique_module_[index].layer][sb_unique_module_[index].coordinates.x()][sb_unique_module_[index].coordinates.y()];
+}
+
+/* Get layer of unique SB module at index */
+const size_t DeviceRRGSB::get_sb_unique_module_layer(const size_t& index) const {
+  VTR_ASSERT(validate_sb_unique_module_index(index));
+
+  return sb_unique_module_[index].layer;
 }
 
 /* Get a rr switch block which a unique mirror */
@@ -227,6 +249,22 @@ const RRGSB& DeviceRRGSB::get_cb_unique_module(const t_rr_type& cb_type,
       return rr_gsb_[cby_unique_module_[index].layer]
                     [cby_unique_module_[index].coordinates.x()]
                     [cby_unique_module_[index].coordinates.y()];
+    default:
+      VTR_LOG_ERROR("Invalid type of connection block!\n");
+      exit(1);
+  }
+}
+
+/* Get layer of unique CB module at index */
+const size_t DeviceRRGSB::get_cb_unique_module_layer(const t_rr_type& cb_type,
+                                               const size_t& index) const {
+  VTR_ASSERT(validate_cb_unique_module_index(cb_type, index));
+  VTR_ASSERT(validate_cb_type(cb_type));
+  switch (cb_type) {
+    case CHANX:
+      return cbx_unique_module_[index].layer;
+    case CHANY:
+      return cby_unique_module_[index].layer;
     default:
       VTR_LOG_ERROR("Invalid type of connection block!\n");
       exit(1);
@@ -744,6 +782,37 @@ size_t DeviceRRGSB::get_cb_unique_module_index(
     case CHANY:
       cb_unique_module_id =
         cby_unique_module_id_[layer][coordinate.x()][coordinate.y()];
+      break;
+    default:
+      VTR_LOG_ERROR("Invalid type of connection block!\n");
+      exit(1);
+  }
+
+  return cb_unique_module_id;
+}
+
+size_t DeviceRRGSB::get_sb_unique_module_index(
+  const vtr::Point<size_t>& coordinate) const {
+  VTR_ASSERT(validate_coordinate(coordinate, 0));
+  size_t sb_unique_module_id =
+    sb_unique_module_id_[0][coordinate.x()][coordinate.y()];
+  return sb_unique_module_id;
+}
+
+size_t DeviceRRGSB::get_cb_unique_module_index(
+  const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate) const {
+  VTR_ASSERT(validate_cb_type(cb_type));
+  VTR_ASSERT(validate_coordinate(coordinate, 0));
+  size_t cb_unique_module_id;
+
+  switch (cb_type) {
+    case CHANX:
+      cb_unique_module_id =
+        cbx_unique_module_id_[0][coordinate.x()][coordinate.y()];
+      break;
+    case CHANY:
+      cb_unique_module_id =
+        cby_unique_module_id_[0][coordinate.x()][coordinate.y()];
       break;
     default:
       VTR_LOG_ERROR("Invalid type of connection block!\n");

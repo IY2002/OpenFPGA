@@ -24,10 +24,10 @@
  *******************************************************************/
 namespace openfpga {
 
-std::vector<vtr::Point<size_t>> read_xml_unique_instance_coords(
+std::vector<PointWithLayer> read_xml_unique_instance_coords(
   const pugi::xml_node& xml_block_info, const pugiutil::loc_data& loc_data);
 
-vtr::Point<size_t> read_xml_unique_block_coord(
+PointWithLayer read_xml_unique_block_coord(
   const pugi::xml_node& xml_block_info, const pugiutil::loc_data& loc_data);
 
 void report_unique_module_status_read(const DeviceRRGSB& device_rr_gsb,
