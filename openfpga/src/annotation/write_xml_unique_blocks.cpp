@@ -56,7 +56,7 @@ int write_xml_atom_block(std::fstream& fp,
     } else {
       openfpga::write_tab_to_file(fp, 2);
       fp << "<instance";
-      write_xml_attribute(fp, "layer", instance_info.layer)
+      write_xml_attribute(fp, "layer", instance_info.layer);
       write_xml_attribute(fp, "x", instance_info.coordinates.x());
       write_xml_attribute(fp, "y", instance_info.coordinates.y());
 
@@ -141,7 +141,7 @@ int write_xml_unique_blocks(const DeviceRRGSB& device_rr_gsb, const char* fname,
   for (size_t id = 0; id < device_rr_gsb.get_num_sb_unique_module(); ++id) {
     const auto unique_block_coord = device_rr_gsb.get_sb_unique_block_coord(id);
     const std::vector<PointWithLayer> instance_map =
-      device_rr_gsb.get_sb_unique_block_instance_coord(unique_block_coord);
+      device_rr_gsb.get_sb_unique_block_instance_coord(unique_block_coord.coordinates, unique_block_coord.layer);
     int status_code =
       write_xml_atom_block(fp, instance_map, unique_block_coord, "sb");
     if (status_code != 0) {
@@ -155,7 +155,7 @@ int write_xml_unique_blocks(const DeviceRRGSB& device_rr_gsb, const char* fname,
     const auto unique_block_coord =
       device_rr_gsb.get_cbx_unique_block_coord(id);
     const std::vector<PointWithLayer> instance_map =
-      device_rr_gsb.get_cbx_unique_block_instance_coord(unique_block_coord);
+      device_rr_gsb.get_cbx_unique_block_instance_coord(unique_block_coord.coordinates, unique_block_coord.layer);
     int status_code =
       write_xml_atom_block(fp, instance_map, unique_block_coord, "cbx");
     if (status_code != 0) {
@@ -169,7 +169,7 @@ int write_xml_unique_blocks(const DeviceRRGSB& device_rr_gsb, const char* fname,
     const auto unique_block_coord =
       device_rr_gsb.get_cby_unique_block_coord(id);
     const std::vector<PointWithLayer> instance_map =
-      device_rr_gsb.get_cby_unique_block_instance_coord(unique_block_coord);
+      device_rr_gsb.get_cby_unique_block_instance_coord(unique_block_coord.coordinates, unique_block_coord.layer);
     int status_code =
       write_xml_atom_block(fp, instance_map, unique_block_coord, "cby");
     if (status_code != 0) {
