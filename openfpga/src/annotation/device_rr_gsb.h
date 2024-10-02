@@ -86,9 +86,9 @@ class DeviceRRGSB {
                                     const vtr::Point<size_t>& coordinate, const size_t& layer) const;
   size_t get_num_cb_unique_module(const t_rr_type& cb_type)
     const; /* get the number of unique mirrors of CBs */
-  const size_t get_sb_unique_module_layer(const size_t& index) const; /* Gets the layer of the unqiue SB at index */
-  const size_t get_cb_unique_module_layer(const t_rr_type& cb_type, const size_t& index) const; /* Gets the layer of the unqiue CB at index */
-  const size_t get_gsb_unique_module_layer(const size_t& index) const; /* Gets the layer of the unqiue GSB at index */
+  size_t get_sb_unique_module_layer(const size_t& index) const; /* Gets the layer of the unqiue SB at index */
+  size_t get_cb_unique_module_layer(const t_rr_type& cb_type, const size_t& index) const; /* Gets the layer of the unqiue CB at index */
+  size_t get_gsb_unique_module_layer(const size_t& index) const; /* Gets the layer of the unqiue GSB at index */
 
   
   bool is_gsb_exist(const RRGraphView& rr_graph,

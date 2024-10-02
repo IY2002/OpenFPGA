@@ -31,8 +31,8 @@ namespace openfpga {
 /*Write unique blocks and their corresponding instances' information from
  *device_rr_gsb to a XML file*/
 int write_xml_atom_block(std::fstream& fp,
-                         const std::vector<vtr::Point<size_t>>& instance_map,
-                         const vtr::Point<size_t>& unique_block_coord,
+                         const std::vector<PointWithLayer>& instance_map,
+                         const PointWithLayer& unique_block_coord,
                          std::string type) {
   if (false == openfpga::valid_file_stream(fp)) {
     return CMD_EXEC_FATAL_ERROR;
@@ -41,21 +41,24 @@ int write_xml_atom_block(std::fstream& fp,
   openfpga::write_tab_to_file(fp, 1);
   fp << "<block";
   write_xml_attribute(fp, "type", type.c_str());
-  write_xml_attribute(fp, "x", unique_block_coord.x());
-  write_xml_attribute(fp, "y", unique_block_coord.y());
+  write_xml_attribute(fp, "layer", unique_block_coord.layer);
+  write_xml_attribute(fp, "x", unique_block_coord.coordinates.x());
+  write_xml_attribute(fp, "y", unique_block_coord.coordinates.y());
 
   fp << ">"
      << "\n";
 
   for (const auto& instance_info : instance_map) {
-    if (instance_info.x() == unique_block_coord.x() &&
-        instance_info.y() == unique_block_coord.y()) {
+    if (instance_info.layer == unique_block_coord.layer && 
+        instance_info.coordinates.x() == unique_block_coord.coordinates.x() &&
+        instance_info.coordinates.y() == unique_block_coord.coordinates.y()) {
       ;
     } else {
       openfpga::write_tab_to_file(fp, 2);
       fp << "<instance";
-      write_xml_attribute(fp, "x", instance_info.x());
-      write_xml_attribute(fp, "y", instance_info.y());
+      write_xml_attribute(fp, "layer", instance_info.layer)
+      write_xml_attribute(fp, "x", instance_info.coordinates.x());
+      write_xml_attribute(fp, "y", instance_info.coordinates.y());
 
       fp << "/>"
          << "\n";
@@ -137,7 +140,7 @@ int write_xml_unique_blocks(const DeviceRRGSB& device_rr_gsb, const char* fname,
 
   for (size_t id = 0; id < device_rr_gsb.get_num_sb_unique_module(); ++id) {
     const auto unique_block_coord = device_rr_gsb.get_sb_unique_block_coord(id);
-    const std::vector<vtr::Point<size_t>> instance_map =
+    const std::vector<PointWithLayer> instance_map =
       device_rr_gsb.get_sb_unique_block_instance_coord(unique_block_coord);
     int status_code =
       write_xml_atom_block(fp, instance_map, unique_block_coord, "sb");
@@ -151,7 +154,7 @@ int write_xml_unique_blocks(const DeviceRRGSB& device_rr_gsb, const char* fname,
        ++id) {
     const auto unique_block_coord =
       device_rr_gsb.get_cbx_unique_block_coord(id);
-    const std::vector<vtr::Point<size_t>> instance_map =
+    const std::vector<PointWithLayer> instance_map =
       device_rr_gsb.get_cbx_unique_block_instance_coord(unique_block_coord);
     int status_code =
       write_xml_atom_block(fp, instance_map, unique_block_coord, "cbx");
@@ -165,7 +168,7 @@ int write_xml_unique_blocks(const DeviceRRGSB& device_rr_gsb, const char* fname,
        ++id) {
     const auto unique_block_coord =
       device_rr_gsb.get_cby_unique_block_coord(id);
-    const std::vector<vtr::Point<size_t>> instance_map =
+    const std::vector<PointWithLayer> instance_map =
       device_rr_gsb.get_cby_unique_block_instance_coord(unique_block_coord);
     int status_code =
       write_xml_atom_block(fp, instance_map, unique_block_coord, "cby");

@@ -215,7 +215,7 @@ const RRGSB& DeviceRRGSB::get_gsb_unique_module(const size_t& index) const {
 }
 
 /* Get layer of the unique GSB module at index*/
-const size_t DeviceRRGSB::get_gsb_unique_module_layer(const size_t& index) const {
+size_t DeviceRRGSB::get_gsb_unique_module_layer(const size_t& index) const {
   VTR_ASSERT(validate_gsb_unique_module_index(index));
 
   return gsb_unique_module_[index].layer;
@@ -229,7 +229,7 @@ const RRGSB& DeviceRRGSB::get_sb_unique_module(const size_t& index) const {
 }
 
 /* Get layer of unique SB module at index */
-const size_t DeviceRRGSB::get_sb_unique_module_layer(const size_t& index) const {
+size_t DeviceRRGSB::get_sb_unique_module_layer(const size_t& index) const {
   VTR_ASSERT(validate_sb_unique_module_index(index));
 
   return sb_unique_module_[index].layer;
@@ -256,7 +256,7 @@ const RRGSB& DeviceRRGSB::get_cb_unique_module(const t_rr_type& cb_type,
 }
 
 /* Get layer of unique CB module at index */
-const size_t DeviceRRGSB::get_cb_unique_module_layer(const t_rr_type& cb_type,
+size_t DeviceRRGSB::get_cb_unique_module_layer(const t_rr_type& cb_type,
                                                const size_t& index) const {
   VTR_ASSERT(validate_cb_unique_module_index(cb_type, index));
   VTR_ASSERT(validate_cb_type(cb_type));

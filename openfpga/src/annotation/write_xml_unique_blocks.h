@@ -25,8 +25,8 @@
 
 namespace openfpga {
 int write_xml_atom_block(std::fstream& fp,
-                         const std::vector<vtr::Point<size_t>>& instance_map,
-                         const vtr::Point<size_t>& unique_block_coord,
+                         const std::vector<PointWithLayer>& instance_map,
+                         const PointWithLayer& unique_block_coord,
                          std::string type);
 void report_unique_module_status_write(
   const DeviceRRGSB& device_rr_gsb,
