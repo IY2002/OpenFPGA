@@ -21,7 +21,6 @@ struct PointWithLayer{
   size_t layer;
 };
 
-
 /********************************************************************
  * Object Device Routing Resource Switch Block
  * This includes:
