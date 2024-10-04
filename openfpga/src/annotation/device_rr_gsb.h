@@ -42,13 +42,13 @@ class DeviceRRGSB {
     const; /* get the max coordinate of the switch block array */
   size_t get_gsb_layers() 
   const; /* Get the number of layers with GSBs */
-  const RRGSB& get_gsb(const vtr::Point<size_t>& coordinate, const size_t& layer)
+  const RRGSB& get_gsb(const vtr::Point<size_t>& coordinate, const size_t& layer = 0)
     const; /* Get a rr switch block in the array with a coordinate */
-  const RRGSB& get_gsb(const size_t& x, const size_t& y, const size_t& layer)
+  const RRGSB& get_gsb(const size_t& x, const size_t& y, const size_t& layer = 0)
     const; /* Get a rr switch block in the array with a coordinate */
   /* Get a gsb using its connection block coordinate */
   const RRGSB& get_gsb_by_cb_coordinate(
-    const vtr::Point<size_t>& coordinate, const size_t& layer) const;
+    const vtr::Point<size_t>& coordinate, const size_t& layer = 0) const;
   size_t get_num_gsb_unique_module()
     const; /* get the number of unique mirrors of GSB */
 
@@ -57,19 +57,19 @@ class DeviceRRGSB {
   PointWithLayer get_sb_unique_block_coord(
     size_t id) const; /* get the coordinate of a unique switch block */
   std::vector<PointWithLayer> get_sb_unique_block_instance_coord(
-    const vtr::Point<size_t>& unique_block_coord, const size_t& layer)
+    const vtr::Point<size_t>& unique_block_coord, const size_t& layer = 0)
     const; /* get the coordinates of the instances of a unique switch block */
 
   PointWithLayer get_cbx_unique_block_coord(size_t id)
     const; /* get the coordinate of a unique connection block of CHANX type */
   std::vector<PointWithLayer> get_cbx_unique_block_instance_coord(
-    const vtr::Point<size_t>& unique_block_coord, const size_t& layer)
+    const vtr::Point<size_t>& unique_block_coord, const size_t& layer = 0)
     const; /* get the coordinates of the instances of a unique connection block
               of CHANX type*/
   PointWithLayer get_cby_unique_block_coord(size_t id)
     const; /* get the coordinate of a unique connection block of CHANY type */
   std::vector<PointWithLayer> get_cby_unique_block_instance_coord(
-    const vtr::Point<size_t>& unique_block_coord, const size_t& layer)
+    const vtr::Point<size_t>& unique_block_coord, const size_t& layer = 0)
     const; /* get the coordinates of the instances of a unique connection block
               of CHANY type */
 
@@ -77,13 +77,13 @@ class DeviceRRGSB {
     const size_t& index) const; /* Get a rr-gsb which is a unique mirror */
   const RRGSB& get_sb_unique_module(const size_t& index)
     const; /* Get a rr switch block which a unique mirror */
-  const RRGSB& get_sb_unique_module(const vtr::Point<size_t>& coordinate, const size_t& layer)
+  const RRGSB& get_sb_unique_module(const vtr::Point<size_t>& coordinate, const size_t& layer = 0)
     const; /* Get a rr switch block which a unique mirror */
   const RRGSB& get_cb_unique_module(const t_rr_type& cb_type,
                                     const size_t& index)
     const; /* Get a rr switch block which a unique mirror */
   const RRGSB& get_cb_unique_module(const t_rr_type& cb_type,
-                                    const vtr::Point<size_t>& coordinate, const size_t& layer) const;
+                                    const vtr::Point<size_t>& coordinate, const size_t& layer = 0) const;
   size_t get_num_cb_unique_module(const t_rr_type& cb_type)
     const; /* get the number of unique mirrors of CBs */
   size_t get_sb_unique_module_layer(const size_t& index) const; /* Gets the layer of the unqiue SB at index */
@@ -92,21 +92,16 @@ class DeviceRRGSB {
 
   
   bool is_gsb_exist(const RRGraphView& rr_graph,
-                    const vtr::Point<size_t> coord, const size_t layer) const;
+                    const vtr::Point<size_t> coord, const size_t layer = 0) const;
   /* Get the index of the unique Switch block module with a given GSB
    * coordinate. Note: Do NOT use sb coordinate!!! */
-  size_t get_sb_unique_module_index(const vtr::Point<size_t>& coordinate, const size_t& layer) const;
+  size_t get_sb_unique_module_index(const vtr::Point<size_t>& coordinate, const size_t& layer = 0) const;
   /* Get the index of the unique Connection block module with a given GSB
    * coordinate. Note: Do NOT use sb coordinate!!! */
   size_t get_cb_unique_module_index(const t_rr_type& cb_type,
-                                    const vtr::Point<size_t>& coordinate, const size_t& layer) const;
+                                    const vtr::Point<size_t>& coordinate, const size_t& layer = 0) const;
                                       /* Get the index of the unique Switch block module with a given GSB
    * coordinate. Note: Do NOT use sb coordinate!!! */
-  size_t get_sb_unique_module_index(const vtr::Point<size_t>& coordinate) const;
-  /* Get the index of the unique Connection block module with a given GSB
-   * coordinate. Note: Do NOT use sb coordinate!!! */
-  size_t get_cb_unique_module_index(const t_rr_type& cb_type,
-                                    const vtr::Point<size_t>& coordinate) const;
 
  public: /* Mutators */
   bool is_compressed() const;
@@ -114,25 +109,25 @@ class DeviceRRGSB {
                                      automatically identify and update the lists
                                      of unique mirrors and rotatable mirrors */
   void reserve(
-    const vtr::Point<size_t>& coordinate, const size_t& layer); /* Pre-allocate the rr_switch_block
+    const vtr::Point<size_t>& coordinate, const size_t& layer = 0); /* Pre-allocate the rr_switch_block
                                               array that the device requires */
   void reserve_unique_modules(); /* Pre-allocate the rr_sb_unique_module_id
                       matrix that the device requires */
   void resize_upon_need(
     const vtr::Point<size_t>&
-      coordinate, const size_t& layer); /* Resize the rr_switch_block array if needed */
+      coordinate, const size_t& layer = 0); /* Resize the rr_switch_block array if needed */
   void add_rr_gsb(
     const vtr::Point<size_t>& coordinate,
-    const RRGSB& rr_gsb, const size_t& layer); /* Add a switch block to the array, which will
+    const RRGSB& rr_gsb, const size_t& layer = 0); /* Add a switch block to the array, which will
                              automatically identify and update the lists of
                              unique mirrors and rotatable mirrors */
   RRGSB& get_mutable_gsb(
     const vtr::Point<size_t>&
-      coordinate, const size_t& layer); /* Get a rr switch block in the array with a coordinate */
+      coordinate, const size_t& layer = 0); /* Get a rr switch block in the array with a coordinate */
   RRGSB& get_mutable_gsb(
     const size_t& x,
     const size_t& y,
-    const size_t& layer); /* Get a rr switch block in the array with a coordinate */
+    const size_t&  = 0); /* Get a rr switch block in the array with a coordinate */
   void build_unique_module(
     const RRGraphView& rr_graph); /* Add a switch block to the array, which will
                                      automatically identify and update the lists
@@ -167,7 +162,7 @@ when read_unique_blocks command invoked */
   void clear_gsb_unique_module();    /* clean the content */
   void clear_gsb_unique_module_id(); /* clean the content */
  private:                            /* Validators */
-  bool validate_coordinate(const vtr::Point<size_t>& coordinate, const size_t& layer)
+  bool validate_coordinate(const vtr::Point<size_t>& coordinate, const size_t& layer = 0)
     const; /* Validate if the (x,y) is the range of this device */
   bool validate_side(const e_side& side)
     const; /* validate if side is in the range of unique_side_module_ */
@@ -181,11 +176,11 @@ when read_unique_blocks command invoked */
   bool validate_cb_type(const t_rr_type& cb_type) const;
 
  private: /* Internal builders */
-  void add_gsb_unique_module(const vtr::Point<size_t>& coordinate, const size_t& layer);
+  void add_gsb_unique_module(const vtr::Point<size_t>& coordinate, const size_t& layer = 0);
   void add_cb_unique_module(const t_rr_type& cb_type,
-                            const vtr::Point<size_t>& coordinate, const size_t& layer);
+                            const vtr::Point<size_t>& coordinate, const size_t& layer = 0);
   void set_cb_unique_module_id(const t_rr_type& cb_type,
-                               const vtr::Point<size_t>& coordinate, const size_t& layer, size_t id);
+                               const vtr::Point<size_t>& coordinate, size_t id, const size_t& layer = 0);
   void build_sb_unique_module(
     const RRGraphView& rr_graph); /* Add a switch block to the array, which will
                                      automatically identify and update the lists

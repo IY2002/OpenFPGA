@@ -432,8 +432,8 @@ void DeviceRRGSB::build_cb_unique_module(const RRGraphView& rr_graph,
         if (true == is_unique_module) {
           add_cb_unique_module(cb_type, gsb_coordinate, ilayer);
           /* Record the id of unique mirror */
-          set_cb_unique_module_id(cb_type, gsb_coordinate, ilayer,
-                                  get_num_cb_unique_module(cb_type) - 1);
+          set_cb_unique_module_id(cb_type, gsb_coordinate,
+                                  get_num_cb_unique_module(cb_type) - 1, ilayer);
         }
       }
     }
@@ -575,8 +575,8 @@ void DeviceRRGSB::add_cb_unique_module(const t_rr_type& cb_type,
 
 void DeviceRRGSB::set_cb_unique_module_id(const t_rr_type& cb_type,
                                           const vtr::Point<size_t>& coordinate,
-                                          const size_t& layer,
-                                          size_t id) {
+                                          size_t id,
+                                          const size_t& layer) {
   VTR_ASSERT(validate_cb_type(cb_type));
   size_t x = coordinate.x();
   size_t y = coordinate.y();
@@ -782,37 +782,6 @@ size_t DeviceRRGSB::get_cb_unique_module_index(
     case CHANY:
       cb_unique_module_id =
         cby_unique_module_id_[layer][coordinate.x()][coordinate.y()];
-      break;
-    default:
-      VTR_LOG_ERROR("Invalid type of connection block!\n");
-      exit(1);
-  }
-
-  return cb_unique_module_id;
-}
-
-size_t DeviceRRGSB::get_sb_unique_module_index(
-  const vtr::Point<size_t>& coordinate) const {
-  VTR_ASSERT(validate_coordinate(coordinate, 0));
-  size_t sb_unique_module_id =
-    sb_unique_module_id_[0][coordinate.x()][coordinate.y()];
-  return sb_unique_module_id;
-}
-
-size_t DeviceRRGSB::get_cb_unique_module_index(
-  const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate) const {
-  VTR_ASSERT(validate_cb_type(cb_type));
-  VTR_ASSERT(validate_coordinate(coordinate, 0));
-  size_t cb_unique_module_id;
-
-  switch (cb_type) {
-    case CHANX:
-      cb_unique_module_id =
-        cbx_unique_module_id_[0][coordinate.x()][coordinate.y()];
-      break;
-    case CHANY:
-      cb_unique_module_id =
-        cby_unique_module_id_[0][coordinate.x()][coordinate.y()];
       break;
     default:
       VTR_LOG_ERROR("Invalid type of connection block!\n");
