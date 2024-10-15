@@ -50,6 +50,13 @@ std::vector<RRNodeId> get_rr_gsb_chan_node_configurable_driver_nodes(
     if (false == rr_graph.edge_is_configurable(edge)) {
       continue;
     }
+    // Get the layer of source and sink nodes
+    short src_layer = rr_graph.node_layer(rr_graph.edge_src_node(edge));
+    short sink_layer = rr_graph.node_layer(rr_graph.edge_sink_node(edge));
+
+    // Only adds nodes that are on the same layer as their sink nodes
+    if(src_layer != sink_layer) continue;
+
     driver_nodes.push_back(rr_graph.edge_src_node(edge));
   }
 

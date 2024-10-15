@@ -65,8 +65,22 @@ static void build_routing_arch_mux_library(
 
         VTR_ASSERT(CircuitModelId::INVALID() != rr_switch_circuit_model);
         /* Add the mux to mux_library */
+        std::vector<RREdgeId> in_edges = rr_graph.node_in_edges(node);
+        // use an iterator to remove edges since the vector is modified during the loop
+        for(auto it = in_edges.begin(); it != in_edges.end();) {
+          RRNodeId src_node = rr_graph.edge_src_node(*it);
+          RRNodeId sink_node = rr_graph.edge_sink_node(*it);
+
+          // if an edge is across 2 different layers, remove it
+          if (rr_graph.node_layer(src_node) != rr_graph.node_layer(sink_node)) {
+            it = in_edges.erase(it);
+          } else {
+            ++it;
+          }
+        }
+        if (in_edges.size() < 2 ) break;
         mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
-                        rr_graph.node_in_edges(node).size());
+                        in_edges.size());
         break;
       }
       default:
