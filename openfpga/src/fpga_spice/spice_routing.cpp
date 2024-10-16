@@ -78,7 +78,7 @@ namespace openfpga {
 static void print_spice_routing_connection_box_unique_module(
   NetlistManager& netlist_manager, const ModuleManager& module_manager,
   const std::string& subckt_dir, const RRGSB& rr_gsb,
-  const t_rr_type& cb_type) {
+  const t_rr_type& cb_type, const size_t& layer) {
   /* Create the netlist */
   vtr::Point<size_t> gsb_coordinate(rr_gsb.get_cb_x(cb_type),
                                     rr_gsb.get_cb_y(cb_type));
@@ -101,7 +101,7 @@ static void print_spice_routing_connection_box_unique_module(
   /* Create a Verilog Module based on the circuit model, and add to module
    * manager */
   ModuleId cb_module = module_manager.find_module(
-    generate_connection_block_module_name(cb_type, gsb_coordinate));
+    generate_connection_block_module_name(cb_type, gsb_coordinate, layer));
   VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
 
   /* Write the spice module */
@@ -182,7 +182,7 @@ static void print_spice_routing_connection_box_unique_module(
  ********************************************************************/
 static void print_spice_routing_switch_box_unique_module(
   NetlistManager& netlist_manager, const ModuleManager& module_manager,
-  const std::string& subckt_dir, const RRGSB& rr_gsb) {
+  const std::string& subckt_dir, const RRGSB& rr_gsb, const size_t& layer) {
   /* Create the netlist */
   vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
   std::string spice_fname(subckt_dir +
@@ -204,7 +204,7 @@ static void print_spice_routing_switch_box_unique_module(
   /* Create a Verilog Module based on the circuit model, and add to module
    * manager */
   ModuleId sb_module = module_manager.find_module(
-    generate_switch_block_module_name(gsb_coordinate));
+    generate_switch_block_module_name(gsb_coordinate, layer));
   VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
 
   /* Write the spice module */
@@ -230,19 +230,21 @@ static void print_spice_flatten_connection_block_modules(
   const t_rr_type& cb_type) {
   /* Build unique X-direction connection block modules */
   vtr::Point<size_t> cb_range = device_rr_gsb.get_gsb_range();
-
-  for (size_t ix = 0; ix < cb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < cb_range.y(); ++iy) {
-      /* Check if the connection block exists in the device!
-       * Some of them do NOT exist due to heterogeneous blocks (height > 1)
-       * We will skip those modules
-       */
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      if (true != rr_gsb.is_cb_exist(cb_type)) {
-        continue;
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
+  for (size_t ilayer = 0; ilayer < num_layers; ++ilayer) {
+    for (size_t ix = 0; ix < cb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < cb_range.y(); ++iy) {
+        /* Check if the connection block exists in the device!
+        * Some of them do NOT exist due to heterogeneous blocks (height > 1)
+        * We will skip those modules
+        */
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        if (true != rr_gsb.is_cb_exist(cb_type)) {
+          continue;
+        }
+        print_spice_routing_connection_box_unique_module(
+          netlist_manager, module_manager, subckt_dir, rr_gsb, cb_type, ilayer);
       }
-      print_spice_routing_connection_box_unique_module(
-        netlist_manager, module_manager, subckt_dir, rr_gsb, cb_type);
     }
   }
 }
@@ -266,16 +268,19 @@ void print_spice_flatten_routing_modules(NetlistManager& netlist_manager,
   std::vector<std::string> netlist_names;
 
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
 
   /* Build unique switch block modules */
-  for (size_t ix = 0; ix < sb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < sb_range.y(); ++iy) {
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      if (true != rr_gsb.is_sb_exist(rr_graph)) {
-        continue;
+  for (size_t ilayer = 0; ilayer < num_layers; ++ilayer) {
+    for (size_t ix = 0; ix < sb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < sb_range.y(); ++iy) {
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        if (true != rr_gsb.is_sb_exist(rr_graph)) {
+          continue;
+        }
+        print_spice_routing_switch_box_unique_module(
+          netlist_manager, module_manager, subckt_dir, rr_gsb, ilayer);
       }
-      print_spice_routing_switch_box_unique_module(
-        netlist_manager, module_manager, subckt_dir, rr_gsb);
     }
   }
 
@@ -317,26 +322,29 @@ void print_spice_unique_routing_modules(NetlistManager& netlist_manager,
   /* Build unique switch block modules */
   for (size_t isb = 0; isb < device_rr_gsb.get_num_sb_unique_module(); ++isb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(isb);
+    const size_t layer = device_rr_gsb.get_sb_unique_module_layer(isb);
     print_spice_routing_switch_box_unique_module(
-      netlist_manager, module_manager, subckt_dir, unique_mirror);
+      netlist_manager, module_manager, subckt_dir, unique_mirror, layer);
   }
 
   /* Build unique X-direction connection block modules */
   for (size_t icb = 0; icb < device_rr_gsb.get_num_cb_unique_module(CHANX);
        ++icb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_cb_unique_module(CHANX, icb);
+    const size_t layer = device_rr_gsb.get_cb_unique_module_layer(CHANX, icb);
 
     print_spice_routing_connection_box_unique_module(
-      netlist_manager, module_manager, subckt_dir, unique_mirror, CHANX);
+      netlist_manager, module_manager, subckt_dir, unique_mirror, CHANX, layer);
   }
 
   /* Build unique X-direction connection block modules */
   for (size_t icb = 0; icb < device_rr_gsb.get_num_cb_unique_module(CHANY);
        ++icb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_cb_unique_module(CHANY, icb);
+    const size_t layer = device_rr_gsb.get_cb_unique_module_layer(CHANY, icb);
 
     print_spice_routing_connection_box_unique_module(
-      netlist_manager, module_manager, subckt_dir, unique_mirror, CHANY);
+      netlist_manager, module_manager, subckt_dir, unique_mirror, CHANY, layer);
   }
 
   /*
