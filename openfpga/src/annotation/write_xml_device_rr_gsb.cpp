@@ -207,7 +207,7 @@ static void write_rr_switch_block_to_xml(
   /* Prepare file name */
   std::string fname(fname_prefix);
   vtr::Point<size_t> sb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
-  std::string curr_sb_name = generate_switch_block_module_name(sb_coordinate);
+  std::string curr_sb_name = generate_switch_block_module_name(sb_coordinate, layer);
   fname += curr_sb_name;
   fname += ".xml";
 

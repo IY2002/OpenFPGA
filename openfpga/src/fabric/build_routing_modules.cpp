@@ -385,17 +385,17 @@ static void build_switch_block_module(
   const RRGraphView& rr_graph, const CircuitLibrary& circuit_lib,
   const e_config_protocol_type& sram_orgz_type,
   const CircuitModelId& sram_model, const DeviceRRGSB& device_rr_gsb,
-  const RRGSB& rr_gsb, const bool& group_config_block, const bool& verbose) {
+  const RRGSB& rr_gsb, const bool& group_config_block, const bool& verbose, size_t layer) {
   /* Create a Module of Switch Block and add to module manager */
   vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
   ModuleId sb_module = module_manager.add_module(
-    generate_switch_block_module_name(gsb_coordinate));
+    generate_switch_block_module_name(gsb_coordinate, layer));
 
   /* Label module usage */
   module_manager.set_module_usage(sb_module, ModuleManager::MODULE_SB);
 
   VTR_LOGV(verbose, "Building module '%s'...",
-           generate_switch_block_module_name(gsb_coordinate).c_str());
+           generate_switch_block_module_name(gsb_coordinate, layer).c_str());
 
   /* Create a cache (fast look up) for module nets whose source are input ports
    */
@@ -1189,19 +1189,22 @@ void build_flatten_routing_modules(
   vtr::ScopedStartFinishTimer timer("Build routing modules...");
 
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
+  size_t layer_range = device_rr_gsb.get_gsb_layers();
 
   /* Build unique switch block modules */
-  for (size_t ix = 0; ix < sb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < sb_range.y(); ++iy) {
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      if (false == rr_gsb.is_sb_exist(device_ctx.rr_graph)) {
-        continue;
+  for (size_t ilayer = 0; ilayer < layer_range; ++ilayer) {
+    for (size_t ix = 0; ix < sb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < sb_range.y(); ++iy) {
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
+        if (false == rr_gsb.is_sb_exist(device_ctx.rr_graph)) {
+          continue;
+        }
+        build_switch_block_module(
+          module_manager, decoder_lib, device_annotation, device_ctx.grid,
+          device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
+          device_rr_gsb, rr_gsb, group_config_block, verbose, ilayer);
       }
-      build_switch_block_module(
-        module_manager, decoder_lib, device_annotation, device_ctx.grid,
-        device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
-        device_rr_gsb, rr_gsb, group_config_block, verbose);
-    }
+  }
   }
 
   build_flatten_connection_block_modules(
@@ -1238,10 +1241,11 @@ void build_unique_routing_modules(
   /* Build unique switch block modules */
   for (size_t isb = 0; isb < device_rr_gsb.get_num_sb_unique_module(); ++isb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(isb);
+    size_t ilayer = device_rr_gsb.get_sb_unique_module_layer(isb);
     build_switch_block_module(module_manager, decoder_lib, device_annotation,
                               device_ctx.grid, device_ctx.rr_graph, circuit_lib,
                               sram_orgz_type, sram_model, device_rr_gsb,
-                              unique_mirror, group_config_block, verbose);
+                              unique_mirror, group_config_block, verbose, ilayer);
   }
 
   /* Build unique X-direction connection block modules */

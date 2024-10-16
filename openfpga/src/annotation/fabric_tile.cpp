@@ -11,36 +11,39 @@
 /* namespace openfpga begins */
 namespace openfpga {
 
-vtr::Point<size_t> FabricTile::tile_coordinate(
+PointWithLayer FabricTile::tile_coordinate(
   const FabricTileId& tile_id) const {
   VTR_ASSERT(valid_tile_id(tile_id));
   return coords_[tile_id];
 }
 
-vtr::Point<size_t> FabricTile::unique_tile_coordinate(
+PointWithLayer FabricTile::unique_tile_coordinate(
   const FabricTileId& tile_id) const {
-  vtr::Point<size_t> tile_coord = tile_coordinate(tile_id);
+  PointWithLayer tile_coord = tile_coordinate(tile_id);
   FabricTileId unique_fabric_tile_id = unique_tile(tile_coord);
   return tile_coordinate(unique_fabric_tile_id);
 }
 
 FabricTileId FabricTile::find_unique_tile(const FabricTileId& tile_id) const {
-  vtr::Point<size_t> tile_coord = tile_coordinate(tile_id);
+  PointWithLayer tile_coord = tile_coordinate(tile_id);
   return unique_tile(tile_coord);
 }
 
-std::vector<vtr::Point<size_t>> FabricTile::pb_coordinates(
+std::vector<PointWithLayer> FabricTile::pb_coordinates(
   const FabricTileId& tile_id) const {
   VTR_ASSERT(valid_tile_id(tile_id));
-  std::vector<vtr::Point<size_t>> pb_root_coords;
+  std::vector<PointWithLayer> pb_root_coords;
   pb_root_coords.reserve(pb_coords_[tile_id].size());
   for (auto curr_rect : pb_coords_[tile_id]) {
-    pb_root_coords.push_back(curr_rect.bottom_left());
+    PointWithLayer new_point;
+    new_point.coordinates = curr_rect.coordinates.bottom_left();
+    new_point.layer = curr_rect.layer;
+    pb_root_coords.push_back(new_point);
   }
   return pb_root_coords;
 }
 
-std::vector<vtr::Point<size_t>> FabricTile::cb_coordinates(
+std::vector<PointWithLayer> FabricTile::cb_coordinates(
   const FabricTileId& tile_id, const t_rr_type& cb_type) const {
   VTR_ASSERT(valid_tile_id(tile_id));
   switch (cb_type) {
@@ -52,113 +55,146 @@ std::vector<vtr::Point<size_t>> FabricTile::cb_coordinates(
       VTR_LOG("Invalid type of connection block!\n");
       exit(1);
   }
-  return std::vector<vtr::Point<size_t>>();
+  return std::vector<PointWithLayer>();
 }
 
-std::vector<vtr::Point<size_t>> FabricTile::sb_coordinates(
+std::vector<PointWithLayer> FabricTile::sb_coordinates(
   const FabricTileId& tile_id) const {
   VTR_ASSERT(valid_tile_id(tile_id));
   return sb_coords_[tile_id];
 }
 
-FabricTileId FabricTile::unique_tile(const vtr::Point<size_t>& coord) const {
+FabricTileId FabricTile::unique_tile(const PointWithLayer& coord) const {
   /* Return invalid Id when out of range! */
-  if (coord.x() < tile_coord2unique_tile_ids_.size()) {
-    if (coord.y() < tile_coord2unique_tile_ids_[coord.x()].size()) {
-      return tile_coord2unique_tile_ids_[coord.x()][coord.y()];
+  if (coord.layer < tile_coord2unique_tile_ids_.size()) {
+      if (coord.coordinates.x() < tile_coord2unique_tile_ids_[coord.layer].size()) {
+        if (coord.coordinates.y() < tile_coord2unique_tile_ids_[coord.layer][coord.coordinates.x()].size()) {
+          return tile_coord2unique_tile_ids_[coord.layer][coord.coordinates.x()][coord.coordinates.y()];
+        }
     }
   }
   return FabricTileId::INVALID();
 }
 
-FabricTileId FabricTile::find_tile(const vtr::Point<size_t>& coord) const {
-  if (coord.x() >= tile_coord2id_lookup_.size()) {
+FabricTileId FabricTile::find_tile(const PointWithLayer& coord) const {
+  if (coord.layer >= tile_coord2id_lookup_.size()) {
     VTR_LOG_ERROR(
-      "Tile coordinate [%lu][%lu] exceeds the maximum range [%lu][%lu]!\n",
-      coord.x(), coord.y(), tile_coord2id_lookup_.size(),
-      tile_coord2id_lookup_[0].size());
+      "Tile coordinate [%lu][%lu][%lu] exceeds the maximum range [%lu][%lu][%lu]!\n", coord.layer,
+      coord.coordinates.x(), coord.coordinates.y(), tile_coord2id_lookup_.size(),
+      tile_coord2id_lookup_[0].size(), tile_coord2id_lookup_[0][0].size());
     return FabricTileId::INVALID();
   }
-  if (coord.y() >= tile_coord2id_lookup_[coord.x()].size()) {
+  if (coord.coordinates.x() >= tile_coord2id_lookup_[coord.layer].size()) {
     VTR_LOG_ERROR(
-      "Tile coordinate [%lu][%lu] exceeds the maximum range [%lu][%lu]!\n",
-      coord.x(), coord.y(), tile_coord2id_lookup_.size(),
-      tile_coord2id_lookup_[0].size());
+      "Tile coordinate [%lu][%lu][%lu] exceeds the maximum range [%lu][%lu][%lu]!\n", coord.layer,
+      coord.coordinates.x(), coord.coordinates.y(), tile_coord2id_lookup_.size(),
+      tile_coord2id_lookup_[0].size(), tile_coord2id_lookup_[0][0].size());
     return FabricTileId::INVALID();
   }
-  return tile_coord2id_lookup_[coord.x()][coord.y()];
+  if (coord.coordinates.y() >= tile_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
+    VTR_LOG_ERROR(
+      "Tile coordinate [%lu][%lu][%lu] exceeds the maximum range [%lu][%lu][%lu]!\n", coord.layer,
+      coord.coordinates.x(), coord.coordinates.y(), tile_coord2id_lookup_.size(),
+      tile_coord2id_lookup_[0].size(), tile_coord2id_lookup_[0][0].size());
+    return FabricTileId::INVALID();
+  }
+  return tile_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()];
 }
 
 FabricTileId FabricTile::find_tile_by_pb_coordinate(
-  const vtr::Point<size_t>& coord) const {
+  const PointWithLayer& coord) const {
   if (pb_coord2id_lookup_.empty()) {
     return FabricTileId::INVALID();
   }
-  if (coord.x() >= pb_coord2id_lookup_.size()) {
+  if (coord.layer >= pb_coord2id_lookup_.size()) {
     VTR_LOG_ERROR(
-      "Programmable block coordinate [%lu][%lu] exceeds the maximum range "
-      "[%lu][%lu]!\n",
-      coord.x(), coord.y(), pb_coord2id_lookup_.size(),
-      pb_coord2id_lookup_[0].size());
+      "Programmable block coordinate [%lu][%lu][%lu] exceeds the maximum range "
+      "[%lu][%lu][%lu]!\n", coord.layer,
+      coord.coordinates.x(), coord.coordinates.y(), pb_coord2id_lookup_.size(),
+      pb_coord2id_lookup_[0].size(), pb_coord2id_lookup_[0][0].size());
     return FabricTileId::INVALID();
   }
-  if (coord.y() >= pb_coord2id_lookup_[coord.x()].size()) {
+  if (coord.coordinates.x() >= pb_coord2id_lookup_[coord.layer].size()) {
     VTR_LOG_ERROR(
-      "Programmable block coordinate [%lu][%lu] exceeds the maximum range "
-      "[%lu][%lu]!\n",
-      coord.x(), coord.y(), pb_coord2id_lookup_.size(),
-      pb_coord2id_lookup_[0].size());
+      "Programmable block coordinate [%lu][%lu][%lu] exceeds the maximum range "
+      "[%lu][%lu][%lu]!\n", coord.layer,
+      coord.coordinates.x(), coord.coordinates.y(), pb_coord2id_lookup_.size(),
+      pb_coord2id_lookup_[0].size(), pb_coord2id_lookup_[0][0].size());
     return FabricTileId::INVALID();
   }
-  return pb_coord2id_lookup_[coord.x()][coord.y()];
+  if (coord.coordinates.y() >= pb_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
+    VTR_LOG_ERROR(
+      "Programmable block coordinate [%lu][%lu][%lu] exceeds the maximum range "
+      "[%lu][%lu][%lu]!\n", coord.layer,
+      coord.coordinates.x(), coord.coordinates.y(), pb_coord2id_lookup_.size(),
+      pb_coord2id_lookup_[0].size(), pb_coord2id_lookup_[0][0].size());
+    return FabricTileId::INVALID();
+  }
+  return pb_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()];
 }
 
 FabricTileId FabricTile::find_tile_by_cb_coordinate(
-  const t_rr_type& cb_type, const vtr::Point<size_t>& coord) const {
+  const t_rr_type& cb_type, const PointWithLayer& coord) const {
   switch (cb_type) {
     case CHANX: {
       if (cbx_coord2id_lookup_.empty()) {
         return FabricTileId::INVALID();
       }
-      if (coord.x() >= cbx_coord2id_lookup_.size()) {
+      if (coord.layer >= cbx_coord2id_lookup_.size()) {
         VTR_LOG_ERROR(
-          "X-direction connection block coordinate [%lu][%lu] exceeds the "
-          "maximum range [%lu][%lu]!\n",
-          coord.x(), coord.y(), cbx_coord2id_lookup_.size(),
-          cbx_coord2id_lookup_[0].size());
+          "X-direction connection block coordinate [%lu][%lu][%lu] exceeds the "
+          "maximum range [%lu][%lu][%lu]!\n", coord.layer,
+          coord.coordinates.x(), coord.coordinates.y(), cbx_coord2id_lookup_.size(),
+          cbx_coord2id_lookup_[0].size(), cbx_coord2id_lookup_[0][0].size());
         return FabricTileId::INVALID();
       }
-      if (coord.y() >= cbx_coord2id_lookup_[coord.x()].size()) {
+      if (coord.coordinates.x() >= cbx_coord2id_lookup_[coord.layer].size()) {
         VTR_LOG_ERROR(
-          "X-direction connection block coordinate [%lu][%lu] exceeds the "
-          "maximum range [%lu][%lu]!\n",
-          coord.x(), coord.y(), cbx_coord2id_lookup_.size(),
-          cbx_coord2id_lookup_[0].size());
+          "X-direction connection block coordinate [%lu][%lu][%lu] exceeds the "
+          "maximum range [%lu][%lu][%lu]!\n", coord.layer,
+          coord.coordinates.x(), coord.coordinates.y(), cbx_coord2id_lookup_.size(),
+          cbx_coord2id_lookup_[0].size(), cbx_coord2id_lookup_[0][0].size());
         return FabricTileId::INVALID();
       }
-      return cbx_coord2id_lookup_[coord.x()][coord.y()];
+      if (coord.coordinates.y() >= cbx_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
+        VTR_LOG_ERROR(
+          "X-direction connection block coordinate [%lu][%lu][%lu] exceeds the "
+          "maximum range [%lu][%lu][%lu]!\n", coord.layer,
+          coord.coordinates.x(), coord.coordinates.y(), cbx_coord2id_lookup_.size(),
+          cbx_coord2id_lookup_[0].size(), cbx_coord2id_lookup_[0][0].size());
+        return FabricTileId::INVALID();
+      }
+      return cbx_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()];
     }
     case CHANY: {
       if (cby_coord2id_lookup_.empty()) {
         return FabricTileId::INVALID();
       }
-      if (coord.x() >= cby_coord2id_lookup_.size()) {
+      if (coord.layer >= cby_coord2id_lookup_.size()) {
         VTR_LOG_ERROR(
-          "Y-direction connection block coordinate [%lu][%lu] exceeds the "
-          "maximum range [%lu][%lu]!\n",
-          coord.x(), coord.y(), cby_coord2id_lookup_.size(),
-          cby_coord2id_lookup_[0].size());
+          "Y-direction connection block coordinate [%lu][%lu][%lu] exceeds the "
+          "maximum range [%lu][%lu][%lu]!\n", coord.layer,
+          coord.coordinates.x(), coord.coordinates.y(), cby_coord2id_lookup_.size(),
+          cby_coord2id_lookup_[0].size(), cby_coord2id_lookup_[0][0].size());
         return FabricTileId::INVALID();
       }
-      if (coord.y() >= cby_coord2id_lookup_[coord.x()].size()) {
+      if (coord.coordinates.x() >= cby_coord2id_lookup_[coord.layer].size()) {
         VTR_LOG_ERROR(
-          "Y-direction connection block coordinate [%lu][%lu] exceeds the "
-          "maximum range [%lu][%lu]!\n",
-          coord.x(), coord.y(), cby_coord2id_lookup_.size(),
-          cby_coord2id_lookup_[0].size());
+          "Y-direction connection block coordinate [%lu][%lu][%lu] exceeds the "
+          "maximum range [%lu][%lu][%lu]!\n", coord.layer,
+          coord.coordinates.x(), coord.coordinates.y(), cby_coord2id_lookup_.size(),
+          cby_coord2id_lookup_[0].size(), cby_coord2id_lookup_[0][0].size());
         return FabricTileId::INVALID();
       }
-      return cby_coord2id_lookup_[coord.x()][coord.y()];
+      if (coord.coordinates.y() >= cby_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
+        VTR_LOG_ERROR(
+          "Y-direction connection block coordinate [%lu][%lu][%lu] exceeds the "
+          "maximum range [%lu][%lu][%lu]!\n", coord.layer,
+          coord.coordinates.x(), coord.coordinates.y(), cby_coord2id_lookup_.size(),
+          cby_coord2id_lookup_[0].size(), cby_coord2id_lookup_[0][0].size());
+        return FabricTileId::INVALID();
+      }
+      return cby_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()];
     }
     default:
       VTR_LOG("Invalid type of connection block!\n");
@@ -167,31 +203,39 @@ FabricTileId FabricTile::find_tile_by_cb_coordinate(
 }
 
 FabricTileId FabricTile::find_tile_by_sb_coordinate(
-  const vtr::Point<size_t>& coord) const {
+  const PointWithLayer& coord) const {
   if (sb_coord2id_lookup_.empty()) {
     return FabricTileId::INVALID();
   }
-  if (coord.x() >= sb_coord2id_lookup_.size()) {
+  if (coord.layer >= sb_coord2id_lookup_.size()) {
     VTR_LOG_ERROR(
-      "Switch block coordinate [%lu][%lu] exceeds the maximum range "
-      "[%lu][%lu]!\n",
-      coord.x(), coord.y(), sb_coord2id_lookup_.size(),
-      sb_coord2id_lookup_[0].size());
+      "Switch block coordinate [%lu][%lu][%lu] exceeds the maximum range "
+      "[%lu][%lu][%lu]!\n", coord.layer,
+      coord.coordinates.x(), coord.coordinates.y(), sb_coord2id_lookup_.size(),
+      sb_coord2id_lookup_[0].size(), sb_coord2id_lookup_[0][0].size());
     return FabricTileId::INVALID();
   }
-  if (coord.y() >= sb_coord2id_lookup_[coord.x()].size()) {
+  if (coord.coordinates.x() >= sb_coord2id_lookup_[coord.layer].size()) {
     VTR_LOG_ERROR(
-      "Switch block coordinate [%lu][%lu] exceeds the maximum range "
-      "[%lu][%lu]!\n",
-      coord.x(), coord.y(), sb_coord2id_lookup_.size(),
-      sb_coord2id_lookup_[0].size());
+      "Switch block coordinate [%lu][%lu][%lu] exceeds the maximum range "
+      "[%lu][%lu][%lu]!\n", coord.layer,
+      coord.coordinates.x(), coord.coordinates.y(), sb_coord2id_lookup_.size(),
+      sb_coord2id_lookup_[0].size(), sb_coord2id_lookup_[0][0].size());
     return FabricTileId::INVALID();
   }
-  return sb_coord2id_lookup_[coord.x()][coord.y()];
+  if (coord.coordinates.y() >= sb_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
+    VTR_LOG_ERROR(
+      "Switch block coordinate [%lu][%lu][%lu] exceeds the maximum range "
+      "[%lu][%lu][%lu]!\n", coord.layer,
+      coord.coordinates.x(), coord.coordinates.y(), sb_coord2id_lookup_.size(),
+      sb_coord2id_lookup_[0].size(), sb_coord2id_lookup_[0][0].size());
+    return FabricTileId::INVALID();
+  }
+  return sb_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()];
 }
 
 bool FabricTile::pb_in_tile(const FabricTileId& tile_id,
-                            const vtr::Point<size_t>& coord,
+                            const PointWithLayer& coord,
                             const bool& use_gsb_coord) const {
   if (use_gsb_coord) {
     return !pb_gsb_coords_[tile_id].empty() &&
@@ -203,13 +247,13 @@ bool FabricTile::pb_in_tile(const FabricTileId& tile_id,
 }
 
 size_t FabricTile::find_pb_index_in_tile(const FabricTileId& tile_id,
-                                         const vtr::Point<size_t>& coord,
+                                         const PointWithLayer& coord,
                                          const bool& use_gsb_coord) const {
   VTR_ASSERT(valid_tile_id(tile_id));
   if (use_gsb_coord) {
     for (size_t idx = 0; idx < pb_gsb_coords_[tile_id].size(); ++idx) {
-      vtr::Point<size_t> curr_coord = pb_gsb_coords_[tile_id][idx];
-      if (curr_coord == coord) {
+      PointWithLayer curr_coord = pb_gsb_coords_[tile_id][idx];
+      if (curr_coord.layer == coord.layer && curr_coord.coordinates == coord.coordinates) {
         return idx;
       }
     }
@@ -217,7 +261,8 @@ size_t FabricTile::find_pb_index_in_tile(const FabricTileId& tile_id,
     return pb_gsb_coords_[tile_id].size();
   } else {
     for (size_t idx = 0; idx < pb_coords_[tile_id].size(); ++idx) {
-      if (pb_coords_[tile_id][idx].coincident(coord)) {
+      RectWithLayer curr_coord = pb_coords_[tile_id][idx];
+      if (curr_coord.layer == coord.layer && curr_coord.coordinates.coincident(coord.coordinates)) {
         return idx;
       }
     }
@@ -227,17 +272,17 @@ size_t FabricTile::find_pb_index_in_tile(const FabricTileId& tile_id,
 }
 
 bool FabricTile::sb_in_tile(const FabricTileId& tile_id,
-                            const vtr::Point<size_t>& coord) const {
+                            const PointWithLayer& coord) const {
   return !sb_coords_[tile_id].empty() &&
          find_sb_index_in_tile(tile_id, coord) != sb_coords_[tile_id].size();
 }
 
 size_t FabricTile::find_sb_index_in_tile(
-  const FabricTileId& tile_id, const vtr::Point<size_t>& coord) const {
+  const FabricTileId& tile_id, const PointWithLayer& coord) const {
   VTR_ASSERT(valid_tile_id(tile_id));
   for (size_t idx = 0; idx < sb_coords_[tile_id].size(); ++idx) {
-    vtr::Point<size_t> curr_coord = sb_coords_[tile_id][idx];
-    if (curr_coord == coord) {
+    PointWithLayer curr_coord = sb_coords_[tile_id][idx];
+    if (curr_coord.layer == coord.layer && curr_coord.coordinates == coord.coordinates) {
       return idx;
     }
   }
@@ -247,7 +292,7 @@ size_t FabricTile::find_sb_index_in_tile(
 
 bool FabricTile::cb_in_tile(const FabricTileId& tile_id,
                             const t_rr_type& cb_type,
-                            const vtr::Point<size_t>& coord) const {
+                            const PointWithLayer& coord) const {
   switch (cb_type) {
     case CHANX:
       return !cbx_coords_[tile_id].empty() &&
@@ -265,21 +310,21 @@ bool FabricTile::cb_in_tile(const FabricTileId& tile_id,
 
 size_t FabricTile::find_cb_index_in_tile(
   const FabricTileId& tile_id, const t_rr_type& cb_type,
-  const vtr::Point<size_t>& coord) const {
+  const PointWithLayer& coord) const {
   VTR_ASSERT(valid_tile_id(tile_id));
   switch (cb_type) {
     case CHANX:
       for (size_t idx = 0; idx < cbx_coords_[tile_id].size(); ++idx) {
-        vtr::Point<size_t> curr_coord = cbx_coords_[tile_id][idx];
-        if (curr_coord == coord) {
+        PointWithLayer curr_coord = cbx_coords_[tile_id][idx];
+        if (curr_coord.layer == coord.layer && curr_coord.coordinates == coord.coordinates) {
           return idx;
         }
       }
       return cbx_coords_[tile_id].size();
     case CHANY:
       for (size_t idx = 0; idx < cby_coords_[tile_id].size(); ++idx) {
-        vtr::Point<size_t> curr_coord = cby_coords_[tile_id][idx];
-        if (curr_coord == coord) {
+        PointWithLayer curr_coord = cby_coords_[tile_id][idx];
+        if (curr_coord.layer == coord.layer && coord.coordinates == curr_coord.coordinates) {
           return idx;
         }
       }
@@ -290,24 +335,24 @@ size_t FabricTile::find_cb_index_in_tile(
   }
 }
 
-vtr::Point<size_t> FabricTile::find_cb_coordinate_in_unique_tile(
+PointWithLayer FabricTile::find_cb_coordinate_in_unique_tile(
   const FabricTileId& tile_id, const t_rr_type& cb_type,
-  const vtr::Point<size_t>& cb_coord) const {
+  const PointWithLayer& cb_coord) const {
   size_t cb_idx_in_curr_tile =
     find_cb_index_in_tile(tile_id, cb_type, cb_coord);
   FabricTileId unique_tile = find_unique_tile(tile_id);
   return cb_coordinates(unique_tile, cb_type)[cb_idx_in_curr_tile];
 }
 
-vtr::Point<size_t> FabricTile::find_pb_coordinate_in_unique_tile(
-  const FabricTileId& tile_id, const vtr::Point<size_t>& pb_coord) const {
+PointWithLayer FabricTile::find_pb_coordinate_in_unique_tile(
+  const FabricTileId& tile_id, const PointWithLayer& pb_coord) const {
   size_t pb_idx_in_curr_tile = find_pb_index_in_tile(tile_id, pb_coord);
   FabricTileId unique_tile = find_unique_tile(tile_id);
   return pb_coordinates(unique_tile)[pb_idx_in_curr_tile];
 }
 
-vtr::Point<size_t> FabricTile::find_sb_coordinate_in_unique_tile(
-  const FabricTileId& tile_id, const vtr::Point<size_t>& sb_coord) const {
+PointWithLayer FabricTile::find_sb_coordinate_in_unique_tile(
+  const FabricTileId& tile_id, const PointWithLayer& sb_coord) const {
   size_t sb_idx_in_curr_tile = find_sb_index_in_tile(tile_id, sb_coord);
   FabricTileId unique_tile = find_unique_tile(tile_id);
   return sb_coordinates(unique_tile)[sb_idx_in_curr_tile];
@@ -319,7 +364,7 @@ std::vector<FabricTileId> FabricTile::unique_tiles() const {
 
 bool FabricTile::empty() const { return ids_.empty(); }
 
-FabricTileId FabricTile::create_tile(const vtr::Point<size_t>& coord) {
+FabricTileId FabricTile::create_tile(const PointWithLayer& coord) {
   FabricTileId tile_id = FabricTileId(ids_.size());
   ids_.push_back(tile_id);
   coords_.push_back(coord);
@@ -336,28 +381,38 @@ FabricTileId FabricTile::create_tile(const vtr::Point<size_t>& coord) {
   return FabricTileId::INVALID();
 }
 
-void FabricTile::init(const vtr::Point<size_t>& max_coord) {
-  tile_coord2id_lookup_.resize(max_coord.x());
-  pb_coord2id_lookup_.resize(max_coord.x());
-  cbx_coord2id_lookup_.resize(max_coord.x());
-  cby_coord2id_lookup_.resize(max_coord.x());
-  sb_coord2id_lookup_.resize(max_coord.x());
-  for (size_t ix = 0; ix < max_coord.x(); ++ix) {
-    tile_coord2id_lookup_[ix].resize(max_coord.y(), FabricTileId::INVALID());
-    pb_coord2id_lookup_[ix].resize(max_coord.y(), FabricTileId::INVALID());
-    cbx_coord2id_lookup_[ix].resize(max_coord.y(), FabricTileId::INVALID());
-    cby_coord2id_lookup_[ix].resize(max_coord.y(), FabricTileId::INVALID());
-    sb_coord2id_lookup_[ix].resize(max_coord.y(), FabricTileId::INVALID());
+void FabricTile::init(const PointWithLayer& max_coord) {
+  tile_coord2id_lookup_.resize(max_coord.layer);
+  pb_coord2id_lookup_.resize(max_coord.layer);
+  cbx_coord2id_lookup_.resize(max_coord.layer);
+  cby_coord2id_lookup_.resize(max_coord.layer);
+  sb_coord2id_lookup_.resize(max_coord.layer);
+  for (size_t ilayer=0; ilayer < max_coord.layer; ++ilayer) {
+    tile_coord2id_lookup_[ilayer].resize(max_coord.coordinates.x());
+    pb_coord2id_lookup_[ilayer].resize(max_coord.coordinates.x());
+    cbx_coord2id_lookup_[ilayer].resize(max_coord.coordinates.x());
+    cby_coord2id_lookup_[ilayer].resize(max_coord.coordinates.x());
+    sb_coord2id_lookup_[ilayer].resize(max_coord.coordinates.x());
+    for (size_t ix = 0; ix < max_coord.coordinates.x(); ++ix) {
+      tile_coord2id_lookup_[ilayer][ix].resize(max_coord.coordinates.y(), FabricTileId::INVALID());
+      pb_coord2id_lookup_[ilayer][ix].resize(max_coord.coordinates.y(), FabricTileId::INVALID());
+      cbx_coord2id_lookup_[ilayer][ix].resize(max_coord.coordinates.y(), FabricTileId::INVALID());
+      cby_coord2id_lookup_[ilayer][ix].resize(max_coord.coordinates.y(), FabricTileId::INVALID());
+      sb_coord2id_lookup_[ilayer][ix].resize(max_coord.coordinates.y(), FabricTileId::INVALID());
+    }
   }
-  tile_coord2unique_tile_ids_.resize(max_coord.x());
-  for (size_t ix = 0; ix < max_coord.x(); ++ix) {
-    tile_coord2unique_tile_ids_[ix].resize(max_coord.y(),
-                                           FabricTileId::INVALID());
+  tile_coord2unique_tile_ids_.resize(max_coord.layer);
+  for (size_t ilayer = 0; ilayer < max_coord.layer; ++ilayer) {
+    tile_coord2unique_tile_ids_[ilayer].resize(max_coord.coordinates.x());
+    for (size_t ix = 0; ix < max_coord.coordinates.x(); ++ix) {
+      tile_coord2unique_tile_ids_[ilayer][ix].resize(max_coord.coordinates.y(),
+                                            FabricTileId::INVALID());
+    }
   }
 }
 
 bool FabricTile::register_tile_in_lookup(const FabricTileId& tile_id,
-                                         const vtr::Point<size_t>& coord) {
+                                         const PointWithLayer& coord) {
   if (coord.x() >= tile_coord2id_lookup_.size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
@@ -384,7 +439,7 @@ bool FabricTile::register_tile_in_lookup(const FabricTileId& tile_id,
 }
 
 bool FabricTile::register_pb_in_lookup(const FabricTileId& tile_id,
-                                       const vtr::Point<size_t>& coord) {
+                                       const PointWithLayer& coord) {
   if (coord.x() >= pb_coord2id_lookup_.size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
@@ -413,7 +468,7 @@ bool FabricTile::register_pb_in_lookup(const FabricTileId& tile_id,
 }
 
 bool FabricTile::register_cbx_in_lookup(const FabricTileId& tile_id,
-                                        const vtr::Point<size_t>& coord) {
+                                        const PointWithLayer& coord) {
   if (coord.x() >= cbx_coord2id_lookup_.size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
@@ -442,7 +497,7 @@ bool FabricTile::register_cbx_in_lookup(const FabricTileId& tile_id,
 }
 
 bool FabricTile::register_cby_in_lookup(const FabricTileId& tile_id,
-                                        const vtr::Point<size_t>& coord) {
+                                        const PointWithLayer& coord) {
   if (coord.x() >= cby_coord2id_lookup_.size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
@@ -471,7 +526,7 @@ bool FabricTile::register_cby_in_lookup(const FabricTileId& tile_id,
 }
 
 bool FabricTile::register_sb_in_lookup(const FabricTileId& tile_id,
-                                       const vtr::Point<size_t>& coord) {
+                                       const PointWithLayer& coord) {
   if (coord.x() >= sb_coord2id_lookup_.size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
@@ -497,28 +552,28 @@ bool FabricTile::register_sb_in_lookup(const FabricTileId& tile_id,
   return true;
 }
 
-void FabricTile::invalidate_tile_in_lookup(const vtr::Point<size_t>& coord) {
+void FabricTile::invalidate_tile_in_lookup(const PointWithLayer& coord) {
   tile_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
 }
 
-void FabricTile::invalidate_pb_in_lookup(const vtr::Point<size_t>& coord) {
+void FabricTile::invalidate_pb_in_lookup(const PointWithLayer& coord) {
   pb_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
 }
 
-void FabricTile::invalidate_cbx_in_lookup(const vtr::Point<size_t>& coord) {
+void FabricTile::invalidate_cbx_in_lookup(const PointWithLayer& coord) {
   cbx_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
 }
 
-void FabricTile::invalidate_cby_in_lookup(const vtr::Point<size_t>& coord) {
+void FabricTile::invalidate_cby_in_lookup(const PointWithLayer& coord) {
   cby_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
 }
 
-void FabricTile::invalidate_sb_in_lookup(const vtr::Point<size_t>& coord) {
+void FabricTile::invalidate_sb_in_lookup(const PointWithLayer& coord) {
   sb_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
 }
 
 bool FabricTile::set_tile_coordinate(const FabricTileId& tile_id,
-                                     const vtr::Point<size_t>& coord) {
+                                     const PointWithLayer& coord) {
   VTR_ASSERT(valid_tile_id(tile_id));
   /* Invalidate previous coordinate in look-up */
   invalidate_tile_in_lookup(coords_[tile_id]);
@@ -529,8 +584,8 @@ bool FabricTile::set_tile_coordinate(const FabricTileId& tile_id,
 }
 
 int FabricTile::add_pb_coordinate(const FabricTileId& tile_id,
-                                  const vtr::Point<size_t>& coord,
-                                  const vtr::Point<size_t>& gsb_coord) {
+                                  const PointWithLayer& coord,
+                                  const PointWithLayer& gsb_coord) {
   VTR_ASSERT(valid_tile_id(tile_id));
   pb_coords_[tile_id].push_back(vtr::Rect<size_t>(coord, coord));
   pb_gsb_coords_[tile_id].push_back(gsb_coord);
@@ -540,7 +595,7 @@ int FabricTile::add_pb_coordinate(const FabricTileId& tile_id,
 
 int FabricTile::set_pb_max_coordinate(const FabricTileId& tile_id,
                                       const size_t& pb_index,
-                                      const vtr::Point<size_t>& max_coord) {
+                                      const PointWithLayer& max_coord) {
   VTR_ASSERT(valid_tile_id(tile_id));
   if (pb_index >= pb_coords_[tile_id].size()) {
     VTR_LOG_ERROR(
@@ -569,7 +624,7 @@ int FabricTile::set_pb_max_coordinate(const FabricTileId& tile_id,
        ix <= pb_coords_[tile_id][pb_index].xmax(); ++ix) {
     for (size_t iy = pb_coords_[tile_id][pb_index].ymin();
          iy <= pb_coords_[tile_id][pb_index].ymax(); ++iy) {
-      register_pb_in_lookup(tile_id, vtr::Point<size_t>(ix, iy));
+      register_pb_in_lookup(tile_id, PointWithLayer(ix, iy));
     }
   }
   return CMD_EXEC_SUCCESS;
@@ -577,7 +632,7 @@ int FabricTile::set_pb_max_coordinate(const FabricTileId& tile_id,
 
 int FabricTile::add_cb_coordinate(const FabricTileId& tile_id,
                                   const t_rr_type& cb_type,
-                                  const vtr::Point<size_t>& coord) {
+                                  const PointWithLayer& coord) {
   VTR_ASSERT(valid_tile_id(tile_id));
   switch (cb_type) {
     case CHANX:
@@ -595,7 +650,7 @@ int FabricTile::add_cb_coordinate(const FabricTileId& tile_id,
 }
 
 int FabricTile::add_sb_coordinate(const FabricTileId& tile_id,
-                                  const vtr::Point<size_t>& coord) {
+                                  const PointWithLayer& coord) {
   VTR_ASSERT(valid_tile_id(tile_id));
   sb_coords_[tile_id].push_back(coord);
   /* Register in fast look-up */
@@ -637,8 +692,8 @@ bool FabricTile::equivalent_tile(const FabricTileId& tile_a,
   }
   /* The pb of two tiles should be the same, otherwise not equivalent */
   for (size_t iblk = 0; iblk < pb_coords_[tile_a].size(); ++iblk) {
-    vtr::Point<size_t> tile_a_pb_coord = pb_coords_[tile_a][iblk].bottom_left();
-    vtr::Point<size_t> tile_b_pb_coord = pb_coords_[tile_b][iblk].bottom_left();
+    PointWithLayer tile_a_pb_coord = pb_coords_[tile_a][iblk].bottom_left();
+    PointWithLayer tile_b_pb_coord = pb_coords_[tile_b][iblk].bottom_left();
     if (generate_grid_block_module_name_in_top_module(std::string(), grids,
                                                       tile_a_pb_coord) !=
         generate_grid_block_module_name_in_top_module(std::string(), grids,

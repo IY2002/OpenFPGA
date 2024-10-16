@@ -109,7 +109,7 @@ std::string generate_routing_track_middle_output_port_name(
   const size_t& track_id);
 
 std::string generate_switch_block_module_name(
-  const vtr::Point<size_t>& coordinate);
+  const vtr::Point<size_t>& coordinate, const size_t& layer);
 
 std::string generate_switch_block_module_name_using_index(const size_t& index);
 

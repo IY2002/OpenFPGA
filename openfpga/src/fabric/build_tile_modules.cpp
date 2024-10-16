@@ -1716,14 +1716,16 @@ int build_tile_modules(
   size_t layer = 0;
 
   /* Build a module for each unique tile  */
-  for (FabricTileId fabric_tile_id : fabric_tile.unique_tiles()) {
-    status_code = build_tile_module(
-      module_manager, decoder_lib, fabric_tile, fabric_tile_id, grids, layer,
-      vpr_device_annotation, device_rr_gsb, rr_graph_view, tile_annotation,
-      circuit_lib, sram_model, sram_orgz_type, name_module_using_index,
-      perimeter_cb, frame_view, verbose);
-    if (status_code != CMD_EXEC_SUCCESS) {
-      return CMD_EXEC_FATAL_ERROR;
+  for(size_t ilayer = 0; ilayer < device_rr_gsb.get_gsb_layers(); ++ilayer) {
+    for (FabricTileId fabric_tile_id : fabric_tile.unique_tiles()) {
+      status_code = build_tile_module(
+        module_manager, decoder_lib, fabric_tile, fabric_tile_id, grids, layer,
+        vpr_device_annotation, device_rr_gsb, rr_graph_view, tile_annotation,
+        circuit_lib, sram_model, sram_orgz_type, name_module_using_index,
+        perimeter_cb, frame_view, verbose);
+      if (status_code != CMD_EXEC_SUCCESS) {
+        return CMD_EXEC_FATAL_ERROR;
+      }
     }
   }
 

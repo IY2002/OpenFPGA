@@ -526,10 +526,10 @@ std::string generate_routing_track_middle_output_port_name(
  * Generate the module name for a switch block with a given coordinate
  *********************************************************************/
 std::string generate_switch_block_module_name(
-  const vtr::Point<size_t>& coordinate) {
+  const vtr::Point<size_t>& coordinate, const size_t& layer) {
   return std::string("sb_" + std::to_string(coordinate.x()) +
                      std::string("__") + std::to_string(coordinate.y()) +
-                     std::string("_"));
+                     std::string("_") + std::to_string(layer) + std::string("_"));
 }
 
 /*********************************************************************
