@@ -33,8 +33,20 @@ static int find_or_create_one_fabric_tile_from_grid(
   FabricTile& fabric_tile, FabricTileId& curr_tile_id, const DeviceGrid& grids,
   const t_physical_tile_loc& tile_loc, const bool& verbose) {
   t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
+
   vtr::Point<size_t> curr_tile_coord(tile_loc.x, tile_loc.y);
   vtr::Point<size_t> curr_gsb_coord(tile_loc.x, tile_loc.y);
+  size_t curr_tile_layer = tile_loc.layer_num;
+  size_t curr_gsb_layer = tile_loc.layer_num;
+
+  PointWithLayer curr_tile_point_coord;
+  PointWithLayer curr_gsb_point_coord;
+
+  curr_tile_point_coord.coordinates = curr_tile_coord;
+  curr_tile_point_coord.layer = curr_tile_layer;
+
+  curr_gsb_point_coord.coordinates = curr_gsb_coord;
+  curr_gsb_point_coord.layer = curr_gsb_layer;
 
   bool skip_add_pb = false;
   /* For EMPTY grid, routing blocks may still be required if there is a gsb
@@ -50,39 +62,42 @@ static int find_or_create_one_fabric_tile_from_grid(
     vtr::Point<size_t> root_tile_coord(
       curr_tile_coord.x() - grids.get_width_offset(tile_loc),
       curr_tile_coord.y() - grids.get_height_offset(tile_loc));
+    PointWithLayer root_tile_point_coord;
+    root_tile_point_coord.coordinates = root_tile_coord;
+    root_tile_point_coord.layer = curr_tile_layer;
     skip_add_pb = true;
     VTR_LOGV(verbose,
-             "Tile[%lu][%lu] contains a heterogeneous block which is "
-             "rooted from tile[%lu][%lu]\n",
-             curr_tile_coord.x(), curr_tile_coord.y(), root_tile_coord.x(),
-             root_tile_coord.y());
-    curr_tile_id = fabric_tile.find_tile(root_tile_coord);
+             "Tile [%lu][%lu][%lu] contains a heterogeneous block which is "
+             "rooted from tile [%lu][%lu][%lu]\n",
+             curr_tile_point_coord.layer, curr_tile_coord.x(), curr_tile_coord.y(), 
+             root_tile_point_coord.layer, root_tile_coord.x(), root_tile_coord.y());
+    curr_tile_id = fabric_tile.find_tile(root_tile_point_coord);
     /* Update the coordinates of the pb in tiles */
     size_t root_pb_idx_in_curr_tile =
-      fabric_tile.find_pb_index_in_tile(curr_tile_id, root_tile_coord);
+      fabric_tile.find_pb_index_in_tile(curr_tile_id, root_tile_point_coord);
     int status_code = fabric_tile.set_pb_max_coordinate(
-      curr_tile_id, root_pb_idx_in_curr_tile, curr_tile_coord);
+      curr_tile_id, root_pb_idx_in_curr_tile, curr_tile_point_coord);
     if (status_code != CMD_EXEC_SUCCESS) {
       return CMD_EXEC_FATAL_ERROR;
     }
   } else {
     /* Need to create a new tile here */
-    VTR_LOGV(verbose, "Create a regular tile[%lu][%lu]\n", curr_tile_coord.x(),
-             curr_tile_coord.y());
-    curr_tile_id = fabric_tile.create_tile(curr_tile_coord);
+    VTR_LOGV(verbose, "Create a regular tile [%lu][%lu][%lu]\n", 
+             curr_tile_point_coord.layer, curr_tile_coord.x(), curr_tile_coord.y());
+    curr_tile_id = fabric_tile.create_tile(curr_tile_point_coord);
   }
 
   /* Ensure that we have a valid id */
   if (!fabric_tile.valid_tile_id(curr_tile_id)) {
-    VTR_LOG_ERROR("Failed to get a valid id for tile[%lu][%lu]!\n",
-                  curr_tile_coord.x(), curr_tile_coord.y());
+    VTR_LOG_ERROR("Failed to get a valid id for tile [%lu][%lu][%lu]!\n",
+                  curr_tile_point_coord.layer, curr_tile_coord.x(), curr_tile_coord.y());
     return CMD_EXEC_FATAL_ERROR;
   }
 
   /* Add components: pb, cbx, cby, and sb if exists */
   if (!skip_add_pb) {
-    fabric_tile.add_pb_coordinate(curr_tile_id, curr_tile_coord,
-                                  curr_gsb_coord);
+    fabric_tile.add_pb_coordinate(curr_tile_id, curr_tile_point_coord,
+                                  curr_gsb_point_coord);
   }
   return CMD_EXEC_SUCCESS;
 }
@@ -129,32 +144,43 @@ static int build_fabric_tile_style_bottom_left(FabricTile& fabric_tile,
       /* If no tile is created for the pb, check if routing exists */
       vtr::Point<size_t> curr_tile_coord(tile_loc.x, tile_loc.y);
       vtr::Point<size_t> curr_gsb_coord(ix, iy);
+
+      PointWithLayer curr_tile_point_coord;
+      curr_tile_point_coord.coordinates = curr_tile_coord;
+      curr_tile_point_coord.layer = layer;
+
+      PointWithLayer curr_gsb_point_coord;
+      curr_gsb_point_coord.coordinates = curr_gsb_coord;
+      curr_gsb_point_coord.layer = layer;
       if (!fabric_tile.valid_tile_id(curr_tile_id)) {
-        if (!device_rr_gsb.is_gsb_exist(rr_graph, curr_gsb_coord)) {
-          VTR_LOGV(verbose, "Skip tile[%lu][%lu] as it is empty\n",
-                   curr_tile_coord.x(), curr_tile_coord.y());
+        if (!device_rr_gsb.is_gsb_exist(rr_graph, curr_gsb_coord, layer)) {
+          VTR_LOGV(verbose, "Skip tile[%lu][%lu][%lu] as it is empty\n",
+                   layer, curr_tile_coord.x(), curr_tile_coord.y());
           continue;
         }
         /* Need to create a new tile here */
         VTR_LOGV(verbose,
-                 "Create tile[%lu][%lu] which only has routing but not a "
+                 "Create tile[%lu][%lu][%lu] which only has routing but not a "
                  "programmable block\n",
-                 curr_tile_coord.x(), curr_tile_coord.y());
-        curr_tile_id = fabric_tile.create_tile(curr_tile_coord);
+                 layer, curr_tile_coord.x(), curr_tile_coord.y());
+        curr_tile_id = fabric_tile.create_tile(curr_tile_point_coord);
       }
       if (fabric_tile.valid_tile_id(curr_tile_id) &&
-          !device_rr_gsb.is_gsb_exist(rr_graph, curr_gsb_coord)) {
+          !device_rr_gsb.is_gsb_exist(rr_graph, curr_gsb_coord, layer)) {
         VTR_LOGV(
           verbose,
-          "Skip to add routing to tile[%lu][%lu] as it is not required\n",
-          curr_tile_coord.x(), curr_tile_coord.y());
+          "Skip to add routing to tile[%lu][%lu][%lu] as it is not required\n",
+          layer, curr_tile_coord.x(), curr_tile_coord.y());
         continue;
       }
-      const RRGSB& curr_rr_gsb = device_rr_gsb.get_gsb(curr_gsb_coord);
+      const RRGSB& curr_rr_gsb = device_rr_gsb.get_gsb(curr_gsb_coord, layer);
       for (t_rr_type cb_type : {CHANX, CHANY}) {
         if (curr_rr_gsb.is_cb_exist(cb_type)) {
+          PointWithLayer curr_rr_gsb_point;
+          curr_rr_gsb_point.coordinates = curr_rr_gsb.get_sb_coordinate();
+          curr_rr_gsb_point.layer = layer;
           fabric_tile.add_cb_coordinate(curr_tile_id, cb_type,
-                                        curr_rr_gsb.get_sb_coordinate());
+                                        curr_rr_gsb_point);
           VTR_LOGV(
             verbose, "Added %s connection block [%lu][%lu] to tile[%lu][%lu]\n",
             cb_type == CHANX ? "x-" : "y-", curr_rr_gsb.get_cb_x(cb_type),
@@ -162,10 +188,13 @@ static int build_fabric_tile_style_bottom_left(FabricTile& fabric_tile,
         }
       }
       if (curr_rr_gsb.is_sb_exist(rr_graph)) {
+        PointWithLayer curr_rr_gsb_point;
+        curr_rr_gsb_point.coordinates = curr_rr_gsb.get_sb_coordinate();
+        curr_rr_gsb_point.layer = layer;
         fabric_tile.add_sb_coordinate(curr_tile_id,
-                                      curr_rr_gsb.get_sb_coordinate());
-        VTR_LOGV(verbose, "Added switch block [%lu][%lu] to tile[%lu][%lu]\n",
-                 curr_rr_gsb.get_sb_x(), curr_rr_gsb.get_sb_y(), ix, iy);
+                                      curr_rr_gsb_point);
+        VTR_LOGV(verbose, "Added switch block [%lu][%lu][%lu] to tile [%lu][%lu][%lu]\n",
+                 layer, curr_rr_gsb.get_sb_x(), curr_rr_gsb.get_sb_y(), layer, ix, iy);
       }
     }
   }
@@ -215,64 +244,88 @@ static int build_fabric_tile_style_top_left(FabricTile& fabric_tile,
       vtr::Point<size_t> curr_tile_coord(tile_loc.x, tile_loc.y);
       vtr::Point<size_t> curr_gsb_coord(ix, iy);
       vtr::Point<size_t> neighbor_gsb_coord(ix, iy - 1);
+
+      PointWithLayer curr_tile_point;
+      curr_tile_point.coordinates = curr_tile_coord;
+      curr_tile_point.layer = layer;
+
+      PointWithLayer curr_gsb_point;
+      curr_gsb_point.coordinates = curr_gsb_coord;
+      curr_gsb_point.layer = layer;
+
+      PointWithLayer neighbor_gsb_point;
+      neighbor_gsb_point.coordinates = neighbor_gsb_coord;
+      neighbor_gsb_point.layer = layer;
+
       if (!fabric_tile.valid_tile_id(curr_tile_id)) {
         bool routing_exist = false;
-        if (device_rr_gsb.is_gsb_exist(rr_graph, curr_gsb_coord)) {
-          const RRGSB& routing_rr_gsb = device_rr_gsb.get_gsb(curr_gsb_coord);
+        if (device_rr_gsb.is_gsb_exist(rr_graph, curr_gsb_coord, layer)) {
+          const RRGSB& routing_rr_gsb = device_rr_gsb.get_gsb(curr_gsb_coord, layer);
           if (routing_rr_gsb.is_cb_exist(CHANY)) {
             routing_exist = true;
           }
         }
-        if (device_rr_gsb.is_gsb_exist(rr_graph, neighbor_gsb_coord)) {
+        if (device_rr_gsb.is_gsb_exist(rr_graph, neighbor_gsb_coord, layer)) {
           const RRGSB& routing_rr_gsb =
-            device_rr_gsb.get_gsb(neighbor_gsb_coord);
+            device_rr_gsb.get_gsb(neighbor_gsb_coord, layer);
           if (routing_rr_gsb.is_cb_exist(CHANX) ||
               routing_rr_gsb.is_sb_exist(rr_graph)) {
             routing_exist = true;
           }
         }
         if (!routing_exist) {
-          VTR_LOGV(verbose, "Skip tile[%lu][%lu] as it is empty\n",
-                   curr_tile_coord.x(), curr_tile_coord.y());
+          VTR_LOGV(verbose, "Skip tile[%lu][%lu][%lu] as it is empty\n",
+                   layer, curr_tile_coord.x(), curr_tile_coord.y());
           continue;
         }
         /* Need to create a new tile here */
         VTR_LOGV(verbose,
-                 "Create tile[%lu][%lu] which only has routing but not a "
+                 "Create tile[%lu][%lu][%lu] which only has routing but not a "
                  "programmable block\n",
-                 curr_tile_coord.x(), curr_tile_coord.y());
-        curr_tile_id = fabric_tile.create_tile(curr_tile_coord);
+                 layer, curr_tile_coord.x(), curr_tile_coord.y());
+        curr_tile_id = fabric_tile.create_tile(curr_tile_point);
       }
       /* For the cby in the same gsb */
-      if (device_rr_gsb.is_gsb_exist(rr_graph, curr_gsb_coord)) {
-        const RRGSB& curr_rr_gsb = device_rr_gsb.get_gsb(curr_gsb_coord);
+      if (device_rr_gsb.is_gsb_exist(rr_graph, curr_gsb_coord, layer)) {
+        const RRGSB& curr_rr_gsb = device_rr_gsb.get_gsb(curr_gsb_coord, layer);
         if (curr_rr_gsb.is_cb_exist(CHANY)) {
+          PointWithLayer curr_rr_gsb_point;
+          curr_rr_gsb_point.coordinates = curr_rr_gsb.get_sb_coordinate();
+          curr_rr_gsb_point.layer = layer;
           fabric_tile.add_cb_coordinate(curr_tile_id, CHANY,
-                                        curr_rr_gsb.get_sb_coordinate());
+                                        curr_rr_gsb_point);
           VTR_LOGV(
-            verbose, "Added y- connection block [%lu][%lu] to tile[%lu][%lu]\n",
-            curr_rr_gsb.get_cb_x(CHANY), curr_rr_gsb.get_cb_y(CHANY), ix, iy);
+            verbose, "Added y- connection block [%lu][%lu][%lu] to tile[%lu][%lu][%lu]\n",
+            layer, curr_rr_gsb.get_cb_x(CHANY), curr_rr_gsb.get_cb_y(CHANY), layer, ix, iy);
         }
       }
       /* For the cbx and sb in the neighbour gsb */
-      if (device_rr_gsb.is_gsb_exist(rr_graph, neighbor_gsb_coord)) {
+      if (device_rr_gsb.is_gsb_exist(rr_graph, neighbor_gsb_coord, layer)) {
         const RRGSB& neighbor_rr_gsb =
-          device_rr_gsb.get_gsb(neighbor_gsb_coord);
+          device_rr_gsb.get_gsb(neighbor_gsb_coord, layer);
         if (neighbor_rr_gsb.is_cb_exist(CHANX)) {
+          PointWithLayer neighbor_rr_gsb_point;
+          neighbor_rr_gsb_point.coordinates = neighbor_rr_gsb.get_sb_coordinate();
+          neighbor_rr_gsb_point.layer = layer;
+
           fabric_tile.add_cb_coordinate(curr_tile_id, CHANX,
-                                        neighbor_rr_gsb.get_sb_coordinate());
+                                        neighbor_rr_gsb_point);
 
           VTR_LOGV(verbose,
-                   "Added x- connection block [%lu][%lu] to tile[%lu][%lu]\n",
-                   neighbor_rr_gsb.get_cb_x(CHANX),
-                   neighbor_rr_gsb.get_cb_y(CHANX), ix, iy);
+                   "Added x- connection block [%lu][%lu][%lu] to tile[%lu][%lu][%lu]\n",
+                   layer, neighbor_rr_gsb.get_cb_x(CHANX),
+                   neighbor_rr_gsb.get_cb_y(CHANX), 
+                   layer, ix, iy);
         }
         if (neighbor_rr_gsb.is_sb_exist(rr_graph)) {
+          PointWithLayer neighbor_rr_gsb_point;
+          neighbor_rr_gsb_point.coordinates = neighbor_rr_gsb.get_sb_coordinate();
+          neighbor_rr_gsb_point.layer = layer;
           fabric_tile.add_sb_coordinate(curr_tile_id,
-                                        neighbor_rr_gsb.get_sb_coordinate());
-          VTR_LOGV(verbose, "Added switch block [%lu][%lu] to tile[%lu][%lu]\n",
-                   neighbor_rr_gsb.get_sb_x(), neighbor_rr_gsb.get_sb_y(), ix,
-                   iy);
+                                        neighbor_rr_gsb_point);
+          VTR_LOGV(verbose, "Added switch block [%lu][%lu][%lu] to tile[%lu][%lu][%lu]\n",
+                   layer, neighbor_rr_gsb.get_sb_x(), neighbor_rr_gsb.get_sb_y(), 
+                   layer, ix, iy);
         }
       }
     }
@@ -292,25 +345,30 @@ int build_fabric_tile(FabricTile& fabric_tile, const TileConfig& tile_config,
 
   int status_code = CMD_EXEC_SUCCESS;
 
-  fabric_tile.init(vtr::Point<size_t>(grids.width(), grids.height()));
+  PointWithLayer max_grid_coord;
+  max_grid_coord.coordinates = vtr::Point<size_t>(grids.width(), grids.height());
+  max_grid_coord.layer = grids.get_num_layers();
+  fabric_tile.init(max_grid_coord);
 
-  /* Depending on the selected style, follow different approaches */
-  if (tile_config.style() == TileConfig::e_style::TOP_LEFT) {
-    status_code = build_fabric_tile_style_top_left(
-      fabric_tile, grids, 0, rr_graph, device_rr_gsb, verbose);
-  } else if (tile_config.style() == TileConfig::e_style::BOTTOM_LEFT) {
-    status_code = build_fabric_tile_style_bottom_left(
-      fabric_tile, grids, 0, rr_graph, device_rr_gsb, verbose);
+  for (size_t layer = 0; layer < grids.get_num_layers(); ++layer) {  
+    /* Depending on the selected style, follow different approaches */
+    if (tile_config.style() == TileConfig::e_style::TOP_LEFT) {
+      status_code = build_fabric_tile_style_top_left(
+        fabric_tile, grids, layer, rr_graph, device_rr_gsb, verbose);
+    } else if (tile_config.style() == TileConfig::e_style::BOTTOM_LEFT) {
+      status_code = build_fabric_tile_style_bottom_left(
+        fabric_tile, grids, layer, rr_graph, device_rr_gsb, verbose);
 
-  } else {
-    /* Error out for styles that are not supported yet! */
-    VTR_LOG_ERROR("Tile style '%s' is not supported yet!\n",
-                  tile_config.style_to_string().c_str());
-    status_code = CMD_EXEC_FATAL_ERROR;
-  }
+    } else {
+      /* Error out for styles that are not supported yet! */
+      VTR_LOG_ERROR("Tile style '%s' is not supported yet!\n",
+                    tile_config.style_to_string().c_str());
+      status_code = CMD_EXEC_FATAL_ERROR;
+    }
 
-  if (status_code != CMD_EXEC_SUCCESS) {
-    return CMD_EXEC_FATAL_ERROR;
+    if (status_code != CMD_EXEC_SUCCESS) {
+      return CMD_EXEC_FATAL_ERROR;
+    }
   }
 
   /* Build unique tiles to compress the number of tile modules to be built in
