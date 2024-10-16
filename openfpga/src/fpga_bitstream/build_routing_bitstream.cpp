@@ -471,130 +471,135 @@ static void build_connection_block_bitstreams(
   const t_rr_type& cb_type, const bool& verbose) {
   vtr::Point<size_t> cb_range = device_rr_gsb.get_gsb_range();
 
-  for (size_t ix = 0; ix < cb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < cb_range.y(); ++iy) {
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      /* Check if the connection block exists in the device!
-       * Some of them do NOT exist due to heterogeneous blocks (height > 1)
-       * We will skip those modules
-       */
-      if (false == rr_gsb.is_cb_exist(cb_type)) {
-        continue;
-      }
-      /* Skip if the cb does not contain any configuration bits! */
-      if (true ==
-          connection_block_contain_only_routing_tracks(rr_gsb, cb_type)) {
+  for (size_t ilayer = 0; ilayer < device_rr_gsb.get_gsb_layers(); ++ilayer) {
+    for (size_t ix = 0; ix < cb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < cb_range.y(); ++iy) {
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        /* Check if the connection block exists in the device!
+        * Some of them do NOT exist due to heterogeneous blocks (height > 1)
+        * We will skip those modules
+        */
+        if (false == rr_gsb.is_cb_exist(cb_type)) {
+          continue;
+        }
+        /* Skip if the cb does not contain any configuration bits! */
+        if (true ==
+            connection_block_contain_only_routing_tracks(rr_gsb, cb_type)) {
+          VTR_LOGV(verbose,
+                  "\n\tSkipped %s Connection Block [%lu][%lu][%lu] as it contains "
+                  "only routing tracks\n",
+                  cb_type == CHANX ? "X-direction" : "Y-direction",
+                  ilayer, rr_gsb.get_cb_x(cb_type), rr_gsb.get_cb_y(cb_type));
+          continue;
+        }
+
         VTR_LOGV(verbose,
-                 "\n\tSkipped %s Connection Block [%lu][%lu] as it contains "
-                 "only routing tracks\n",
-                 cb_type == CHANX ? "X-direction" : "Y-direction",
-                 rr_gsb.get_cb_x(cb_type), rr_gsb.get_cb_y(cb_type));
-        continue;
+                "\n\tGenerating bitstream for %s Connection Block [%lu][%lu][%lu]\n",
+                cb_type == CHANX ? "X-direction" : "Y-direction",
+                ilayer, rr_gsb.get_cb_x(cb_type), rr_gsb.get_cb_y(cb_type));
+
+        /* Find the cb module so that we can precisely reserve child blocks */
+        vtr::Point<size_t> cb_coord(rr_gsb.get_cb_x(cb_type),
+                                    rr_gsb.get_cb_y(cb_type));
+        std::string cb_module_name =
+          generate_connection_block_module_name(cb_type, cb_coord, ilayer);
+        if (true == compact_routing_hierarchy) {
+          vtr::Point<size_t> unique_cb_coord(ix, iy);
+          /* Note: use GSB coordinate when inquire for unique modules!!! */
+          const RRGSB& unique_mirror =
+            device_rr_gsb.get_cb_unique_module(cb_type, unique_cb_coord, ilayer);
+          unique_cb_coord.set_x(unique_mirror.get_cb_x(cb_type));
+          unique_cb_coord.set_y(unique_mirror.get_cb_y(cb_type));
+          cb_module_name =
+            generate_connection_block_module_name(cb_type, unique_cb_coord, ilayer);
+        }
+        ModuleId cb_module =
+          module_manager.find_module(module_name_map.name(cb_module_name));
+        VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
+
+        /* Bypass empty blocks which have none configurable children */
+        if (0 == count_module_manager_module_configurable_children(
+                  module_manager, cb_module,
+                  ModuleManager::e_config_child_type::LOGICAL) &&
+            0 == count_module_manager_module_configurable_children(
+                  module_manager, cb_module,
+                  ModuleManager::e_config_child_type::PHYSICAL)) {
+          continue;
+        }
+
+        /* TODO: If the fabric tile is not empty, find the tile module and create
+        * the block accordingly. Also to support future hierarchy changes, when
+        * creating the blocks, trace backward until reach the current top block.
+        * If any block is missing during the back tracing, create it. */
+        ConfigBlockId parent_block = top_configurable_block;
+        PointWithLayer curr_tile_coord;
+        curr_tile_coord.coordinates = vtr::Point<size_t>(ix, iy);
+        curr_tile_coord.layer = ilayer;
+        FabricTileId curr_tile = fabric_tile.find_tile_by_cb_coordinate(
+          cb_type, curr_tile_coord);
+        ConfigBlockId cb_configurable_block;
+        if (fabric_tile.valid_tile_id(curr_tile)) {
+          PointWithLayer tile_coord = fabric_tile.tile_coordinate(curr_tile);
+          std::string tile_inst_name = generate_tile_module_name(tile_coord.coordinates, tile_coord.layer);
+          parent_block = bitstream_manager.find_or_create_child_block(
+            top_configurable_block, tile_inst_name);
+          /* For tile modules, need to find the specific instance name under its
+          * unique tile */
+          PointWithLayer cb_coord_in_unique_tile =
+            fabric_tile.find_cb_coordinate_in_unique_tile(
+              curr_tile, cb_type, curr_tile_coord);
+          const RRGSB& unique_tile_cb_rr_gsb =
+            device_rr_gsb.get_gsb(cb_coord_in_unique_tile.coordinates, ilayer);
+          cb_configurable_block =
+            bitstream_manager.add_block(generate_connection_block_module_name(
+              cb_type, unique_tile_cb_rr_gsb.get_cb_coordinate(cb_type), ilayer));
+        } else {
+          /* Create a block for the bitstream which corresponds to the Switch
+          * block
+          */
+          cb_configurable_block = bitstream_manager.add_block(
+            generate_connection_block_module_name(cb_type, cb_coord, ilayer));
+        }
+        /* Set switch block as a child of top block */
+        bitstream_manager.add_child_block(parent_block, cb_configurable_block);
+
+        /* Reserve child blocks for new created block */
+        bitstream_manager.reserve_child_blocks(
+          cb_configurable_block,
+          count_module_manager_module_configurable_children(
+            module_manager, cb_module,
+            ModuleManager::e_config_child_type::PHYSICAL));
+
+        /* Create a dedicated block for the non-unified configurable child */
+        if (!module_manager.unified_configurable_children(cb_module)) {
+          VTR_ASSERT(1 ==
+                    module_manager
+                      .configurable_children(
+                        cb_module, ModuleManager::e_config_child_type::PHYSICAL)
+                      .size());
+          std::string phy_mem_instance_name = module_manager.instance_name(
+            cb_module,
+            module_manager.configurable_children(
+              cb_module, ModuleManager::e_config_child_type::PHYSICAL)[0],
+            module_manager.configurable_child_instances(
+              cb_module, ModuleManager::e_config_child_type::PHYSICAL)[0]);
+          ConfigBlockId cb_grouped_config_block =
+            bitstream_manager.add_block(phy_mem_instance_name);
+          bitstream_manager.add_child_block(cb_configurable_block,
+                                            cb_grouped_config_block);
+          VTR_LOGV(verbose, "Added '%s' as a child to '%s'\n",
+                  bitstream_manager.block_name(cb_grouped_config_block).c_str(),
+                  bitstream_manager.block_name(cb_configurable_block).c_str());
+          cb_configurable_block = cb_grouped_config_block;
+        }
+
+        build_connection_block_bitstream(
+          bitstream_manager, cb_configurable_block, module_manager,
+          module_name_map, circuit_lib, mux_lib, atom_ctx, device_annotation,
+          routing_annotation, rr_graph, rr_gsb, cb_type, verbose);
+
+        VTR_LOGV(verbose, "\tDone\n");
       }
-
-      VTR_LOGV(verbose,
-               "\n\tGenerating bitstream for %s Connection Block [%lu][%lu]\n",
-               cb_type == CHANX ? "X-direction" : "Y-direction",
-               rr_gsb.get_cb_x(cb_type), rr_gsb.get_cb_y(cb_type));
-
-      /* Find the cb module so that we can precisely reserve child blocks */
-      vtr::Point<size_t> cb_coord(rr_gsb.get_cb_x(cb_type),
-                                  rr_gsb.get_cb_y(cb_type));
-      std::string cb_module_name =
-        generate_connection_block_module_name(cb_type, cb_coord);
-      if (true == compact_routing_hierarchy) {
-        vtr::Point<size_t> unique_cb_coord(ix, iy);
-        /* Note: use GSB coordinate when inquire for unique modules!!! */
-        const RRGSB& unique_mirror =
-          device_rr_gsb.get_cb_unique_module(cb_type, unique_cb_coord);
-        unique_cb_coord.set_x(unique_mirror.get_cb_x(cb_type));
-        unique_cb_coord.set_y(unique_mirror.get_cb_y(cb_type));
-        cb_module_name =
-          generate_connection_block_module_name(cb_type, unique_cb_coord);
-      }
-      ModuleId cb_module =
-        module_manager.find_module(module_name_map.name(cb_module_name));
-      VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
-
-      /* Bypass empty blocks which have none configurable children */
-      if (0 == count_module_manager_module_configurable_children(
-                 module_manager, cb_module,
-                 ModuleManager::e_config_child_type::LOGICAL) &&
-          0 == count_module_manager_module_configurable_children(
-                 module_manager, cb_module,
-                 ModuleManager::e_config_child_type::PHYSICAL)) {
-        continue;
-      }
-
-      /* TODO: If the fabric tile is not empty, find the tile module and create
-       * the block accordingly. Also to support future hierarchy changes, when
-       * creating the blocks, trace backward until reach the current top block.
-       * If any block is missing during the back tracing, create it. */
-      ConfigBlockId parent_block = top_configurable_block;
-      FabricTileId curr_tile = fabric_tile.find_tile_by_cb_coordinate(
-        cb_type, vtr::Point<size_t>(ix, iy));
-      ConfigBlockId cb_configurable_block;
-      if (fabric_tile.valid_tile_id(curr_tile)) {
-        vtr::Point<size_t> tile_coord = fabric_tile.tile_coordinate(curr_tile);
-        std::string tile_inst_name = generate_tile_module_name(tile_coord);
-        parent_block = bitstream_manager.find_or_create_child_block(
-          top_configurable_block, tile_inst_name);
-        /* For tile modules, need to find the specific instance name under its
-         * unique tile */
-        vtr::Point<size_t> cb_coord_in_unique_tile =
-          fabric_tile.find_cb_coordinate_in_unique_tile(
-            curr_tile, cb_type, vtr::Point<size_t>(ix, iy));
-        const RRGSB& unique_tile_cb_rr_gsb =
-          device_rr_gsb.get_gsb(cb_coord_in_unique_tile);
-        cb_configurable_block =
-          bitstream_manager.add_block(generate_connection_block_module_name(
-            cb_type, unique_tile_cb_rr_gsb.get_cb_coordinate(cb_type)));
-      } else {
-        /* Create a block for the bitstream which corresponds to the Switch
-         * block
-         */
-        cb_configurable_block = bitstream_manager.add_block(
-          generate_connection_block_module_name(cb_type, cb_coord));
-      }
-      /* Set switch block as a child of top block */
-      bitstream_manager.add_child_block(parent_block, cb_configurable_block);
-
-      /* Reserve child blocks for new created block */
-      bitstream_manager.reserve_child_blocks(
-        cb_configurable_block,
-        count_module_manager_module_configurable_children(
-          module_manager, cb_module,
-          ModuleManager::e_config_child_type::PHYSICAL));
-
-      /* Create a dedicated block for the non-unified configurable child */
-      if (!module_manager.unified_configurable_children(cb_module)) {
-        VTR_ASSERT(1 ==
-                   module_manager
-                     .configurable_children(
-                       cb_module, ModuleManager::e_config_child_type::PHYSICAL)
-                     .size());
-        std::string phy_mem_instance_name = module_manager.instance_name(
-          cb_module,
-          module_manager.configurable_children(
-            cb_module, ModuleManager::e_config_child_type::PHYSICAL)[0],
-          module_manager.configurable_child_instances(
-            cb_module, ModuleManager::e_config_child_type::PHYSICAL)[0]);
-        ConfigBlockId cb_grouped_config_block =
-          bitstream_manager.add_block(phy_mem_instance_name);
-        bitstream_manager.add_child_block(cb_configurable_block,
-                                          cb_grouped_config_block);
-        VTR_LOGV(verbose, "Added '%s' as a child to '%s'\n",
-                 bitstream_manager.block_name(cb_grouped_config_block).c_str(),
-                 bitstream_manager.block_name(cb_configurable_block).c_str());
-        cb_configurable_block = cb_grouped_config_block;
-      }
-
-      build_connection_block_bitstream(
-        bitstream_manager, cb_configurable_block, module_manager,
-        module_name_map, circuit_lib, mux_lib, atom_ctx, device_annotation,
-        routing_annotation, rr_graph, rr_gsb, cb_type, verbose);
-
-      VTR_LOGV(verbose, "\tDone\n");
     }
   }
 }
@@ -622,111 +627,117 @@ void build_routing_bitstream(
    */
   VTR_LOG("Generating bitstream for Switch blocks...");
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
-  for (size_t ix = 0; ix < sb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < sb_range.y(); ++iy) {
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      /* Check if the switch block exists in the device!
-       * Some of them do NOT exist due to heterogeneous blocks (width > 1)
-       * We will skip those modules
-       */
-      if (false == rr_gsb.is_sb_exist(rr_graph)) {
-        continue;
+
+  for (size_t ilayer = 0; ilayer < device_rr_gsb.get_gsb_layers(); ++ilayer) {
+    for (size_t ix = 0; ix < sb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < sb_range.y(); ++iy) {
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        /* Check if the switch block exists in the device!
+        * Some of them do NOT exist due to heterogeneous blocks (width > 1)
+        * We will skip those modules
+        */
+        if (false == rr_gsb.is_sb_exist(rr_graph)) {
+          continue;
+        }
+
+        VTR_LOGV(verbose,
+                "\n\tGenerating bitstream for Switch blocks[%lu][%lu][%lu]...\n", 
+                ilayer, ix, iy);
+
+        vtr::Point<size_t> sb_coord(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
+
+        /* Find the sb module so that we can precisely reserve child blocks */
+        std::string sb_module_name = generate_switch_block_module_name(sb_coord, ilayer);
+        if (true == compact_routing_hierarchy) {
+          vtr::Point<size_t> unique_sb_coord(ix, iy);
+          const RRGSB& unique_mirror =
+            device_rr_gsb.get_sb_unique_module(sb_coord , ilayer);
+          unique_sb_coord.set_x(unique_mirror.get_sb_x());
+          unique_sb_coord.set_y(unique_mirror.get_sb_y());
+          sb_module_name = generate_switch_block_module_name(unique_sb_coord, ilayer);
+        }
+        ModuleId sb_module =
+          module_manager.find_module(module_name_map.name(sb_module_name));
+        VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
+
+        /* Bypass empty blocks which have none configurable children */
+        if (0 == count_module_manager_module_configurable_children(
+                  module_manager, sb_module,
+                  ModuleManager::e_config_child_type::LOGICAL) &&
+            0 == count_module_manager_module_configurable_children(
+                  module_manager, sb_module,
+                  ModuleManager::e_config_child_type::PHYSICAL)) {
+          continue;
+        }
+
+        /* TODO: If the fabric tile is not empty, find the tile module and create
+        * the block accordingly. Also to support future hierarchy changes, when
+        * creating the blocks, trace backward until reach the current top block.
+        * If any block is missing during the back tracing, create it. */
+        ConfigBlockId parent_block = top_configurable_block;
+        PointWithLayer sb_coord_with_layer;
+        sb_coord_with_layer.coordinates = sb_coord;
+        sb_coord_with_layer.layer = ilayer;
+        FabricTileId curr_tile = fabric_tile.find_tile_by_sb_coordinate(sb_coord_with_layer);
+        ConfigBlockId sb_configurable_block;
+        if (fabric_tile.valid_tile_id(curr_tile)) {
+          PointWithLayer tile_coord = fabric_tile.tile_coordinate(curr_tile);
+          std::string tile_inst_name = generate_tile_module_name(tile_coord.coordinates, tile_coord.layer);
+          parent_block = bitstream_manager.find_or_create_child_block(
+            top_configurable_block, tile_inst_name);
+          /* For tile modules, need to find the specific instance name under its
+          * unique tile */
+          PointWithLayer sb_coord_in_unique_tile =
+            fabric_tile.find_sb_coordinate_in_unique_tile(curr_tile, sb_coord_with_layer);
+          sb_configurable_block = bitstream_manager.add_block(
+            generate_switch_block_module_name(sb_coord_in_unique_tile.coordinates, sb_coord_in_unique_tile.layer));
+        } else {
+          /* Create a block for the bitstream which corresponds to the Switch
+          * block
+          */
+          sb_configurable_block = bitstream_manager.add_block(
+            generate_switch_block_module_name(sb_coord, ilayer));
+        }
+        /* Set switch block as a child of top block */
+        bitstream_manager.add_child_block(parent_block, sb_configurable_block);
+
+        /* Reserve child blocks for new created block */
+        bitstream_manager.reserve_child_blocks(
+          sb_configurable_block,
+          count_module_manager_module_configurable_children(
+            module_manager, sb_module,
+            ModuleManager::e_config_child_type::PHYSICAL));
+
+        /* Create a dedicated block for the non-unified configurable child */
+        if (!module_manager.unified_configurable_children(sb_module)) {
+          VTR_ASSERT(1 ==
+                    module_manager
+                      .configurable_children(
+                        sb_module, ModuleManager::e_config_child_type::PHYSICAL)
+                      .size());
+          std::string phy_mem_instance_name = module_manager.instance_name(
+            sb_module,
+            module_manager.configurable_children(
+              sb_module, ModuleManager::e_config_child_type::PHYSICAL)[0],
+            module_manager.configurable_child_instances(
+              sb_module, ModuleManager::e_config_child_type::PHYSICAL)[0]);
+          ConfigBlockId sb_grouped_config_block =
+            bitstream_manager.add_block(phy_mem_instance_name);
+          bitstream_manager.add_child_block(sb_configurable_block,
+                                            sb_grouped_config_block);
+          VTR_LOGV(verbose, "Added '%s' as a child to '%s'\n",
+                  bitstream_manager.block_name(sb_grouped_config_block).c_str(),
+                  bitstream_manager.block_name(sb_configurable_block).c_str());
+          sb_configurable_block = sb_grouped_config_block;
+        }
+
+        build_switch_block_bitstream(
+          bitstream_manager, sb_configurable_block, module_manager,
+          module_name_map, circuit_lib, mux_lib, atom_ctx, device_annotation,
+          routing_annotation, rr_graph, rr_gsb, verbose);
+
+        VTR_LOGV(verbose, "\tDone\n");
       }
-
-      VTR_LOGV(verbose,
-               "\n\tGenerating bitstream for Switch blocks[%lu][%lu]...\n", ix,
-               iy);
-
-      vtr::Point<size_t> sb_coord(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
-
-      /* Find the sb module so that we can precisely reserve child blocks */
-      std::string sb_module_name = generate_switch_block_module_name(sb_coord);
-      if (true == compact_routing_hierarchy) {
-        vtr::Point<size_t> unique_sb_coord(ix, iy);
-        const RRGSB& unique_mirror =
-          device_rr_gsb.get_sb_unique_module(sb_coord);
-        unique_sb_coord.set_x(unique_mirror.get_sb_x());
-        unique_sb_coord.set_y(unique_mirror.get_sb_y());
-        sb_module_name = generate_switch_block_module_name(unique_sb_coord);
-      }
-      ModuleId sb_module =
-        module_manager.find_module(module_name_map.name(sb_module_name));
-      VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
-
-      /* Bypass empty blocks which have none configurable children */
-      if (0 == count_module_manager_module_configurable_children(
-                 module_manager, sb_module,
-                 ModuleManager::e_config_child_type::LOGICAL) &&
-          0 == count_module_manager_module_configurable_children(
-                 module_manager, sb_module,
-                 ModuleManager::e_config_child_type::PHYSICAL)) {
-        continue;
-      }
-
-      /* TODO: If the fabric tile is not empty, find the tile module and create
-       * the block accordingly. Also to support future hierarchy changes, when
-       * creating the blocks, trace backward until reach the current top block.
-       * If any block is missing during the back tracing, create it. */
-      ConfigBlockId parent_block = top_configurable_block;
-      FabricTileId curr_tile = fabric_tile.find_tile_by_sb_coordinate(sb_coord);
-      ConfigBlockId sb_configurable_block;
-      if (fabric_tile.valid_tile_id(curr_tile)) {
-        vtr::Point<size_t> tile_coord = fabric_tile.tile_coordinate(curr_tile);
-        std::string tile_inst_name = generate_tile_module_name(tile_coord);
-        parent_block = bitstream_manager.find_or_create_child_block(
-          top_configurable_block, tile_inst_name);
-        /* For tile modules, need to find the specific instance name under its
-         * unique tile */
-        vtr::Point<size_t> sb_coord_in_unique_tile =
-          fabric_tile.find_sb_coordinate_in_unique_tile(curr_tile, sb_coord);
-        sb_configurable_block = bitstream_manager.add_block(
-          generate_switch_block_module_name(sb_coord_in_unique_tile));
-      } else {
-        /* Create a block for the bitstream which corresponds to the Switch
-         * block
-         */
-        sb_configurable_block = bitstream_manager.add_block(
-          generate_switch_block_module_name(sb_coord));
-      }
-      /* Set switch block as a child of top block */
-      bitstream_manager.add_child_block(parent_block, sb_configurable_block);
-
-      /* Reserve child blocks for new created block */
-      bitstream_manager.reserve_child_blocks(
-        sb_configurable_block,
-        count_module_manager_module_configurable_children(
-          module_manager, sb_module,
-          ModuleManager::e_config_child_type::PHYSICAL));
-
-      /* Create a dedicated block for the non-unified configurable child */
-      if (!module_manager.unified_configurable_children(sb_module)) {
-        VTR_ASSERT(1 ==
-                   module_manager
-                     .configurable_children(
-                       sb_module, ModuleManager::e_config_child_type::PHYSICAL)
-                     .size());
-        std::string phy_mem_instance_name = module_manager.instance_name(
-          sb_module,
-          module_manager.configurable_children(
-            sb_module, ModuleManager::e_config_child_type::PHYSICAL)[0],
-          module_manager.configurable_child_instances(
-            sb_module, ModuleManager::e_config_child_type::PHYSICAL)[0]);
-        ConfigBlockId sb_grouped_config_block =
-          bitstream_manager.add_block(phy_mem_instance_name);
-        bitstream_manager.add_child_block(sb_configurable_block,
-                                          sb_grouped_config_block);
-        VTR_LOGV(verbose, "Added '%s' as a child to '%s'\n",
-                 bitstream_manager.block_name(sb_grouped_config_block).c_str(),
-                 bitstream_manager.block_name(sb_configurable_block).c_str());
-        sb_configurable_block = sb_grouped_config_block;
-      }
-
-      build_switch_block_bitstream(
-        bitstream_manager, sb_configurable_block, module_manager,
-        module_name_map, circuit_lib, mux_lib, atom_ctx, device_annotation,
-        routing_annotation, rr_graph, rr_gsb, verbose);
-
-      VTR_LOGV(verbose, "\tDone\n");
     }
   }
   VTR_LOG("Done\n");

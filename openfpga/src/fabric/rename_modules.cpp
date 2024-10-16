@@ -41,10 +41,11 @@ int update_module_map_name_with_indexing_names(ModuleNameMap& module_name_map,
   /* Walk through the device rr gsb on the unique routing modules */
   for (size_t isb = 0; isb < device_rr_gsb.get_num_sb_unique_module(); ++isb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(isb);
+    size_t unique_layer = device_rr_gsb.get_sb_unique_module_layer(isb);
     vtr::Point<size_t> gsb_coordinate(unique_mirror.get_sb_x(),
                                       unique_mirror.get_sb_y());
     std::string name_using_coord =
-      generate_switch_block_module_name(gsb_coordinate);
+      generate_switch_block_module_name(gsb_coordinate, unique_layer);
     std::string name_using_index =
       generate_switch_block_module_name_using_index(isb);
     status =
@@ -60,10 +61,11 @@ int update_module_map_name_with_indexing_names(ModuleNameMap& module_name_map,
          ++icb) {
       const RRGSB& unique_mirror =
         device_rr_gsb.get_cb_unique_module(cb_type, icb);
+      size_t unique_layer = device_rr_gsb.get_cb_unique_module_layer(cb_type, icb);
       vtr::Point<size_t> gsb_coordinate(unique_mirror.get_cb_x(cb_type),
                                         unique_mirror.get_cb_y(cb_type));
       std::string name_using_coord =
-        generate_connection_block_module_name(cb_type, gsb_coordinate);
+        generate_connection_block_module_name(cb_type, gsb_coordinate, unique_layer);
       std::string name_using_index =
         generate_connection_block_module_name_using_index(cb_type, icb);
       status = module_name_map.set_tag_to_name_pair(name_using_coord,
@@ -78,8 +80,8 @@ int update_module_map_name_with_indexing_names(ModuleNameMap& module_name_map,
   /* Walk through the fabric tile on the unique routing modules */
   for (size_t itile = 0; itile < fabric_tile.unique_tiles().size(); ++itile) {
     FabricTileId fabric_tile_id = fabric_tile.unique_tiles()[itile];
-    vtr::Point<size_t> tile_coord = fabric_tile.tile_coordinate(fabric_tile_id);
-    std::string name_using_coord = generate_tile_module_name(tile_coord);
+    PointWithLayer tile_coord = fabric_tile.tile_coordinate(fabric_tile_id);
+    std::string name_using_coord = generate_tile_module_name(tile_coord.coordinates, tile_coord.layer);
     std::string name_using_index = generate_tile_module_name_using_index(itile);
     status =
       module_name_map.set_tag_to_name_pair(name_using_coord, name_using_index);
