@@ -40,7 +40,7 @@ static void organize_top_module_tile_cb_modules(
   const e_config_protocol_type& sram_orgz_type,
   const CircuitModelId& sram_model, const vtr::Matrix<size_t>& cb_instance_ids,
   const DeviceRRGSB& device_rr_gsb, const RRGSB& rr_gsb,
-  const t_rr_type& cb_type, const bool& compact_routing_hierarchy) {
+  const t_rr_type& cb_type, const bool& compact_routing_hierarchy, const size_t& layer) {
   /* If the CB does not exist, we can skip addition */
   if (false == rr_gsb.is_cb_exist(cb_type)) {
     return;
@@ -58,13 +58,13 @@ static void organize_top_module_tile_cb_modules(
   if (true == compact_routing_hierarchy) {
     /* Note: use GSB coordinate when inquire for unique modules!!! */
     const RRGSB& unique_mirror = device_rr_gsb.get_cb_unique_module(
-      cb_type, vtr::Point<size_t>(rr_gsb.get_x(), rr_gsb.get_y()));
+      cb_type, vtr::Point<size_t>(rr_gsb.get_x(), rr_gsb.get_y()), layer);
     cb_coord.set_x(unique_mirror.get_cb_x(cb_type));
     cb_coord.set_y(unique_mirror.get_cb_y(cb_type));
   }
 
   std::string cb_module_name =
-    generate_connection_block_module_name(cb_type, cb_coord);
+    generate_connection_block_module_name(cb_type, cb_coord, layer);
   ModuleId cb_module = module_manager.find_module(cb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
 
@@ -146,7 +146,7 @@ static void organize_top_module_tile_memory_modules(
   /* We do NOT consider SB and CBs if the gsb is not in the range! */
   if ((gsb_coord.x() < gsb_coord_range.x()) &&
       (gsb_coord.y() < gsb_coord_range.y())) {
-    const RRGSB& rr_gsb = device_rr_gsb.get_gsb(gsb_coord.x(), gsb_coord.y());
+    const RRGSB& rr_gsb = device_rr_gsb.get_gsb(gsb_coord.x(), gsb_coord.y(), layer);
     /* Find Switch Block: unique module id and instance id!
      * Note that switch block does always exist in a GSB
      */
@@ -154,11 +154,11 @@ static void organize_top_module_tile_memory_modules(
     /* If we use compact routing hierarchy, we should instanciate the unique
      * module of SB */
     if (true == compact_routing_hierarchy) {
-      const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(sb_coord);
+      const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(sb_coord, layer);
       sb_coord.set_x(unique_mirror.get_sb_x());
       sb_coord.set_y(unique_mirror.get_sb_y());
     }
-    std::string sb_module_name = generate_switch_block_module_name(sb_coord);
+    std::string sb_module_name = generate_switch_block_module_name(sb_coord, layer);
     ModuleId sb_module = module_manager.find_module(sb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
 
@@ -183,12 +183,12 @@ static void organize_top_module_tile_memory_modules(
     organize_top_module_tile_cb_modules(
       module_manager, top_module, circuit_lib, sram_orgz_type, sram_model,
       cb_instance_ids.at(CHANX), device_rr_gsb, rr_gsb, CHANX,
-      compact_routing_hierarchy);
+      compact_routing_hierarchy, layer);
 
     organize_top_module_tile_cb_modules(
       module_manager, top_module, circuit_lib, sram_orgz_type, sram_model,
       cb_instance_ids.at(CHANY), device_rr_gsb, rr_gsb, CHANY,
-      compact_routing_hierarchy);
+      compact_routing_hierarchy, layer);
   }
 
   /* Find the module name for this type of grid */
