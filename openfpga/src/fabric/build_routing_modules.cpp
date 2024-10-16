@@ -420,8 +420,8 @@ static void build_switch_block_module(
           break;
         default:
           VTR_LOGF_ERROR(__FILE__, __LINE__,
-                         "Invalid direction of chan[%d][%d]_track[%d]!\n",
-                         rr_gsb.get_sb_x(), rr_gsb.get_sb_y(), itrack);
+                         "Invalid direction of chan[%d][%d][%d]_track[%d]!\n",
+                         layer, rr_gsb.get_sb_x(), rr_gsb.get_sb_y(), itrack);
           exit(1);
       }
     }
@@ -505,7 +505,7 @@ static void build_switch_block_module(
   if (group_config_block) {
     std::string mem_module_name_prefix =
       generate_switch_block_module_name_using_index(
-        device_rr_gsb.get_sb_unique_module_index(gsb_coordinate));
+        device_rr_gsb.get_sb_unique_module_index(gsb_coordinate, layer));
     add_physical_memory_module(module_manager, decoder_lib, sb_module,
                                mem_module_name_prefix, circuit_lib,
                                sram_orgz_type, sram_model, verbose);
@@ -906,7 +906,7 @@ static void build_connection_block_module(
   const e_config_protocol_type& sram_orgz_type,
   const CircuitModelId& sram_model, const DeviceRRGSB& device_rr_gsb,
   const RRGSB& rr_gsb, const t_rr_type& cb_type, const bool& group_config_block,
-  const bool& verbose) {
+  const bool& verbose, const size_t& layer) {
   /* Create the netlist */
   vtr::Point<size_t> gsb_coordinate(rr_gsb.get_cb_x(cb_type),
                                     rr_gsb.get_cb_y(cb_type));
@@ -914,14 +914,14 @@ static void build_connection_block_module(
   /* Create a Verilog Module based on the circuit model, and add to module
    * manager */
   ModuleId cb_module = module_manager.add_module(
-    generate_connection_block_module_name(cb_type, gsb_coordinate));
+    generate_connection_block_module_name(cb_type, gsb_coordinate, layer));
 
   /* Label module usage */
   module_manager.set_module_usage(cb_module, ModuleManager::MODULE_CB);
 
   VTR_LOGV(
     verbose, "Building module '%s'...",
-    generate_connection_block_module_name(cb_type, gsb_coordinate).c_str());
+    generate_connection_block_module_name(cb_type, gsb_coordinate, layer).c_str());
 
   /* Add the input and output ports of routing tracks in the channel
    * Routing tracks pass through the connection blocks
@@ -1080,7 +1080,7 @@ static void build_connection_block_module(
     std::string mem_module_name_prefix =
       generate_connection_block_module_name_using_index(
         cb_type,
-        device_rr_gsb.get_cb_unique_module_index(cb_type, gsb_coordinate));
+        device_rr_gsb.get_cb_unique_module_index(cb_type, gsb_coordinate, layer));
     add_physical_memory_module(module_manager, decoder_lib, cb_module,
                                mem_module_name_prefix, circuit_lib,
                                sram_orgz_type, sram_model, verbose);
@@ -1151,21 +1151,23 @@ static void build_flatten_connection_block_modules(
   const bool& group_config_block, const bool& verbose) {
   /* Build unique X-direction connection block modules */
   vtr::Point<size_t> cb_range = device_rr_gsb.get_gsb_range();
-
-  for (size_t ix = 0; ix < cb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < cb_range.y(); ++iy) {
-      /* Check if the connection block exists in the device!
-       * Some of them do NOT exist due to heterogeneous blocks (height > 1)
-       * We will skip those modules
-       */
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      if (false == rr_gsb.is_cb_exist(cb_type)) {
-        continue;
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
+  for (size_t ilayer = 0; ilayer < num_layers; ++ilayer) {
+    for (size_t ix = 0; ix < cb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < cb_range.y(); ++iy) {
+        /* Check if the connection block exists in the device!
+        * Some of them do NOT exist due to heterogeneous blocks (height > 1)
+        * We will skip those modules
+        */
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        if (false == rr_gsb.is_cb_exist(cb_type)) {
+          continue;
+        }
+        build_connection_block_module(
+          module_manager, decoder_lib, device_annotation, device_ctx.grid,
+          device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
+          device_rr_gsb, rr_gsb, cb_type, group_config_block, verbose, ilayer);
       }
-      build_connection_block_module(
-        module_manager, decoder_lib, device_annotation, device_ctx.grid,
-        device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
-        device_rr_gsb, rr_gsb, cb_type, group_config_block, verbose);
     }
   }
 }
@@ -1195,7 +1197,7 @@ void build_flatten_routing_modules(
   for (size_t ilayer = 0; ilayer < layer_range; ++ilayer) {
     for (size_t ix = 0; ix < sb_range.x(); ++ix) {
       for (size_t iy = 0; iy < sb_range.y(); ++iy) {
-        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
         if (false == rr_gsb.is_sb_exist(device_ctx.rr_graph)) {
           continue;
         }
@@ -1204,7 +1206,7 @@ void build_flatten_routing_modules(
           device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
           device_rr_gsb, rr_gsb, group_config_block, verbose, ilayer);
       }
-  }
+    }
   }
 
   build_flatten_connection_block_modules(
@@ -1252,22 +1254,22 @@ void build_unique_routing_modules(
   for (size_t icb = 0; icb < device_rr_gsb.get_num_cb_unique_module(CHANX);
        ++icb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_cb_unique_module(CHANX, icb);
-
+    const size_t& unique_layer = device_rr_gsb.get_cb_unique_module_layer(CHANX, icb);
     build_connection_block_module(
       module_manager, decoder_lib, device_annotation, device_ctx.grid,
       device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
-      device_rr_gsb, unique_mirror, CHANX, group_config_block, verbose);
+      device_rr_gsb, unique_mirror, CHANX, group_config_block, verbose, unique_layer);
   }
 
   /* Build unique X-direction connection block modules */
   for (size_t icb = 0; icb < device_rr_gsb.get_num_cb_unique_module(CHANY);
        ++icb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_cb_unique_module(CHANY, icb);
-
+    const size_t& unique_layer = device_rr_gsb.get_cb_unique_module_layer(CHANY, icb);
     build_connection_block_module(
       module_manager, decoder_lib, device_annotation, device_ctx.grid,
       device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
-      device_rr_gsb, unique_mirror, CHANY, group_config_block, verbose);
+      device_rr_gsb, unique_mirror, CHANY, group_config_block, verbose, unique_layer);
   }
 }
 

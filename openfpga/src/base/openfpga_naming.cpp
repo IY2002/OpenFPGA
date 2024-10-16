@@ -584,7 +584,7 @@ std::string generate_physical_memory_module_name(const std::string& prefix,
  * Generate the module name for a connection block with a given coordinate
  *********************************************************************/
 std::string generate_connection_block_module_name(
-  const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate) {
+  const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate, const size_t& layer) {
   std::string prefix("cb");
   switch (cb_type) {
     case CHANX:
@@ -598,7 +598,7 @@ std::string generate_connection_block_module_name(
       exit(1);
   }
 
-  return std::string(prefix + std::to_string(coordinate.x()) +
+  return std::string(prefix + std::to_string(layer) + std::string("__") + std::to_string(coordinate.x()) +
                      std::string("__") + std::to_string(coordinate.y()) +
                      std::string("_"));
 }

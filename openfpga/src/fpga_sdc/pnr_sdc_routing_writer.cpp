@@ -128,7 +128,7 @@ static void print_pnr_sdc_constrain_sb_timing(
   const PnrSdcOption& options, const std::string& module_path,
   const ModuleManager& module_manager,
   const VprDeviceAnnotation& device_annotation, const DeviceGrid& grids,
-  const RRGraphView& rr_graph, const RRGSB& rr_gsb) {
+  const RRGraphView& rr_graph, const RRGSB& rr_gsb, const size_t& layer) {
   std::string sdc_dir = options.sdc_dir();
   float time_unit = options.time_unit();
   bool hierarchical = options.hierarchical();
@@ -138,7 +138,7 @@ static void print_pnr_sdc_constrain_sb_timing(
   /* Create the file name for Verilog netlist */
   vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
   std::string sdc_fname(sdc_dir +
-                        generate_switch_block_module_name(gsb_coordinate) +
+                        generate_switch_block_module_name(gsb_coordinate, layer) +
                         std::string(SDC_FILE_NAME_POSTFIX));
 
   /* Create the file stream */
@@ -149,7 +149,7 @@ static void print_pnr_sdc_constrain_sb_timing(
   check_file_stream(sdc_fname.c_str(), fp);
 
   std::string sb_module_name =
-    generate_switch_block_module_name(gsb_coordinate);
+    generate_switch_block_module_name(gsb_coordinate, layer);
   ModuleId sb_module = module_manager.find_module(sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
 
@@ -207,26 +207,29 @@ void print_pnr_sdc_flatten_routing_constrain_sb_timing(
 
   /* Get the range of SB array */
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
   /* Go for each SB */
-  for (size_t ix = 0; ix < sb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < sb_range.y(); ++iy) {
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      if (false == rr_gsb.is_sb_exist(rr_graph)) {
-        continue;
+  for (size_t ilayer = 0; ilayer < num_layers; ++ilayer) {
+    for (size_t ix = 0; ix < sb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < sb_range.y(); ++iy) {
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        if (false == rr_gsb.is_sb_exist(rr_graph)) {
+          continue;
+        }
+
+        vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
+        std::string sb_instance_name =
+          generate_switch_block_module_name(gsb_coordinate, ilayer);
+
+        ModuleId sb_module = module_manager.find_module(sb_instance_name);
+        VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
+
+        std::string module_path = format_dir_path(root_path) + sb_instance_name;
+
+        print_pnr_sdc_constrain_sb_timing(options, module_path, module_manager,
+                                          device_annotation, grids, rr_graph,
+                                          rr_gsb, ilayer);
       }
-
-      vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
-      std::string sb_instance_name =
-        generate_switch_block_module_name(gsb_coordinate);
-
-      ModuleId sb_module = module_manager.find_module(sb_instance_name);
-      VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
-
-      std::string module_path = format_dir_path(root_path) + sb_instance_name;
-
-      print_pnr_sdc_constrain_sb_timing(options, module_path, module_manager,
-                                        device_annotation, grids, rr_graph,
-                                        rr_gsb);
     }
   }
 }
@@ -248,6 +251,7 @@ void print_pnr_sdc_compact_routing_constrain_sb_timing(
 
   for (size_t isb = 0; isb < device_rr_gsb.get_num_sb_unique_module(); ++isb) {
     const RRGSB& rr_gsb = device_rr_gsb.get_sb_unique_module(isb);
+    const size_t& layer = device_rr_gsb.get_sb_unique_module_layer(isb);
     if (false == rr_gsb.is_sb_exist(rr_graph)) {
       continue;
     }
@@ -257,7 +261,7 @@ void print_pnr_sdc_compact_routing_constrain_sb_timing(
      */
     vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
     std::string sb_module_name =
-      generate_switch_block_module_name(gsb_coordinate);
+      generate_switch_block_module_name(gsb_coordinate, layer);
 
     ModuleId sb_module = module_manager.find_module(sb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
@@ -266,7 +270,7 @@ void print_pnr_sdc_compact_routing_constrain_sb_timing(
 
     print_pnr_sdc_constrain_sb_timing(options, module_path, module_manager,
                                       device_annotation, grids, rr_graph,
-                                      rr_gsb);
+                                      rr_gsb, layer);
   }
 }
 
@@ -373,7 +377,7 @@ static void print_pnr_sdc_constrain_cb_timing(
   const PnrSdcOption& options, const std::string& module_path,
   const ModuleManager& module_manager,
   const VprDeviceAnnotation& device_annotation, const DeviceGrid& grids,
-  const RRGraphView& rr_graph, const RRGSB& rr_gsb, const t_rr_type& cb_type) {
+  const RRGraphView& rr_graph, const RRGSB& rr_gsb, const t_rr_type& cb_type, const size_t& layer) {
   std::string sdc_dir = options.sdc_dir();
   float time_unit = options.time_unit();
   bool include_time_stamp = options.time_stamp();
@@ -386,7 +390,7 @@ static void print_pnr_sdc_constrain_cb_timing(
 
   /* Find the module name and create a SDC file for it */
   std::string sdc_fname(
-    sdc_dir + generate_connection_block_module_name(cb_type, gsb_coordinate) +
+    sdc_dir + generate_connection_block_module_name(cb_type, gsb_coordinate, layer) +
     std::string(SDC_FILE_NAME_POSTFIX));
 
   /* Create the file stream */
@@ -397,7 +401,7 @@ static void print_pnr_sdc_constrain_cb_timing(
   check_file_stream(sdc_fname.c_str(), fp);
 
   std::string cb_module_name =
-    generate_connection_block_module_name(cb_type, gsb_coordinate);
+    generate_connection_block_module_name(cb_type, gsb_coordinate, layer);
   ModuleId cb_module = module_manager.find_module(cb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
 
@@ -496,35 +500,37 @@ static void print_pnr_sdc_flatten_routing_constrain_cb_timing(
   const DeviceRRGSB& device_rr_gsb, const t_rr_type& cb_type) {
   /* Build unique X-direction connection block modules */
   vtr::Point<size_t> cb_range = device_rr_gsb.get_gsb_range();
-
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
   std::string root_path = module_manager.module_name(top_module);
 
-  for (size_t ix = 0; ix < cb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < cb_range.y(); ++iy) {
-      /* Check if the connection block exists in the device!
-       * Some of them do NOT exist due to heterogeneous blocks (height > 1)
-       * We will skip those modules
-       */
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      if (false == rr_gsb.is_cb_exist(cb_type)) {
-        continue;
+  for (size_t ilayer = 0; ilayer < num_layers; ++ilayer) {
+    for (size_t ix = 0; ix < cb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < cb_range.y(); ++iy) {
+        /* Check if the connection block exists in the device!
+        * Some of them do NOT exist due to heterogeneous blocks (height > 1)
+        * We will skip those modules
+        */
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        if (false == rr_gsb.is_cb_exist(cb_type)) {
+          continue;
+        }
+
+        /* Find all the cb instance under this module
+        * Create a regular expression to include these instance names
+        */
+        vtr::Point<size_t> gsb_coordinate(rr_gsb.get_cb_x(cb_type),
+                                          rr_gsb.get_cb_y(cb_type));
+        std::string cb_instance_name =
+          generate_connection_block_module_name(cb_type, gsb_coordinate, ilayer);
+        ModuleId cb_module = module_manager.find_module(cb_instance_name);
+        VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
+
+        std::string module_path = format_dir_path(root_path) + cb_instance_name;
+
+        print_pnr_sdc_constrain_cb_timing(options, module_path, module_manager,
+                                          device_annotation, grids, rr_graph,
+                                          rr_gsb, cb_type, ilayer);
       }
-
-      /* Find all the cb instance under this module
-       * Create a regular expression to include these instance names
-       */
-      vtr::Point<size_t> gsb_coordinate(rr_gsb.get_cb_x(cb_type),
-                                        rr_gsb.get_cb_y(cb_type));
-      std::string cb_instance_name =
-        generate_connection_block_module_name(cb_type, gsb_coordinate);
-      ModuleId cb_module = module_manager.find_module(cb_instance_name);
-      VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
-
-      std::string module_path = format_dir_path(root_path) + cb_instance_name;
-
-      print_pnr_sdc_constrain_cb_timing(options, module_path, module_manager,
-                                        device_annotation, grids, rr_graph,
-                                        rr_gsb, cb_type);
     }
   }
 }
@@ -570,6 +576,7 @@ void print_pnr_sdc_compact_routing_constrain_cb_timing(
   for (size_t icb = 0; icb < device_rr_gsb.get_num_cb_unique_module(CHANX);
        ++icb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_cb_unique_module(CHANX, icb);
+    const size_t& unique_layer = device_rr_gsb.get_cb_unique_module_layer(CHANX, icb);
 
     /* Find all the cb instance under this module
      * Create a regular expression to include these instance names
@@ -577,7 +584,7 @@ void print_pnr_sdc_compact_routing_constrain_cb_timing(
     vtr::Point<size_t> gsb_coordinate(unique_mirror.get_cb_x(CHANX),
                                       unique_mirror.get_cb_y(CHANX));
     std::string cb_module_name =
-      generate_connection_block_module_name(CHANX, gsb_coordinate);
+      generate_connection_block_module_name(CHANX, gsb_coordinate, unique_layer);
     ModuleId cb_module = module_manager.find_module(cb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
 
@@ -585,13 +592,14 @@ void print_pnr_sdc_compact_routing_constrain_cb_timing(
 
     print_pnr_sdc_constrain_cb_timing(options, module_path, module_manager,
                                       device_annotation, grids, rr_graph,
-                                      unique_mirror, CHANX);
+                                      unique_mirror, CHANX, unique_layer);
   }
 
   /* Print SDC for unique Y-direction connection block modules */
   for (size_t icb = 0; icb < device_rr_gsb.get_num_cb_unique_module(CHANY);
        ++icb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_cb_unique_module(CHANY, icb);
+    const size_t& unique_layer = device_rr_gsb.get_cb_unique_module_layer(CHANY, icb);
 
     /* Find all the cb instance under this module
      * Create a regular expression to include these instance names
@@ -599,7 +607,7 @@ void print_pnr_sdc_compact_routing_constrain_cb_timing(
     vtr::Point<size_t> gsb_coordinate(unique_mirror.get_cb_x(CHANY),
                                       unique_mirror.get_cb_y(CHANY));
     std::string cb_module_name =
-      generate_connection_block_module_name(CHANY, gsb_coordinate);
+      generate_connection_block_module_name(CHANY, gsb_coordinate, unique_layer);
     ModuleId cb_module = module_manager.find_module(cb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
 
@@ -607,7 +615,7 @@ void print_pnr_sdc_compact_routing_constrain_cb_timing(
 
     print_pnr_sdc_constrain_cb_timing(options, module_path, module_manager,
                                       device_annotation, grids, rr_graph,
-                                      unique_mirror, CHANY);
+                                      unique_mirror, CHANY, unique_layer);
   }
 }
 
