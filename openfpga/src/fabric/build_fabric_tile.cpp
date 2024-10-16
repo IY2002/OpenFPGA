@@ -350,7 +350,7 @@ int build_fabric_tile(FabricTile& fabric_tile, const TileConfig& tile_config,
   max_grid_coord.layer = grids.get_num_layers();
   fabric_tile.init(max_grid_coord);
 
-  for (size_t layer = 0; layer < grids.get_num_layers(); ++layer) {  
+  for (size_t layer = 0; layer < (size_t) grids.get_num_layers(); ++layer) {  
     /* Depending on the selected style, follow different approaches */
     if (tile_config.style() == TileConfig::e_style::TOP_LEFT) {
       status_code = build_fabric_tile_style_top_left(
