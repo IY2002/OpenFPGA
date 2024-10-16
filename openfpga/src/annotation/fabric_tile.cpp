@@ -413,163 +413,198 @@ void FabricTile::init(const PointWithLayer& max_coord) {
 
 bool FabricTile::register_tile_in_lookup(const FabricTileId& tile_id,
                                          const PointWithLayer& coord) {
-  if (coord.x() >= tile_coord2id_lookup_.size()) {
+  if (coord.layer >= tile_coord2id_lookup_.size()) {
+    VTR_LOG_ERROR(
+      "Fast look-up has not been re-allocated properly! Given layer='%lu' exceeds "
+      "the upper-bound '%lu'!\n",
+      coord.layer, tile_coord2id_lookup_.size());
+    return false;
+  }
+  if (coord.coordinates.x() >= tile_coord2id_lookup_[coord.layer].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.x(), tile_coord2id_lookup_.size());
+      coord.coordinates.x(), tile_coord2id_lookup_[coord.layer].size());
     return false;
   }
-  if (coord.y() >= tile_coord2id_lookup_[coord.x()].size()) {
+  if (coord.coordinates.y() >= tile_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given y='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.y(), tile_coord2id_lookup_[coord.x()].size());
+      coord.coordinates.y(), tile_coord2id_lookup_[coord.layer][coord.coordinates.x()].size());
     return false;
   }
   /* Throw error if this coord is already registered! */
-  if (tile_coord2id_lookup_[coord.x()][coord.y()]) {
-    VTR_LOG_ERROR("Tile at [%lu][%lu] has already been registered!\n",
-                  coord.x(), coord.y());
+  if (tile_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()]) {
+    VTR_LOG_ERROR("Tile at [%lu][%lu][%lu] has already been registered!\n",
+                  coord.layer, coord.coordinates.x(), coord.coordinates.y());
     return false;
   }
-  tile_coord2id_lookup_[coord.x()][coord.y()] = tile_id;
+  tile_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = tile_id;
 
   return true;
 }
 
 bool FabricTile::register_pb_in_lookup(const FabricTileId& tile_id,
                                        const PointWithLayer& coord) {
-  if (coord.x() >= pb_coord2id_lookup_.size()) {
+  if (coord.layer >= pb_coord2id_lookup_.size()) {
+    VTR_LOG_ERROR(
+      "Fast look-up has not been re-allocated properly! Given layer='%lu' exceeds "
+      "the upper-bound '%lu'!\n",
+      coord.layer, pb_coord2id_lookup_.size());
+    return false;
+  }
+  if (coord.coordinates.x() >= pb_coord2id_lookup_[coord.layer].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.x(), pb_coord2id_lookup_.size());
+      coord.coordinates.x(), pb_coord2id_lookup_[coord.layer].size());
     return false;
   }
-  if (coord.y() >= pb_coord2id_lookup_[coord.x()].size()) {
+  if (coord.coordinates.y() >= pb_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given y='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.y(), pb_coord2id_lookup_[coord.x()].size());
+      coord.coordinates.y(), pb_coord2id_lookup_[coord.layer][coord.coordinates.x()].size());
     return false;
   }
   /* Throw error if this coord is already registered! */
-  if (pb_coord2id_lookup_[coord.x()][coord.y()] &&
-      pb_coord2id_lookup_[coord.x()][coord.y()] != tile_id) {
+  if (pb_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] &&
+      pb_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] != tile_id) {
     VTR_LOG_ERROR(
-      "Programmable block at [%lu][%lu] has already been registered!\n",
-      coord.x(), coord.y());
+      "Programmable block at [%lu][%lu][%lu] has already been registered!\n",
+      coord.layer, coord.coordinates.x(), coord.coordinates.y());
     return false;
   }
-  pb_coord2id_lookup_[coord.x()][coord.y()] = tile_id;
+  pb_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = tile_id;
 
   return true;
 }
 
 bool FabricTile::register_cbx_in_lookup(const FabricTileId& tile_id,
                                         const PointWithLayer& coord) {
-  if (coord.x() >= cbx_coord2id_lookup_.size()) {
+  if (coord.layer >= cbx_coord2id_lookup_.size()) {
+    VTR_LOG_ERROR(
+      "Fast look-up has not been re-allocated properly! Given layer='%lu' exceeds "
+      "the upper-bound '%lu'!\n",
+      coord.layer, cbx_coord2id_lookup_.size());
+    return false;
+  }
+  if (coord.coordinates.x() >= cbx_coord2id_lookup_[coord.layer].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.x(), cbx_coord2id_lookup_.size());
+      coord.coordinates.x(), cbx_coord2id_lookup_[coord.layer].size());
     return false;
   }
-  if (coord.y() >= cbx_coord2id_lookup_[coord.x()].size()) {
+  if (coord.coordinates.y() >= cbx_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given y='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.y(), cbx_coord2id_lookup_[coord.x()].size());
+      coord.coordinates.y(), cbx_coord2id_lookup_[coord.layer][coord.coordinates.x()].size());
     return false;
   }
   /* Throw error if this coord is already registered! */
-  if (cbx_coord2id_lookup_[coord.x()][coord.y()]) {
+  if (cbx_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()]) {
     VTR_LOG_ERROR(
-      "X-direction connection block at [%lu][%lu] has already been "
+      "X-direction connection block at [%lu][%lu][%lu] has already been "
       "registered!\n",
-      coord.x(), coord.y());
+      coord.layer, coord.coordinates.x(), coord.coordinates.y());
     return false;
   }
-  cbx_coord2id_lookup_[coord.x()][coord.y()] = tile_id;
+  cbx_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = tile_id;
 
   return true;
 }
 
 bool FabricTile::register_cby_in_lookup(const FabricTileId& tile_id,
                                         const PointWithLayer& coord) {
-  if (coord.x() >= cby_coord2id_lookup_.size()) {
+  if (coord.layer >= cby_coord2id_lookup_.size()) {
+    VTR_LOG_ERROR(
+      "Fast look-up has not been re-allocated properly! Given layer='%lu' exceeds "
+      "the upper-bound '%lu'!\n",
+      coord.layer, cby_coord2id_lookup_.size());
+    return false;
+  }
+  if (coord.coordinates.x() >= cby_coord2id_lookup_[coord.layer].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.x(), cby_coord2id_lookup_.size());
+      coord.coordinates.x(), cby_coord2id_lookup_[coord.layer].size());
     return false;
   }
-  if (coord.y() >= cby_coord2id_lookup_[coord.x()].size()) {
+  if (coord.coordinates.y() >= cby_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given y='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.y(), cby_coord2id_lookup_[coord.x()].size());
+      coord.coordinates.y(), cby_coord2id_lookup_[coord.layer][coord.coordinates.x()].size());
     return false;
   }
   /* Throw error if this coord is already registered! */
-  if (cby_coord2id_lookup_[coord.x()][coord.y()]) {
+  if (cby_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()]) {
     VTR_LOG_ERROR(
-      "Y-direction connection block at [%lu][%lu] has already been "
+      "Y-direction connection block at [%lu][%lu][%lu] has already been "
       "registered!\n",
-      coord.x(), coord.y());
+      coord.layer, coord.coordinates.x(), coord.coordinates.y());
     return false;
   }
-  cby_coord2id_lookup_[coord.x()][coord.y()] = tile_id;
+  cby_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = tile_id;
 
   return true;
 }
 
 bool FabricTile::register_sb_in_lookup(const FabricTileId& tile_id,
                                        const PointWithLayer& coord) {
-  if (coord.x() >= sb_coord2id_lookup_.size()) {
+  if (coord.layer >= sb_coord2id_lookup_.size()) {
+    VTR_LOG_ERROR(
+      "Fast look-up has not been re-allocated properly! Given layer='%lu' exceeds "
+      "the upper-bound '%lu'!\n",
+      coord.layer, sb_coord2id_lookup_.size());
+    return false;
+  }
+  if (coord.coordinates.x() >= sb_coord2id_lookup_[coord.layer].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given x='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.x(), sb_coord2id_lookup_.size());
+      coord.coordinates.x(), sb_coord2id_lookup_[coord.layer].size());
     return false;
   }
-  if (coord.y() >= sb_coord2id_lookup_[coord.x()].size()) {
+  if (coord.coordinates.y() >= sb_coord2id_lookup_[coord.layer][coord.coordinates.x()].size()) {
     VTR_LOG_ERROR(
       "Fast look-up has not been re-allocated properly! Given y='%lu' exceeds "
       "the upper-bound '%lu'!\n",
-      coord.y(), sb_coord2id_lookup_[coord.x()].size());
+      coord.coordinates.y(), sb_coord2id_lookup_[coord.layer][coord.coordinates.x()].size());
     return false;
   }
   /* Throw error if this coord is already registered! */
-  if (sb_coord2id_lookup_[coord.x()][coord.y()]) {
-    VTR_LOG_ERROR("Switch block at [%lu][%lu] has already been registered!\n",
-                  coord.x(), coord.y());
+  if (sb_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()]) {
+    VTR_LOG_ERROR("Switch block at [%lu][%lu][%lu] has already been registered!\n",
+                  coord.layer, coord.coordinates.x(), coord.coordinates.y());
     return false;
   }
-  sb_coord2id_lookup_[coord.x()][coord.y()] = tile_id;
+  sb_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = tile_id;
 
   return true;
 }
 
 void FabricTile::invalidate_tile_in_lookup(const PointWithLayer& coord) {
-  tile_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
+  tile_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = FabricTileId::INVALID();
 }
 
 void FabricTile::invalidate_pb_in_lookup(const PointWithLayer& coord) {
-  pb_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
+  pb_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = FabricTileId::INVALID();
 }
 
 void FabricTile::invalidate_cbx_in_lookup(const PointWithLayer& coord) {
-  cbx_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
+  cbx_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = FabricTileId::INVALID();
 }
 
 void FabricTile::invalidate_cby_in_lookup(const PointWithLayer& coord) {
-  cby_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
+  cby_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = FabricTileId::INVALID();
 }
 
 void FabricTile::invalidate_sb_in_lookup(const PointWithLayer& coord) {
-  sb_coord2id_lookup_[coord.x()][coord.y()] = FabricTileId::INVALID();
+  sb_coord2id_lookup_[coord.layer][coord.coordinates.x()][coord.coordinates.y()] = FabricTileId::INVALID();
 }
 
 bool FabricTile::set_tile_coordinate(const FabricTileId& tile_id,
@@ -587,7 +622,10 @@ int FabricTile::add_pb_coordinate(const FabricTileId& tile_id,
                                   const PointWithLayer& coord,
                                   const PointWithLayer& gsb_coord) {
   VTR_ASSERT(valid_tile_id(tile_id));
-  pb_coords_[tile_id].push_back(vtr::Rect<size_t>(coord, coord));
+  RectWithLayer new_pb_coord;
+  new_pb_coord.layer = coord.layer;
+  new_pb_coord.coordinates = vtr::Rect<size_t>(coord.coordinates, coord.coordinates);
+  pb_coords_[tile_id].push_back(new_pb_coord);
   pb_gsb_coords_[tile_id].push_back(gsb_coord);
   /* Register in fast look-up */
   return register_pb_in_lookup(tile_id, coord);
@@ -600,31 +638,42 @@ int FabricTile::set_pb_max_coordinate(const FabricTileId& tile_id,
   if (pb_index >= pb_coords_[tile_id].size()) {
     VTR_LOG_ERROR(
       "Invalid pb_index '%lu' is out of range of programmable block list "
-      "(size='%lu') of tile[%lu][%lu]!\n",
-      pb_index, pb_coords_[tile_id].size(), tile_coordinate(tile_id).x(),
-      tile_coordinate(tile_id).y());
+      "(size='%lu') of tile [%lu][%lu][%lu]!\n",
+      pb_index, pb_coords_[tile_id].size(), 
+      tile_coordinate(tile_id).layer,
+      tile_coordinate(tile_id).coordinates.x(),
+      tile_coordinate(tile_id).coordinates.y());
     return CMD_EXEC_FATAL_ERROR;
   }
-  if (max_coord.x() < pb_coords_[tile_id][pb_index].xmin() ||
-      max_coord.y() < pb_coords_[tile_id][pb_index].ymin()) {
+  if (max_coord.layer != pb_coords_[tile_id][pb_index].layer ||
+      max_coord.coordinates.x() < pb_coords_[tile_id][pb_index].coordinates.xmin() ||
+      max_coord.coordinates.y() < pb_coords_[tile_id][pb_index].coordinates.ymin()) {
     VTR_LOG_ERROR(
-      "Invalid max. coordinate (%lu, %lu) is out of range of programmable "
-      "block list (%lu, %lu) <-> (%lu, %lu) of tile[%lu][%lu]!\n",
-      max_coord.x(), max_coord.y(), pb_coords_[tile_id][pb_index].xmin(),
-      pb_coords_[tile_id][pb_index].ymin(),
-      pb_coords_[tile_id][pb_index].xmax(),
-      pb_coords_[tile_id][pb_index].ymax(), tile_coordinate(tile_id).x(),
-      tile_coordinate(tile_id).y());
+      "Invalid max. coordinate (%lu, %lu, %lu) is out of range of programmable "
+      "block list (%lu, %lu, %lu) <-> (%lu, %lu, %lu) of tile [%lu][%lu][%lu]!\n",
+      max_coord.layer, max_coord.coordinates.x(), max_coord.coordinates.y(), 
+      pb_coords_[tile_id][pb_index].layer,
+      pb_coords_[tile_id][pb_index].coordinates.xmin(),
+      pb_coords_[tile_id][pb_index].coordinates.ymin(),
+      pb_coords_[tile_id][pb_index].layer,
+      pb_coords_[tile_id][pb_index].coordinates.xmax(),
+      pb_coords_[tile_id][pb_index].coordinates.ymax(), 
+      tile_coordinate(tile_id).layer,
+      tile_coordinate(tile_id).coordinates.x(),
+      tile_coordinate(tile_id).coordinates.y());
     return CMD_EXEC_FATAL_ERROR;
   }
-  pb_coords_[tile_id][pb_index].set_xmax(max_coord.x());
-  pb_coords_[tile_id][pb_index].set_ymax(max_coord.y());
+  pb_coords_[tile_id][pb_index].coordinates.set_xmax(max_coord.coordinates.x());
+  pb_coords_[tile_id][pb_index].coordinates.set_ymax(max_coord.coordinates.y());
   /* Update fast lookup */
-  for (size_t ix = pb_coords_[tile_id][pb_index].xmin();
-       ix <= pb_coords_[tile_id][pb_index].xmax(); ++ix) {
-    for (size_t iy = pb_coords_[tile_id][pb_index].ymin();
-         iy <= pb_coords_[tile_id][pb_index].ymax(); ++iy) {
-      register_pb_in_lookup(tile_id, PointWithLayer(ix, iy));
+  for (size_t ix = pb_coords_[tile_id][pb_index].coordinates.xmin();
+       ix <= pb_coords_[tile_id][pb_index].coordinates.xmax(); ++ix) {
+    for (size_t iy = pb_coords_[tile_id][pb_index].coordinates.ymin(); 
+         iy <= pb_coords_[tile_id][pb_index].coordinates.ymax(); ++iy) {
+      PointWithLayer new_point;
+      new_point.layer = max_coord.layer;
+      new_point.coordinates = vtr::Point<size_t>(ix, iy);
+      register_pb_in_lookup(tile_id, new_point);
     }
   }
   return CMD_EXEC_SUCCESS;
@@ -690,37 +739,48 @@ bool FabricTile::equivalent_tile(const FabricTileId& tile_a,
       sb_coords_[tile_a].size() != sb_coords_[tile_b].size()) {
     return false;
   }
+
   /* The pb of two tiles should be the same, otherwise not equivalent */
   for (size_t iblk = 0; iblk < pb_coords_[tile_a].size(); ++iblk) {
-    PointWithLayer tile_a_pb_coord = pb_coords_[tile_a][iblk].bottom_left();
-    PointWithLayer tile_b_pb_coord = pb_coords_[tile_b][iblk].bottom_left();
+    vtr::Point<size_t> tile_a_pb_coord = pb_coords_[tile_a][iblk].coordinates.bottom_left();
+    vtr::Point<size_t> tile_b_pb_coord = pb_coords_[tile_b][iblk].coordinates.bottom_left();
+    
+    PointWithLayer tile_a_point;
+    tile_a_point.layer = pb_coords_[tile_a][iblk].layer;
+    tile_a_point.coordinates = tile_a_pb_coord;
+
+    PointWithLayer tile_b_point;
+    tile_b_point.layer = pb_coords_[tile_b][iblk].layer;
+    tile_b_point.coordinates = tile_b_pb_coord;
+
     if (generate_grid_block_module_name_in_top_module(std::string(), grids,
-                                                      tile_a_pb_coord) !=
+                                                      tile_a_point.coordinates, tile_a_point.layer) !=
         generate_grid_block_module_name_in_top_module(std::string(), grids,
-                                                      tile_b_pb_coord)) {
+                                                      tile_b_point.coordinates, tile_b_point.layer)) {
       return false;
     }
   }
+
   /* Each CBx should have the same unique modules in the device rr_gsb */
   for (size_t iblk = 0; iblk < cbx_coords_[tile_a].size(); ++iblk) {
     if (device_rr_gsb.get_cb_unique_module_index(CHANX,
-                                                 cbx_coords_[tile_a][iblk]) !=
+                                                 cbx_coords_[tile_a][iblk].coordinates, cbx_coords_[tile_a][iblk].layer) !=
         device_rr_gsb.get_cb_unique_module_index(CHANX,
-                                                 cbx_coords_[tile_b][iblk])) {
+                                                 cbx_coords_[tile_b][iblk].coordinates, cbx_coords_[tile_b][iblk].layer)) {
       return false;
     }
   }
   for (size_t iblk = 0; iblk < cby_coords_[tile_a].size(); ++iblk) {
     if (device_rr_gsb.get_cb_unique_module_index(CHANY,
-                                                 cby_coords_[tile_a][iblk]) !=
+                                                 cby_coords_[tile_a][iblk].coordinates, cby_coords_[tile_a][iblk].layer) !=
         device_rr_gsb.get_cb_unique_module_index(CHANY,
-                                                 cby_coords_[tile_b][iblk])) {
+                                                 cby_coords_[tile_b][iblk].coordinates, cby_coords_[tile_b][iblk].layer)) {
       return false;
     }
   }
   for (size_t iblk = 0; iblk < sb_coords_[tile_a].size(); ++iblk) {
-    if (device_rr_gsb.get_sb_unique_module_index(sb_coords_[tile_a][iblk]) !=
-        device_rr_gsb.get_sb_unique_module_index(sb_coords_[tile_b][iblk])) {
+    if (device_rr_gsb.get_sb_unique_module_index(sb_coords_[tile_a][iblk].coordinates, sb_coords_[tile_a][iblk].layer) !=
+        device_rr_gsb.get_sb_unique_module_index(sb_coords_[tile_b][iblk].coordinates, sb_coords_[tile_b][iblk].layer)) {
       return false;
     }
   }
@@ -730,33 +790,37 @@ bool FabricTile::equivalent_tile(const FabricTileId& tile_a,
 int FabricTile::build_unique_tiles(const DeviceGrid& grids,
                                    const DeviceRRGSB& device_rr_gsb,
                                    const bool& verbose) {
-  for (size_t ix = 0; ix < grids.width(); ++ix) {
-    for (size_t iy = 0; iy < grids.height(); ++iy) {
-      if (!valid_tile_id(tile_coord2id_lookup_[ix][iy])) {
-        continue; /* Skip invalid tile (which does not exist) */
-      }
-      bool is_unique_tile = true;
-      for (FabricTileId unique_tile_id : unique_tile_ids_) {
-        if (equivalent_tile(tile_coord2id_lookup_[ix][iy], unique_tile_id,
-                            grids, device_rr_gsb)) {
-          VTR_LOGV(verbose,
-                   "Tile[%lu][%lu] is a mirror to the unique tile[%lu][%lu]\n",
-                   ix, iy, tile_coordinate(unique_tile_id).x(),
-                   tile_coordinate(unique_tile_id).y());
-          is_unique_tile = false;
-          tile_coord2unique_tile_ids_[ix][iy] = unique_tile_id;
-          break;
+  for (size_t ilayer = 0; ilayer < grids.get_num_layers(); ++ilayer) {
+    for (size_t ix = 0; ix < grids.width(); ++ix) {
+      for (size_t iy = 0; iy < grids.height(); ++iy) {
+        if (!valid_tile_id(tile_coord2id_lookup_[ilayer][ix][iy])) {
+          continue; /* Skip invalid tile (which does not exist) */
+        }
+        bool is_unique_tile = true;
+        for (FabricTileId unique_tile_id : unique_tile_ids_) {
+          if (equivalent_tile(tile_coord2id_lookup_[ilayer][ix][iy], unique_tile_id,
+                              grids, device_rr_gsb)) {
+            VTR_LOGV(verbose,
+                    "Tile [%lu][%lu][%lu] is a mirror to the unique tile [%lu][%lu][%lu]\n",
+                    ilayer, ix, iy, 
+                    tile_coordinate(unique_tile_id).layer,
+                    tile_coordinate(unique_tile_id).coordinates.x(),
+                    tile_coordinate(unique_tile_id).coordinates.y());
+            is_unique_tile = false;
+            tile_coord2unique_tile_ids_[ilayer][ix][iy] = unique_tile_id;
+            break;
+          }
+        }
+        /* Update list if this is a unique tile */
+        if (is_unique_tile) {
+          VTR_LOGV(verbose, "Tile [%lu][%lu][%lu] is added as a new unique tile\n", 
+                   ilayer, ix, iy);
+          unique_tile_ids_.push_back(tile_coord2id_lookup_[ilayer][ix][iy]);
+          tile_coord2unique_tile_ids_[ilayer][ix][iy] = tile_coord2id_lookup_[ilayer][ix][iy];
         }
       }
-      /* Update list if this is a unique tile */
-      if (is_unique_tile) {
-        VTR_LOGV(verbose, "Tile[%lu][%lu] is added as a new unique tile\n", ix,
-                 iy);
-        unique_tile_ids_.push_back(tile_coord2id_lookup_[ix][iy]);
-        tile_coord2unique_tile_ids_[ix][iy] = tile_coord2id_lookup_[ix][iy];
-      }
     }
-  }
+    }
   return 0;
 }
 
