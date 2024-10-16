@@ -85,19 +85,19 @@ static int build_tile_module_port_and_nets_between_sb_and_pb(
    * CB, which is added to the top module */
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
-    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord);
+    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord, layer);
     module_gsb_coordinate.set_x(unique_mirror.get_x());
     module_gsb_coordinate.set_y(unique_mirror.get_y());
   }
 
   /* This is the source cb that is added to the top module */
-  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_coordinate);
+  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_coordinate, layer);
   vtr::Point<size_t> module_sb_coordinate(module_sb.get_sb_x(),
                                           module_sb.get_sb_y());
 
   /* Collect sink-related information */
   std::string sink_sb_module_name =
-    generate_switch_block_module_name(module_sb_coordinate);
+    generate_switch_block_module_name(module_sb_coordinate, layer);
   ModuleId sink_sb_module = module_manager.find_module(sink_sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sink_sb_module));
   size_t sink_sb_instance = sb_instance;
@@ -118,7 +118,7 @@ static int build_tile_module_port_and_nets_between_sb_and_pb(
           rr_gsb.get_opin_node(side_manager.get_side(), inode)));
       std::string src_grid_module_name =
         generate_grid_block_module_name_in_top_module(
-          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate);
+          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate, layer);
       ModuleId src_grid_module =
         module_manager.find_module(src_grid_module_name);
       VTR_ASSERT(true == module_manager.valid_module_id(src_grid_module));
@@ -170,17 +170,20 @@ static int build_tile_module_port_and_nets_between_sb_and_pb(
       BasicPort sink_sb_port =
         module_manager.module_port(sink_sb_module, sink_sb_port_id);
 
+      PointWithLayer grid_coordinate_with_layer;
+      grid_coordinate_with_layer.coordinates = grid_coordinate;
+      grid_coordinate_with_layer.layer = layer;
       /* Check if the grid is inside the tile, if not, create ports */
-      if (fabric_tile.pb_in_tile(fabric_tile_id, grid_coordinate)) {
+      if (fabric_tile.pb_in_tile(fabric_tile_id, grid_coordinate_with_layer)) {
         VTR_LOGV(verbose,
                  "Build intra-tile nets between switch block '%s' and "
-                 "programmable block '%s[%lu][%lu]'\n",
+                 "programmable block '%s[%lu][%lu][%lu]'\n",
                  sink_sb_module_name.c_str(), src_grid_module_name.c_str(),
-                 grid_coordinate.x(), grid_coordinate.y());
+                 layer, grid_coordinate.x(), grid_coordinate.y());
         if (!frame_view) {
           size_t src_grid_instance =
             pb_instances[fabric_tile.find_pb_index_in_tile(fabric_tile_id,
-                                                           grid_coordinate)];
+                                                           grid_coordinate_with_layer)];
 
           /* Source and sink port should match in size */
           VTR_ASSERT(src_grid_port.get_width() == sink_sb_port.get_width());
@@ -201,7 +204,7 @@ static int build_tile_module_port_and_nets_between_sb_and_pb(
         /* Create a port on the tile module and create the net if required.
          * Create a proper name to avoid naming conflicts */
         std::string temp_sb_module_name = generate_switch_block_module_name(
-          fabric_tile.sb_coordinates(fabric_tile_id)[isb]);
+          fabric_tile.sb_coordinates(fabric_tile_id)[isb].coordinates, layer);
         if (name_module_using_index) {
           temp_sb_module_name =
             generate_switch_block_module_name_using_index(isb);
@@ -328,19 +331,19 @@ static int build_tile_module_port_and_nets_between_cb_and_pb(
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
     const RRGSB& unique_mirror =
-      device_rr_gsb.get_cb_unique_module(cb_type, gsb_coord);
+      device_rr_gsb.get_cb_unique_module(cb_type, gsb_coord, layer);
     module_gsb_coordinate.set_x(unique_mirror.get_x());
     module_gsb_coordinate.set_y(unique_mirror.get_y());
   }
 
   /* This is the source cb that is added to the top module */
-  const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_coordinate);
+  const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_coordinate, layer);
   vtr::Point<size_t> module_cb_coordinate(module_cb.get_cb_x(cb_type),
                                           module_cb.get_cb_y(cb_type));
 
   /* Collect source-related information */
   std::string src_cb_module_name =
-    generate_connection_block_module_name(cb_type, module_cb_coordinate);
+    generate_connection_block_module_name(cb_type, module_cb_coordinate, layer);
   ModuleId src_cb_module = module_manager.find_module(src_cb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(src_cb_module));
   /* Instance id should follow the instance cb coordinate */
@@ -376,7 +379,7 @@ static int build_tile_module_port_and_nets_between_cb_and_pb(
         rr_graph.node_ylow(instance_ipin_node));
       std::string sink_grid_module_name =
         generate_grid_block_module_name_in_top_module(
-          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate);
+          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate, layer);
       ModuleId sink_grid_module =
         module_manager.find_module(sink_grid_module_name);
       VTR_ASSERT(true == module_manager.valid_module_id(sink_grid_module));
@@ -408,12 +411,15 @@ static int build_tile_module_port_and_nets_between_cb_and_pb(
       BasicPort sink_grid_port =
         module_manager.module_port(sink_grid_module, sink_grid_port_id);
 
+      PointWithLayer grid_coordinate_with_layer;
+      grid_coordinate_with_layer.coordinates = grid_coordinate;
+      grid_coordinate_with_layer.layer = layer;
       /* Check if the grid is inside the tile, if not, create ports */
-      if (fabric_tile.pb_in_tile(fabric_tile_id, grid_coordinate)) {
+      if (fabric_tile.pb_in_tile(fabric_tile_id, grid_coordinate_with_layer)) {
         if (!frame_view) {
           size_t sink_grid_instance =
             pb_instances[fabric_tile.find_pb_index_in_tile(fabric_tile_id,
-                                                           grid_coordinate)];
+                                                           grid_coordinate_with_layer)];
 
           /* Source and sink port should match in size */
           VTR_ASSERT(src_cb_port.get_width() == sink_grid_port.get_width());
@@ -433,10 +439,10 @@ static int build_tile_module_port_and_nets_between_cb_and_pb(
       } else {
         /* Create a port on the tile module and create the net if required. */
         const RRGSB& cb_inst_rr_gsb = device_rr_gsb.get_gsb(
-          fabric_tile.cb_coordinates(fabric_tile_id, cb_type)[icb]);
+          fabric_tile.cb_coordinates(fabric_tile_id, cb_type)[icb].coordinates, layer);
         std::string cb_instance_name_in_tile =
           generate_connection_block_module_name(
-            cb_type, cb_inst_rr_gsb.get_cb_coordinate(cb_type));
+            cb_type, cb_inst_rr_gsb.get_cb_coordinate(cb_type), layer);
         if (name_module_using_index) {
           cb_instance_name_in_tile =
             generate_connection_block_module_name_using_index(cb_type, icb);
@@ -504,7 +510,7 @@ static int build_tile_module_port_and_nets_between_cb_and_pb(
         rr_graph.node_ylow(instance_opin_node));
       std::string sink_grid_module_name =
         generate_grid_block_module_name_in_top_module(
-          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate);
+          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate, layer);
       ModuleId sink_grid_module =
         module_manager.find_module(sink_grid_module_name);
       VTR_ASSERT(true == module_manager.valid_module_id(sink_grid_module));
@@ -536,12 +542,15 @@ static int build_tile_module_port_and_nets_between_cb_and_pb(
       BasicPort sink_grid_port =
         module_manager.module_port(sink_grid_module, sink_grid_port_id);
 
+      PointWithLayer grid_coordinate_with_layer;
+      grid_coordinate_with_layer.coordinates = grid_coordinate;
+      grid_coordinate_with_layer.layer = layer;
       /* Check if the grid is inside the tile, if not, create ports */
-      if (fabric_tile.pb_in_tile(fabric_tile_id, grid_coordinate)) {
+      if (fabric_tile.pb_in_tile(fabric_tile_id, grid_coordinate_with_layer)) {
         if (!frame_view) {
           size_t sink_grid_instance =
             pb_instances[fabric_tile.find_pb_index_in_tile(fabric_tile_id,
-                                                           grid_coordinate)];
+                                                           grid_coordinate_with_layer)];
 
           /* Source and sink port should match in size */
           VTR_ASSERT(src_cb_port.get_width() == sink_grid_port.get_width());
@@ -565,20 +574,23 @@ static int build_tile_module_port_and_nets_between_cb_and_pb(
          * new port that it is created when connecting pb and sb */
         if (!frame_view) {
           /* This is the source sb that is added to the top module */
-          const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_coordinate);
+          const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_coordinate, layer);
           vtr::Point<size_t> module_sb_coordinate(module_sb.get_sb_x(),
                                                   module_sb.get_sb_y());
 
           /* Collect sink-related information */
           std::string sink_sb_module_name =
-            generate_switch_block_module_name(module_sb_coordinate);
+            generate_switch_block_module_name(module_sb_coordinate, layer);
           ModuleId sink_sb_module =
             module_manager.find_module(sink_sb_module_name);
           VTR_ASSERT(true == module_manager.valid_module_id(sink_sb_module));
+          PointWithLayer module_sb_coordinate_with_layer;
+          module_sb_coordinate_with_layer.coordinates = module_sb_coordinate;
+          module_sb_coordinate_with_layer.layer = layer;
           size_t isb = fabric_tile.find_sb_index_in_tile(fabric_tile_id,
-                                                         module_sb_coordinate);
+                                                         module_sb_coordinate_with_layer);
           std::string temp_sb_module_name = generate_switch_block_module_name(
-            fabric_tile.sb_coordinates(fabric_tile_id)[isb]);
+            fabric_tile.sb_coordinates(fabric_tile_id)[isb].coordinates, layer);
           if (name_module_using_index) {
             temp_sb_module_name =
               generate_switch_block_module_name_using_index(isb);
@@ -673,7 +685,7 @@ static int build_tile_module_port_and_nets_between_sb_and_cb(
   const std::map<t_rr_type, std::vector<size_t>>& cb_instances,
   const std::vector<size_t>& sb_instances, const size_t& isb,
   const bool& compact_routing_hierarchy, const bool& name_module_using_index,
-  const bool& frame_view, const bool& verbose) {
+  const bool& frame_view, const bool& verbose, const size_t& layer) {
   size_t sb_instance = sb_instances[isb];
   /* We could have two different coordinators, one is the instance, the other is
    * the module */
@@ -690,17 +702,17 @@ static int build_tile_module_port_and_nets_between_sb_and_cb(
    * CB, which is added to the top module */
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
-    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord);
+    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord, layer);
     module_gsb_sb_coordinate.set_x(unique_mirror.get_x());
     module_gsb_sb_coordinate.set_y(unique_mirror.get_y());
   }
 
   /* This is the source cb that is added to the top module */
-  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_sb_coordinate);
+  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_sb_coordinate, layer);
   vtr::Point<size_t> module_sb_coordinate(module_sb.get_sb_x(),
                                           module_sb.get_sb_y());
   std::string sb_module_name =
-    generate_switch_block_module_name(module_sb_coordinate);
+    generate_switch_block_module_name(module_sb_coordinate, layer);
   ModuleId sb_module_id = module_manager.find_module(sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sb_module_id));
 
@@ -740,7 +752,7 @@ static int build_tile_module_port_and_nets_between_sb_and_cb(
 
     if (RIGHT == side_manager.get_side() || TOP == side_manager.get_side()) {
       const RRGSB& adjacent_gsb =
-        device_rr_gsb.get_gsb(module_gsb_cb_coordinate);
+        device_rr_gsb.get_gsb(module_gsb_cb_coordinate, layer);
       if (false == adjacent_gsb.is_cb_exist(cb_type)) {
         continue;
       }
@@ -750,37 +762,39 @@ static int build_tile_module_port_and_nets_between_sb_and_cb(
      * CB, which is added to the top module */
     if (true == compact_routing_hierarchy) {
       const RRGSB& unique_mirror =
-        device_rr_gsb.get_cb_unique_module(cb_type, module_gsb_cb_coordinate);
+        device_rr_gsb.get_cb_unique_module(cb_type, module_gsb_cb_coordinate, layer);
       module_gsb_cb_coordinate.set_x(unique_mirror.get_x());
       module_gsb_cb_coordinate.set_y(unique_mirror.get_y());
     }
 
-    const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_cb_coordinate);
+    const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_cb_coordinate, layer);
     vtr::Point<size_t> module_cb_coordinate(module_cb.get_cb_x(cb_type),
                                             module_cb.get_cb_y(cb_type));
     std::string cb_module_name =
-      generate_connection_block_module_name(cb_type, module_cb_coordinate);
+      generate_connection_block_module_name(cb_type, module_cb_coordinate, layer);
     ModuleId cb_module_id = module_manager.find_module(cb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(cb_module_id));
     const RRGSB& instance_cb =
-      device_rr_gsb.get_gsb(instance_gsb_cb_coordinate);
+      device_rr_gsb.get_gsb(instance_gsb_cb_coordinate, layer);
     vtr::Point<size_t> instance_cb_coordinate(instance_cb.get_cb_x(cb_type),
                                               instance_cb.get_cb_y(cb_type));
-
+    PointWithLayer instance_gsb_cb_coordinate_with_layer;
+    instance_gsb_cb_coordinate_with_layer.coordinates = instance_gsb_cb_coordinate;
+    instance_gsb_cb_coordinate_with_layer.layer = layer;
     /* Check if the grid is inside the tile, if not, create ports */
     if (fabric_tile.cb_in_tile(fabric_tile_id, cb_type,
-                               instance_gsb_cb_coordinate)) {
+                               instance_gsb_cb_coordinate_with_layer)) {
       VTR_LOGV(
         verbose,
         "Skip adding ports to tile as connection block '%s' is part of the "
         "tile along with the switch block '%s'...\n",
-        generate_connection_block_module_name(cb_type, instance_cb_coordinate)
+        generate_connection_block_module_name(cb_type, instance_cb_coordinate, layer)
           .c_str(),
         sb_module_name.c_str());
       if (!frame_view) {
         size_t cb_instance =
           cb_instances.at(cb_type)[fabric_tile.find_cb_index_in_tile(
-            fabric_tile_id, cb_type, instance_gsb_cb_coordinate)];
+            fabric_tile_id, cb_type, instance_gsb_cb_coordinate_with_layer)];
 
         for (size_t itrack = 0;
              itrack < module_sb.get_chan_width(side_manager.get_side());
@@ -858,7 +872,7 @@ static int build_tile_module_port_and_nets_between_sb_and_cb(
       BasicPort chan_input_port =
         module_manager.module_port(sb_module_id, sb_chan_input_port_id);
       std::string temp_sb_module_name = generate_switch_block_module_name(
-        fabric_tile.sb_coordinates(fabric_tile_id)[isb]);
+        fabric_tile.sb_coordinates(fabric_tile_id)[isb].coordinates, layer);
       if (name_module_using_index) {
         temp_sb_module_name =
           generate_switch_block_module_name_using_index(isb);
@@ -1044,7 +1058,7 @@ static int build_tile_module_ports_from_cb(
   const std::map<t_rr_type, std::vector<size_t>>& cb_instances,
   const size_t& icb, const bool& compact_routing_hierarchy,
   const bool& name_module_using_index, const bool& frame_view,
-  const bool& verbose) {
+  const bool& verbose, const size_t& layer) {
   int status = CMD_EXEC_SUCCESS;
 
   size_t cb_instance = cb_instances.at(cb_type)[icb];
@@ -1064,35 +1078,35 @@ static int build_tile_module_ports_from_cb(
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
     const RRGSB& unique_mirror =
-      device_rr_gsb.get_cb_unique_module(cb_type, gsb_coord);
+      device_rr_gsb.get_cb_unique_module(cb_type, gsb_coord, layer);
     module_gsb_coordinate.set_x(unique_mirror.get_x());
     module_gsb_coordinate.set_y(unique_mirror.get_y());
   }
 
   /* This is the source cb that is added to the top module */
-  const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_coordinate);
+  const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_coordinate, layer);
   vtr::Point<size_t> module_cb_coordinate(module_cb.get_cb_x(cb_type),
                                           module_cb.get_cb_y(cb_type));
 
   /* Collect source-related information */
   std::string cb_module_name =
-    generate_connection_block_module_name(cb_type, module_cb_coordinate);
+    generate_connection_block_module_name(cb_type, module_cb_coordinate, layer);
   ModuleId cb_module = module_manager.find_module(cb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
 
   /* Find the instance name for the connection block in the context of the tile
    */
   vtr::Point<size_t> cb_coord_in_unique_tile =
-    fabric_tile.cb_coordinates(curr_fabric_tile_id, cb_type)[icb];
-  const RRGSB& unique_rr_gsb = device_rr_gsb.get_gsb(cb_coord_in_unique_tile);
+    fabric_tile.cb_coordinates(curr_fabric_tile_id, cb_type)[icb].coordinates;
+  const RRGSB& unique_rr_gsb = device_rr_gsb.get_gsb(cb_coord_in_unique_tile, layer);
   std::string cb_instance_name_in_tile = generate_connection_block_module_name(
-    cb_type, unique_rr_gsb.get_cb_coordinate(cb_type));
+    cb_type, unique_rr_gsb.get_cb_coordinate(cb_type), layer);
   if (name_module_using_index) {
     cb_instance_name_in_tile =
       generate_connection_block_module_name_using_index(cb_type, icb);
   }
   vtr::Point<size_t> tile_coord =
-    fabric_tile.tile_coordinate(curr_fabric_tile_id);
+    fabric_tile.tile_coordinate(curr_fabric_tile_id).coordinates;
 
   /* Check any track input and output are unconnected in the tile */
   /* Upper input port: W/2 == 0 tracks */
@@ -1190,8 +1204,8 @@ static int build_tile_port_and_nets_from_pb(
     is_io_type(phy_tile), grid_side);
   ModuleId pb_module = module_manager.find_module(pb_module_name);
   if (!pb_module) {
-    VTR_LOG_ERROR("Failed to find pb module '%s' required by tile[%lu][%lu]!\n",
-                  pb_module_name.c_str(), pb_coord.x(), pb_coord.y());
+    VTR_LOG_ERROR("Failed to find pb module '%s' required by tile[%lu][%lu][%lu]!\n",
+                  pb_module_name.c_str(), layer, pb_coord.x(), pb_coord.y());
     return CMD_EXEC_FATAL_ERROR;
   }
 
@@ -1259,7 +1273,7 @@ static int build_tile_port_and_nets_from_pb(
           std::string pb_instance_name_in_tile =
             generate_grid_block_module_name_in_top_module(
               std::string(GRID_MODULE_NAME_PREFIX), grids,
-              fabric_tile.pb_coordinates(curr_fabric_tile_id)[ipb]);
+              fabric_tile.pb_coordinates(curr_fabric_tile_id)[ipb].coordinates, layer);
           pb_port.set_name(generate_tile_module_port_name(
             pb_instance_name_in_tile, pb_port.get_name()));
 
@@ -1347,9 +1361,9 @@ static int build_tile_port_and_nets_from_pb(
           } else {
             VTR_LOG_ERROR(
               "Expect either input or output port '%s' for pb module '%s' "
-              "required by tile[%lu][%lu]!\n",
+              "required by tile[%lu][%lu][%lu]!\n",
               pb_port.to_verilog_string().c_str(), pb_module_name.c_str(),
-              pb_coord.x(), pb_coord.y());
+              layer, pb_coord.x(), pb_coord.y());
             return CMD_EXEC_FATAL_ERROR;
           }
         }
@@ -1387,8 +1401,8 @@ static int build_tile_module_ports_and_nets(
   for (size_t isb = 0; isb < fabric_tile.sb_coordinates(fabric_tile_id).size();
        ++isb) {
     vtr::Point<size_t> sb_coord =
-      fabric_tile.sb_coordinates(fabric_tile_id)[isb];
-    const RRGSB& rr_gsb = device_rr_gsb.get_gsb(sb_coord);
+      fabric_tile.sb_coordinates(fabric_tile_id)[isb].coordinates;
+    const RRGSB& rr_gsb = device_rr_gsb.get_gsb(sb_coord, layer);
     status_code = build_tile_module_port_and_nets_between_sb_and_pb(
       module_manager, tile_module, grids, layer, vpr_device_annotation,
       device_rr_gsb, rr_graph_view, rr_gsb, fabric_tile, fabric_tile_id,
@@ -1405,8 +1419,8 @@ static int build_tile_module_ports_and_nets(
          icb < fabric_tile.cb_coordinates(fabric_tile_id, cb_type).size();
          ++icb) {
       vtr::Point<size_t> cb_coord =
-        fabric_tile.cb_coordinates(fabric_tile_id, cb_type)[icb];
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(cb_coord);
+        fabric_tile.cb_coordinates(fabric_tile_id, cb_type)[icb].coordinates;
+      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(cb_coord, layer);
       status_code = build_tile_module_port_and_nets_between_cb_and_pb(
         module_manager, tile_module, grids, layer, vpr_device_annotation,
         device_rr_gsb, rr_graph_view, rr_gsb, fabric_tile, fabric_tile_id,
@@ -1423,12 +1437,12 @@ static int build_tile_module_ports_and_nets(
   for (size_t isb = 0; isb < fabric_tile.sb_coordinates(fabric_tile_id).size();
        ++isb) {
     vtr::Point<size_t> sb_coord =
-      fabric_tile.sb_coordinates(fabric_tile_id)[isb];
-    const RRGSB& rr_gsb = device_rr_gsb.get_gsb(sb_coord);
+      fabric_tile.sb_coordinates(fabric_tile_id)[isb].coordinates;
+    const RRGSB& rr_gsb = device_rr_gsb.get_gsb(sb_coord, layer);
     status_code = build_tile_module_port_and_nets_between_sb_and_cb(
       module_manager, tile_module, device_rr_gsb, rr_graph_view, rr_gsb,
       fabric_tile, fabric_tile_id, cb_instances, sb_instances, isb, true,
-      name_module_using_index, frame_view, verbose);
+      name_module_using_index, frame_view, verbose, layer);
     if (status_code != CMD_EXEC_SUCCESS) {
       return CMD_EXEC_FATAL_ERROR;
     }
@@ -1438,7 +1452,7 @@ static int build_tile_module_ports_and_nets(
   for (size_t ipb = 0; ipb < fabric_tile.pb_coordinates(fabric_tile_id).size();
        ++ipb) {
     vtr::Point<size_t> pb_coord =
-      fabric_tile.pb_coordinates(fabric_tile_id)[ipb];
+      fabric_tile.pb_coordinates(fabric_tile_id)[ipb].coordinates;
     status_code = build_tile_port_and_nets_from_pb(
       module_manager, tile_module, grids, layer, vpr_device_annotation,
       rr_graph_view, tile_annotation, pb_coord, pb_instances, fabric_tile,
@@ -1454,14 +1468,14 @@ static int build_tile_module_ports_and_nets(
          icb < fabric_tile.cb_coordinates(fabric_tile_id, cb_type).size();
          ++icb) {
       vtr::Point<size_t> cb_coord =
-        fabric_tile.cb_coordinates(fabric_tile_id, cb_type)[icb];
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(cb_coord);
+        fabric_tile.cb_coordinates(fabric_tile_id, cb_type)[icb].coordinates;
+      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(cb_coord, layer);
 
       /* Build any ports missing from connection blocks */
       status_code = build_tile_module_ports_from_cb(
         module_manager, tile_module, device_rr_gsb, rr_gsb, fabric_tile,
         fabric_tile_id, cb_type, cb_instances, icb, true,
-        name_module_using_index, frame_view, verbose);
+        name_module_using_index, frame_view, verbose, layer);
       if (status_code != CMD_EXEC_SUCCESS) {
         return CMD_EXEC_FATAL_ERROR;
       }
@@ -1493,19 +1507,20 @@ static int build_tile_module(
   int status_code = CMD_EXEC_SUCCESS;
 
   /* Create the module */
-  vtr::Point<size_t> tile_coord = fabric_tile.tile_coordinate(fabric_tile_id);
-  std::string module_name = generate_tile_module_name(tile_coord);
+  PointWithLayer tile_coord_point = fabric_tile.tile_coordinate(fabric_tile_id);
+  std::string module_name = generate_tile_module_name(tile_coord_point.coordinates, tile_coord_point.layer);
   VTR_LOGV(verbose, "Building tile module '%s'...\n", module_name.c_str());
   ModuleId tile_module = module_manager.add_module(module_name);
 
   /* Add instance of programmable block */
   std::vector<size_t>
     pb_instances; /* Keep tracking the instance id of each pb */
-  for (vtr::Point<size_t> grid_coord :
+  for (PointWithLayer grid_coord_point :
        fabric_tile.pb_coordinates(fabric_tile_id)) {
+    vtr::Point<size_t> grid_coord = grid_coord_point.coordinates;
     t_physical_tile_type_ptr phy_tile = grids.get_physical_type(
       t_physical_tile_loc(grid_coord.x(), grid_coord.y(), layer));
-    VTR_LOGV(verbose, "Try to find pb at [%lu][%lu]\n", grid_coord.x(),
+    VTR_LOGV(verbose, "Try to find pb at [%lu][%lu][%lu]\n", layer, grid_coord.x(),
              grid_coord.y());
     /* Empty type does not require a module */
     if (!is_empty_type(phy_tile)) {
@@ -1517,8 +1532,9 @@ static int build_tile_module(
       ModuleId pb_module = module_manager.find_module(pb_module_name);
       if (!pb_module) {
         VTR_LOG_ERROR(
-          "Failed to find pb module '%s' required by tile[%lu][%lu]!\n",
-          pb_module_name.c_str(), tile_coord.x(), tile_coord.y());
+          "Failed to find pb module '%s' required by tile[%lu][%lu][%lu]!\n",
+          pb_module_name.c_str(), layer, 
+          tile_coord_point.coordinates.x(), tile_coord_point.coordinates.y());
         return CMD_EXEC_FATAL_ERROR;
       }
       size_t pb_instance = module_manager.num_instance(tile_module, pb_module);
@@ -1537,9 +1553,9 @@ static int build_tile_module(
       }
       VTR_LOGV(
         verbose,
-        "Added programmable module '%s' (instance: '%s') to tile[%lu][%lu]\n",
-        pb_module_name.c_str(), pb_instance_name.c_str(), tile_coord.x(),
-        tile_coord.y());
+        "Added programmable module '%s' (instance: '%s') to tile[%lu][%lu][%lu]\n",
+        pb_module_name.c_str(), pb_instance_name.c_str(), 
+        layer, tile_coord_point.coordinates.x(), tile_coord_point.coordinates.y());
       pb_instances.push_back(pb_instance);
       /* Add a custom I/O child with the grid */
       module_manager.add_io_child(
@@ -1552,28 +1568,29 @@ static int build_tile_module(
   std::map<t_rr_type, std::vector<size_t>>
     cb_instances; /* Keep tracking the instance id of each cb */
   for (t_rr_type cb_type : {CHANX, CHANY}) {
-    for (vtr::Point<size_t> cb_coord :
+    for (PointWithLayer cb_coord_point :
          fabric_tile.cb_coordinates(fabric_tile_id, cb_type)) {
       /* get the unique module coord */
+      vtr::Point<size_t> cb_coord = cb_coord_point.coordinates;
       const RRGSB& unique_rr_gsb =
-        device_rr_gsb.get_cb_unique_module(cb_type, cb_coord);
+        device_rr_gsb.get_cb_unique_module(cb_type, cb_coord, layer);
       vtr::Point<size_t> unique_cb_coord(unique_rr_gsb.get_cb_x(cb_type),
                                          unique_rr_gsb.get_cb_y(cb_type));
       std::string cb_module_name =
-        generate_connection_block_module_name(cb_type, unique_cb_coord);
+        generate_connection_block_module_name(cb_type, unique_cb_coord, layer);
       ModuleId cb_module = module_manager.find_module(cb_module_name);
       if (!cb_module) {
         VTR_LOG_ERROR(
           "Failed to find connection block module '%s' required by "
-          "tile[%lu][%lu]!\n",
-          cb_module_name.c_str(), tile_coord.x(), tile_coord.y());
+          "tile[%lu][%lu][%lu]!\n",
+          cb_module_name.c_str(), layer, tile_coord_point.coordinates.x(), tile_coord_point.coordinates.y());
         return CMD_EXEC_FATAL_ERROR;
       }
       size_t cb_instance = module_manager.num_instance(tile_module, cb_module);
       module_manager.add_child_module(tile_module, cb_module, false);
-      const RRGSB& inst_rr_gsb = device_rr_gsb.get_gsb(cb_coord);
+      const RRGSB& inst_rr_gsb = device_rr_gsb.get_gsb(cb_coord, layer);
       std::string cb_instance_name = generate_connection_block_module_name(
-        cb_type, inst_rr_gsb.get_cb_coordinate(cb_type));
+        cb_type, inst_rr_gsb.get_cb_coordinate(cb_type), layer);
       module_manager.set_child_instance_name(tile_module, cb_module,
                                              cb_instance, cb_instance_name);
       if (0 < find_module_num_config_bits(module_manager, cb_module,
@@ -1585,9 +1602,9 @@ static int build_tile_module(
       }
       VTR_LOGV(verbose,
                "Added connection block module '%s' (instance: '%s') to "
-               "tile[%lu][%lu]\n",
-               cb_module_name.c_str(), cb_instance_name.c_str(), tile_coord.x(),
-               tile_coord.y());
+               "tile[%lu][%lu][%lu]\n",
+               cb_module_name.c_str(), cb_instance_name.c_str(), 
+               layer, tile_coord_point.coordinates.x(), tile_coord_point.coordinates.y());
       cb_instances[cb_type].push_back(cb_instance);
     }
   }
@@ -1595,26 +1612,28 @@ static int build_tile_module(
   /* Add instance of switch blocks */
   std::vector<size_t>
     sb_instances; /* Keep tracking the instance id of each sb */
-  for (vtr::Point<size_t> sb_coord :
+  for (PointWithLayer sb_coord_point :
        fabric_tile.sb_coordinates(fabric_tile_id)) {
+    vtr::Point<size_t> sb_coord = sb_coord_point.coordinates;
     /* get the unique module coord */
-    const RRGSB& unique_rr_gsb = device_rr_gsb.get_sb_unique_module(sb_coord);
+    const RRGSB& unique_rr_gsb = device_rr_gsb.get_sb_unique_module(sb_coord, layer);
     vtr::Point<size_t> unique_sb_coord(unique_rr_gsb.get_sb_x(),
                                        unique_rr_gsb.get_sb_y());
     std::string sb_module_name =
-      generate_switch_block_module_name(unique_sb_coord);
+      generate_switch_block_module_name(unique_sb_coord, layer);
     ModuleId sb_module = module_manager.find_module(sb_module_name);
     if (!sb_module) {
       VTR_LOG_ERROR(
-        "Failed to find switch block module '%s' required by tile[%lu][%lu]!\n",
-        sb_module_name.c_str(), tile_coord.x(), tile_coord.y());
+        "Failed to find switch block module '%s' required by tile[%lu][%lu][%lu]!\n",
+        sb_module_name.c_str(), 
+        layer, tile_coord_point.coordinates.x(), tile_coord_point.coordinates.y());
       return CMD_EXEC_FATAL_ERROR;
     }
     size_t sb_instance = module_manager.num_instance(tile_module, sb_module);
     module_manager.add_child_module(tile_module, sb_module, false);
-    const RRGSB& inst_rr_gsb = device_rr_gsb.get_gsb(sb_coord);
+    const RRGSB& inst_rr_gsb = device_rr_gsb.get_gsb(sb_coord, layer);
     std::string sb_instance_name =
-      generate_switch_block_module_name(inst_rr_gsb.get_sb_coordinate());
+      generate_switch_block_module_name(inst_rr_gsb.get_sb_coordinate(), layer);
     module_manager.set_child_instance_name(tile_module, sb_module, sb_instance,
                                            sb_instance_name);
     if (0 < find_module_num_config_bits(module_manager, sb_module, circuit_lib,
@@ -1625,9 +1644,9 @@ static int build_tile_module(
     }
     VTR_LOGV(
       verbose,
-      "Added switch block module '%s' (instance: %s') to tile[%lu][%lu]\n",
-      sb_module_name.c_str(), sb_instance_name.c_str(), tile_coord.x(),
-      tile_coord.y());
+      "Added switch block module '%s' (instance: %s') to tile[%lu][%lu][%lu]\n",
+      sb_module_name.c_str(), sb_instance_name.c_str(), 
+      layer, tile_coord_point.coordinates.x(), tile_coord_point.coordinates.y());
     sb_instances.push_back(sb_instance);
   }
 

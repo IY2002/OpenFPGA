@@ -268,7 +268,7 @@ static void write_rr_connection_block_to_xml(const std::string fname_prefix,
   vtr::Point<size_t> cb_coordinate(rr_gsb.get_cb_x(cb_type),
                                    rr_gsb.get_cb_y(cb_type));
   std::string curr_cb_name =
-    generate_connection_block_module_name(cb_type, cb_coordinate);
+    generate_connection_block_module_name(cb_type, cb_coordinate, layer);
   fname += curr_cb_name;
   fname += ".xml";
 

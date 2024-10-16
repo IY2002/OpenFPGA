@@ -542,8 +542,9 @@ std::string generate_switch_block_module_name_using_index(const size_t& index) {
 /*********************************************************************
  * Generate the module name for a tile module with a given coordinate
  *********************************************************************/
-std::string generate_tile_module_name(const vtr::Point<size_t>& tile_coord) {
-  return std::string("tile_" + std::to_string(tile_coord.x()) + "__" +
+std::string generate_tile_module_name(const vtr::Point<size_t>& tile_coord, const size_t& layer) {
+  return std::string("tile_" + std::to_string(layer) + "__" + 
+                     std::to_string(tile_coord.x()) + "__" +
                      std::to_string(tile_coord.y()) + "_");
 }
 

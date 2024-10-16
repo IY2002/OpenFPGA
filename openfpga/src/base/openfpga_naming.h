@@ -119,7 +119,7 @@ std::string generate_connection_block_module_name(
 std::string generate_connection_block_module_name_using_index(
   const t_rr_type& cb_type, const size_t& index);
 
-std::string generate_tile_module_name(const vtr::Point<size_t>& tile_coord);
+std::string generate_tile_module_name(const vtr::Point<size_t>& tile_coord, const size_t& layer);
 
 std::string generate_tile_module_name_using_index(const size_t& index);
 
