@@ -192,46 +192,48 @@ static vtr::Matrix<size_t> add_top_module_switch_block_instances(
   vtr::ScopedStartFinishTimer timer("Add switch block instances to top module");
 
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
-
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
   /* Reserve an array for the instance ids */
   vtr::Matrix<size_t> sb_instance_ids({sb_range.x(), sb_range.y()});
   sb_instance_ids.fill(size_t(-1));
 
-  for (size_t ix = 0; ix < sb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < sb_range.y(); ++iy) {
-      /* If we use compact routing hierarchy, we should instanciate the unique
-       * module of SB */
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
+  for (size_t ilayer = 0; ilayer < num_layers;++ilayer){
+    for (size_t ix = 0; ix < sb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < sb_range.y(); ++iy) {
+        /* If we use compact routing hierarchy, we should instanciate the unique
+        * module of SB */
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
 
-      if (false == rr_gsb.is_sb_exist(rr_graph)) {
-        continue;
-      }
+        if (false == rr_gsb.is_sb_exist(rr_graph)) {
+          continue;
+        }
 
-      vtr::Point<size_t> sb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
-      if (true == compact_routing_hierarchy) {
-        vtr::Point<size_t> sb_coord(ix, iy);
-        const RRGSB& unique_mirror =
-          device_rr_gsb.get_sb_unique_module(sb_coord);
-        sb_coordinate.set_x(unique_mirror.get_sb_x());
-        sb_coordinate.set_y(unique_mirror.get_sb_y());
+        vtr::Point<size_t> sb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
+        if (true == compact_routing_hierarchy) {
+          vtr::Point<size_t> sb_coord(ix, iy);
+          const RRGSB& unique_mirror =
+            device_rr_gsb.get_sb_unique_module(sb_coord, ilayer);
+          sb_coordinate.set_x(unique_mirror.get_sb_x());
+          sb_coordinate.set_y(unique_mirror.get_sb_y());
+        }
+        std::string sb_module_name =
+          generate_switch_block_module_name(sb_coordinate, ilayer);
+        ModuleId sb_module = module_manager.find_module(sb_module_name);
+        VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
+        /* Record the instance id */
+        sb_instance_ids[rr_gsb.get_sb_x()][rr_gsb.get_sb_y()] =
+          module_manager.num_instance(top_module, sb_module);
+        /* Add the module to top_module */
+        module_manager.add_child_module(top_module, sb_module, false);
+        /* Set an unique name to the instance
+        * Note: it is your risk to gurantee the name is unique!
+        */
+        module_manager.set_child_instance_name(
+          top_module, sb_module,
+          sb_instance_ids[rr_gsb.get_sb_x()][rr_gsb.get_sb_y()],
+          generate_switch_block_module_name(
+            vtr::Point<size_t>(rr_gsb.get_sb_x(), rr_gsb.get_sb_y()), ilayer));
       }
-      std::string sb_module_name =
-        generate_switch_block_module_name(sb_coordinate);
-      ModuleId sb_module = module_manager.find_module(sb_module_name);
-      VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
-      /* Record the instance id */
-      sb_instance_ids[rr_gsb.get_sb_x()][rr_gsb.get_sb_y()] =
-        module_manager.num_instance(top_module, sb_module);
-      /* Add the module to top_module */
-      module_manager.add_child_module(top_module, sb_module, false);
-      /* Set an unique name to the instance
-       * Note: it is your risk to gurantee the name is unique!
-       */
-      module_manager.set_child_instance_name(
-        top_module, sb_module,
-        sb_instance_ids[rr_gsb.get_sb_x()][rr_gsb.get_sb_y()],
-        generate_switch_block_module_name(
-          vtr::Point<size_t>(rr_gsb.get_sb_x(), rr_gsb.get_sb_y())));
     }
   }
 
@@ -249,61 +251,62 @@ static vtr::Matrix<size_t> add_top_module_connection_block_instances(
     "Add connection block instances to top module");
 
   vtr::Point<size_t> cb_range = device_rr_gsb.get_gsb_range();
-
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
   /* Reserve an array for the instance ids */
   vtr::Matrix<size_t> cb_instance_ids({cb_range.x(), cb_range.y()});
   cb_instance_ids.fill(size_t(-1));
-
-  for (size_t ix = 0; ix < cb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < cb_range.y(); ++iy) {
-      /* Check if the connection block exists in the device!
-       * Some of them do NOT exist due to heterogeneous blocks (height > 1)
-       * We will skip those modules
-       */
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      VTR_LOGV(verbose, "Try to add %s connnection block at (%lu, %lu)\n",
-               cb_type == CHANX ? "X-" : "Y-", ix, iy);
-      vtr::Point<size_t> cb_coordinate(rr_gsb.get_cb_x(cb_type),
-                                       rr_gsb.get_cb_y(cb_type));
-      if (false == rr_gsb.is_cb_exist(cb_type)) {
-        VTR_LOGV(
-          verbose,
-          "Skip %s connnection block at (%lu, %lu) as it does not exist\n",
-          cb_type == CHANX ? "X-" : "Y-", cb_coordinate.x(), cb_coordinate.y());
-        continue;
+  for (size_t ilayer = 0; ilayer < num_layers; ++ilayer) {
+    for (size_t ix = 0; ix < cb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < cb_range.y(); ++iy) {
+        /* Check if the connection block exists in the device!
+        * Some of them do NOT exist due to heterogeneous blocks (height > 1)
+        * We will skip those modules
+        */
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        VTR_LOGV(verbose, "Try to add %s connnection block at (%lu,%lu, %lu)\n",
+                cb_type == CHANX ? "X-" : "Y-", ilayer, ix, iy);
+        vtr::Point<size_t> cb_coordinate(rr_gsb.get_cb_x(cb_type),
+                                        rr_gsb.get_cb_y(cb_type));
+        if (false == rr_gsb.is_cb_exist(cb_type)) {
+          VTR_LOGV(
+            verbose,
+            "Skip %s connnection block at (%lu, %lu, %lu) as it does not exist\n",
+            cb_type == CHANX ? "X-" : "Y-", ilayer, cb_coordinate.x(), cb_coordinate.y());
+          continue;
+        }
+        /* If we use compact routing hierarchy, we should instanciate the unique
+        * module of SB */
+        if (true == compact_routing_hierarchy) {
+          vtr::Point<size_t> cb_coord(ix, iy);
+          /* Note: use GSB coordinate when inquire for unique modules!!! */
+          const RRGSB& unique_mirror =
+            device_rr_gsb.get_cb_unique_module(cb_type, cb_coord, ilayer);
+          cb_coordinate.set_x(unique_mirror.get_cb_x(cb_type));
+          cb_coordinate.set_y(unique_mirror.get_cb_y(cb_type));
+        }
+        std::string cb_module_name =
+          generate_connection_block_module_name(cb_type, cb_coordinate, ilayer);
+        ModuleId cb_module = module_manager.find_module(cb_module_name);
+        VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
+        /* Record the instance id */
+        cb_instance_ids[rr_gsb.get_cb_x(cb_type)][rr_gsb.get_cb_y(cb_type)] =
+          module_manager.num_instance(top_module, cb_module);
+        /* Add the module to top_module */
+        module_manager.add_child_module(top_module, cb_module, false);
+        /* Set an unique name to the instance
+        * Note: it is your risk to gurantee the name is unique!
+        */
+        std::string cb_instance_name = generate_connection_block_module_name(
+          cb_type,
+          vtr::Point<size_t>(rr_gsb.get_cb_x(cb_type), rr_gsb.get_cb_y(cb_type)), ilayer);
+        module_manager.set_child_instance_name(
+          top_module, cb_module,
+          cb_instance_ids[rr_gsb.get_cb_x(cb_type)][rr_gsb.get_cb_y(cb_type)],
+          cb_instance_name);
+        VTR_LOGV(verbose, "Added %s connnection block '%s' (module '%s')\n",
+                cb_type == CHANX ? "X-" : "Y-", cb_instance_name.c_str(),
+                cb_module_name.c_str());
       }
-      /* If we use compact routing hierarchy, we should instanciate the unique
-       * module of SB */
-      if (true == compact_routing_hierarchy) {
-        vtr::Point<size_t> cb_coord(ix, iy);
-        /* Note: use GSB coordinate when inquire for unique modules!!! */
-        const RRGSB& unique_mirror =
-          device_rr_gsb.get_cb_unique_module(cb_type, cb_coord);
-        cb_coordinate.set_x(unique_mirror.get_cb_x(cb_type));
-        cb_coordinate.set_y(unique_mirror.get_cb_y(cb_type));
-      }
-      std::string cb_module_name =
-        generate_connection_block_module_name(cb_type, cb_coordinate);
-      ModuleId cb_module = module_manager.find_module(cb_module_name);
-      VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
-      /* Record the instance id */
-      cb_instance_ids[rr_gsb.get_cb_x(cb_type)][rr_gsb.get_cb_y(cb_type)] =
-        module_manager.num_instance(top_module, cb_module);
-      /* Add the module to top_module */
-      module_manager.add_child_module(top_module, cb_module, false);
-      /* Set an unique name to the instance
-       * Note: it is your risk to gurantee the name is unique!
-       */
-      std::string cb_instance_name = generate_connection_block_module_name(
-        cb_type,
-        vtr::Point<size_t>(rr_gsb.get_cb_x(cb_type), rr_gsb.get_cb_y(cb_type)));
-      module_manager.set_child_instance_name(
-        top_module, cb_module,
-        cb_instance_ids[rr_gsb.get_cb_x(cb_type)][rr_gsb.get_cb_y(cb_type)],
-        cb_instance_name);
-      VTR_LOGV(verbose, "Added %s connnection block '%s' (module '%s')\n",
-               cb_type == CHANX ? "X-" : "Y-", cb_instance_name.c_str(),
-               cb_module_name.c_str());
     }
   }
 
