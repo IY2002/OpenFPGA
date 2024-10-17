@@ -60,6 +60,7 @@ void print_pnr_sdc_routing_sb_hierarchy(const std::string& sdc_dir,
 
   for (size_t isb = 0; isb < device_rr_gsb.get_num_sb_unique_module(); ++isb) {
     const RRGSB& rr_gsb = device_rr_gsb.get_sb_unique_module(isb);
+    const size_t& layer = device_rr_gsb.get_sb_unique_module_layer(isb);
     if (false == rr_gsb.is_sb_exist(rr_graph)) {
       continue;
     }
@@ -69,14 +70,14 @@ void print_pnr_sdc_routing_sb_hierarchy(const std::string& sdc_dir,
      */
     vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
     std::string sb_module_name =
-      generate_switch_block_module_name(gsb_coordinate);
+      generate_switch_block_module_name(gsb_coordinate, layer);
 
     ModuleId sb_module = module_manager.find_module(sb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
 
     /* Create the file name for SDC */
     std::string sdc_fname(sdc_dir +
-                          generate_switch_block_module_name(gsb_coordinate) +
+                          generate_switch_block_module_name(gsb_coordinate, layer) +
                           std::string(SDC_FILE_NAME_POSTFIX));
 
     fp << "- " << sb_module_name << ":"
@@ -149,6 +150,7 @@ void print_pnr_sdc_routing_cb_hierarchy(const std::string& sdc_dir,
        ++icb) {
     const RRGSB& unique_mirror =
       device_rr_gsb.get_cb_unique_module(cb_type, icb);
+    const size_t& layer = device_rr_gsb.get_cb_unique_module_layer(cb_type, icb);
 
     /* Find all the cb instance under this module
      * Create a regular expression to include these instance names
@@ -156,13 +158,13 @@ void print_pnr_sdc_routing_cb_hierarchy(const std::string& sdc_dir,
     vtr::Point<size_t> gsb_coordinate(unique_mirror.get_cb_x(cb_type),
                                       unique_mirror.get_cb_y(cb_type));
     std::string cb_module_name =
-      generate_connection_block_module_name(cb_type, gsb_coordinate);
+      generate_connection_block_module_name(cb_type, gsb_coordinate, layer);
     ModuleId cb_module = module_manager.find_module(cb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
 
     /* Create the file name for SDC */
     std::string sdc_fname(
-      sdc_dir + generate_connection_block_module_name(cb_type, gsb_coordinate) +
+      sdc_dir + generate_connection_block_module_name(cb_type, gsb_coordinate, layer) +
       std::string(SDC_FILE_NAME_POSTFIX));
 
     fp << "- " << cb_module_name << ":"

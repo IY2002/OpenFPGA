@@ -35,7 +35,7 @@ static void print_analysis_sdc_disable_cb_unused_resources(
   const VprDeviceAnnotation& device_annotation, const DeviceGrid& grids,
   const RRGraphView& rr_graph, const VprRoutingAnnotation& routing_annotation,
   const DeviceRRGSB& device_rr_gsb, const RRGSB& rr_gsb,
-  const t_rr_type& cb_type, const bool& compact_routing_hierarchy) {
+  const t_rr_type& cb_type, const bool& compact_routing_hierarchy, const size_t& layer) {
   /* Validate file stream */
   valid_file_stream(fp);
 
@@ -43,7 +43,7 @@ static void print_analysis_sdc_disable_cb_unused_resources(
                                     rr_gsb.get_cb_y(cb_type));
 
   std::string cb_instance_name =
-    generate_connection_block_module_name(cb_type, gsb_coordinate);
+    generate_connection_block_module_name(cb_type, gsb_coordinate, layer);
 
   /* If we use the compact routing hierarchy, we need to find the module name
    * !*/
@@ -53,13 +53,13 @@ static void print_analysis_sdc_disable_cb_unused_resources(
     vtr::Point<size_t> cb_coord(rr_gsb.get_x(), rr_gsb.get_y());
     /* Note: use GSB coordinate when inquire for unique modules!!! */
     const RRGSB& unique_mirror =
-      device_rr_gsb.get_cb_unique_module(cb_type, cb_coord);
+      device_rr_gsb.get_cb_unique_module(cb_type, cb_coord, layer);
     cb_coordinate.set_x(unique_mirror.get_cb_x(cb_type));
     cb_coordinate.set_y(unique_mirror.get_cb_y(cb_type));
   }
 
   std::string cb_module_name =
-    generate_connection_block_module_name(cb_type, cb_coordinate);
+    generate_connection_block_module_name(cb_type, cb_coordinate, layer);
 
   ModuleId cb_module = module_manager.find_module(cb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
@@ -171,7 +171,7 @@ static void print_analysis_sdc_disable_cb_unused_resources(
         /* Note: use GSB coordinate when inquire for unique modules!!! */
         vtr::Point<size_t> cb_coord(rr_gsb.get_x(), rr_gsb.get_y());
         const RRGSB& unique_mirror =
-          device_rr_gsb.get_cb_unique_module(cb_type, cb_coord);
+          device_rr_gsb.get_cb_unique_module(cb_type, cb_coord, layer);
         const RRNodeId& unique_mirror_ipin_node =
           unique_mirror.get_ipin_node(cb_ipin_side, inode);
         port_name = generate_cb_module_grid_port_name(
@@ -247,22 +247,25 @@ static void print_analysis_sdc_disable_unused_cb_ports(
   const bool& compact_routing_hierarchy) {
   /* Build unique X-direction connection block modules */
   vtr::Point<size_t> cb_range = device_rr_gsb.get_gsb_range();
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
+  
+  for(size_t ilayer = 0; ilayer < num_layers; ++ilayer) {
+    for (size_t ix = 0; ix < cb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < cb_range.y(); ++iy) {
+        /* Check if the connection block exists in the device!
+        * Some of them do NOT exist due to heterogeneous blocks (height > 1)
+        * We will skip those modules
+        */
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        if (false == rr_gsb.is_cb_exist(cb_type)) {
+          continue;
+        }
 
-  for (size_t ix = 0; ix < cb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < cb_range.y(); ++iy) {
-      /* Check if the connection block exists in the device!
-       * Some of them do NOT exist due to heterogeneous blocks (height > 1)
-       * We will skip those modules
-       */
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      if (false == rr_gsb.is_cb_exist(cb_type)) {
-        continue;
+        print_analysis_sdc_disable_cb_unused_resources(
+          fp, atom_ctx, module_manager, device_annotation, grids, rr_graph,
+          routing_annotation, device_rr_gsb, rr_gsb, cb_type,
+          compact_routing_hierarchy, ilayer);
       }
-
-      print_analysis_sdc_disable_cb_unused_resources(
-        fp, atom_ctx, module_manager, device_annotation, grids, rr_graph,
-        routing_annotation, device_rr_gsb, rr_gsb, cb_type,
-        compact_routing_hierarchy);
     }
   }
 }
@@ -298,14 +301,14 @@ static void print_analysis_sdc_disable_sb_unused_resources(
   const VprDeviceAnnotation& device_annotation, const DeviceGrid& grids,
   const RRGraphView& rr_graph, const VprRoutingAnnotation& routing_annotation,
   const DeviceRRGSB& device_rr_gsb, const RRGSB& rr_gsb,
-  const bool& compact_routing_hierarchy) {
+  const bool& compact_routing_hierarchy, const size_t& layer) {
   /* Validate file stream */
   valid_file_stream(fp);
 
   vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
 
   std::string sb_instance_name =
-    generate_switch_block_module_name(gsb_coordinate);
+    generate_switch_block_module_name(gsb_coordinate, layer);
 
   /* If we use the compact routing hierarchy, we need to find the module name
    * !*/
@@ -313,12 +316,12 @@ static void print_analysis_sdc_disable_sb_unused_resources(
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> sb_coord(rr_gsb.get_x(), rr_gsb.get_y());
     /* Note: use GSB coordinate when inquire for unique modules!!! */
-    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(sb_coord);
+    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(sb_coord, layer);
     sb_coordinate.set_x(unique_mirror.get_sb_x());
     sb_coordinate.set_y(unique_mirror.get_sb_y());
   }
 
-  std::string sb_module_name = generate_switch_block_module_name(sb_coordinate);
+  std::string sb_module_name = generate_switch_block_module_name(sb_coordinate, layer);
 
   ModuleId sb_module = module_manager.find_module(sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
@@ -351,7 +354,7 @@ static void print_analysis_sdc_disable_sb_unused_resources(
         /* Note: use GSB coordinate when inquire for unique modules!!! */
         vtr::Point<size_t> sb_coord(rr_gsb.get_x(), rr_gsb.get_y());
         const RRGSB& unique_mirror =
-          device_rr_gsb.get_sb_unique_module(sb_coord);
+          device_rr_gsb.get_sb_unique_module(sb_coord, layer);
         port_name = generate_sb_module_track_port_name(
           rr_graph.node_type(
             unique_mirror.get_chan_node(side_manager.get_side(), itrack)),
@@ -414,7 +417,7 @@ static void print_analysis_sdc_disable_sb_unused_resources(
         /* Note: use GSB coordinate when inquire for unique modules!!! */
         vtr::Point<size_t> sb_coord(rr_gsb.get_x(), rr_gsb.get_y());
         const RRGSB& unique_mirror =
-          device_rr_gsb.get_sb_unique_module(sb_coord);
+          device_rr_gsb.get_sb_unique_module(sb_coord, layer);
         const RRNodeId& unique_mirror_opin_node =
           unique_mirror.get_opin_node(side_manager.get_side(), inode);
 
@@ -485,7 +488,7 @@ static void print_analysis_sdc_disable_sb_unused_resources(
         /* Note: use GSB coordinate when inquire for unique modules!!! */
         vtr::Point<size_t> sb_coord(rr_gsb.get_x(), rr_gsb.get_y());
         const RRGSB& unique_mirror =
-          device_rr_gsb.get_sb_unique_module(sb_coord);
+          device_rr_gsb.get_sb_unique_module(sb_coord, layer);
         const RRNodeId& unique_mirror_opin_node =
           unique_mirror.get_opin_node(side_manager.get_side(), inode);
 
@@ -533,7 +536,7 @@ static void print_analysis_sdc_disable_sb_unused_resources(
         /* Note: use GSB coordinate when inquire for unique modules!!! */
         vtr::Point<size_t> sb_coord(rr_gsb.get_x(), rr_gsb.get_y());
         const RRGSB& unique_mirror =
-          device_rr_gsb.get_sb_unique_module(sb_coord);
+          device_rr_gsb.get_sb_unique_module(sb_coord, layer);
         const RRNodeId& unique_mirror_chan_node =
           unique_mirror.get_chan_node(side_manager.get_side(), itrack);
 
@@ -571,21 +574,24 @@ void print_analysis_sdc_disable_unused_sbs(
   const DeviceRRGSB& device_rr_gsb, const bool& compact_routing_hierarchy) {
   /* Build unique X-direction connection block modules */
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
 
-  for (size_t ix = 0; ix < sb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < sb_range.y(); ++iy) {
-      /* Check if the connection block exists in the device!
-       * Some of them do NOT exist due to heterogeneous blocks (height > 1)
-       * We will skip those modules
-       */
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
-      if (false == rr_gsb.is_sb_exist(rr_graph)) {
-        continue;
+  for(size_t ilayer = 0; ilayer < num_layers; ilayer++){
+    for (size_t ix = 0; ix < sb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < sb_range.y(); ++iy) {
+        /* Check if the connection block exists in the device!
+        * Some of them do NOT exist due to heterogeneous blocks (height > 1)
+        * We will skip those modules
+        */
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
+        if (false == rr_gsb.is_sb_exist(rr_graph)) {
+          continue;
+        }
+
+        print_analysis_sdc_disable_sb_unused_resources(
+          fp, atom_ctx, module_manager, device_annotation, grids, rr_graph,
+          routing_annotation, device_rr_gsb, rr_gsb, compact_routing_hierarchy, ilayer);
       }
-
-      print_analysis_sdc_disable_sb_unused_resources(
-        fp, atom_ctx, module_manager, device_annotation, grids, rr_graph,
-        routing_annotation, device_rr_gsb, rr_gsb, compact_routing_hierarchy);
     }
   }
 }

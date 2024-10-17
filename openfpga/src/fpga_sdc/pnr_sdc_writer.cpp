@@ -121,81 +121,83 @@ static void print_pnr_sdc_flatten_routing_disable_switch_block_outputs(
   /* Get the range of SB array */
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
   /* Go for each SB */
-  for (size_t ix = 0; ix < sb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < sb_range.y(); ++iy) {
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy);
+  for (size_t ilayer = 0; ilayer < device_rr_gsb.get_gsb_layers(); ++ilayer) {
+    for (size_t ix = 0; ix < sb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < sb_range.y(); ++iy) {
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
 
-      if (false == rr_gsb.is_sb_exist(rr_graph)) {
-        continue;
-      }
-
-      std::string module_path = root_path;
-
-      vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
-      std::string sb_instance_name =
-        generate_switch_block_module_name(gsb_coordinate);
-
-      ModuleId sb_module = module_manager.find_module(sb_instance_name);
-      VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
-
-      if (false == flatten_names) {
-        /* Try to adapt to a wildcard name: replace all the numbers with a
-         * wildcard character '*' */
-        WildCardString wildcard_str(sb_instance_name);
-        /* If the wildcard name is already in the list, we can skip this
-         * Otherwise, we have to
-         *   - output this instance
-         *   - record the wildcard name in the map
-         */
-        if ((0 < wildcard_names.count(sb_module)) &&
-            (wildcard_names.at(sb_module).end() !=
-             std::find(wildcard_names.at(sb_module).begin(),
-                       wildcard_names.at(sb_module).end(),
-                       wildcard_str.data()))) {
+        if (false == rr_gsb.is_sb_exist(rr_graph)) {
           continue;
         }
 
-        module_path += wildcard_str.data();
+        std::string module_path = root_path;
 
-        wildcard_names[sb_module].push_back(wildcard_str.data());
-      } else {
-        module_path += sb_instance_name;
-      }
+        vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
+        std::string sb_instance_name =
+          generate_switch_block_module_name(gsb_coordinate, ilayer);
 
-      module_path = format_dir_path(module_path);
-
-      std::vector<std::string> port_wildcard_names;
-
-      /* Disable the outputs of the module */
-      for (const BasicPort& output_port : module_manager.module_ports_by_type(
-             sb_module, ModuleManager::MODULE_OUTPUT_PORT)) {
-        std::string port_name = output_port.get_name();
+        ModuleId sb_module = module_manager.find_module(sb_instance_name);
+        VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
 
         if (false == flatten_names) {
           /* Try to adapt to a wildcard name: replace all the numbers with a
-           * wildcard character '*' */
-          WildCardString port_wildcard_str(output_port.get_name());
+          * wildcard character '*' */
+          WildCardString wildcard_str(sb_instance_name);
           /* If the wildcard name is already in the list, we can skip this
-           * Otherwise, we have to
-           *   - output this port
-           *   - record the wildcard name in the vector
-           */
-          if (port_wildcard_names.end() !=
-              std::find(port_wildcard_names.begin(), port_wildcard_names.end(),
-                        port_wildcard_str.data())) {
+          * Otherwise, we have to
+          *   - output this instance
+          *   - record the wildcard name in the map
+          */
+          if ((0 < wildcard_names.count(sb_module)) &&
+              (wildcard_names.at(sb_module).end() !=
+              std::find(wildcard_names.at(sb_module).begin(),
+                        wildcard_names.at(sb_module).end(),
+                        wildcard_str.data()))) {
             continue;
           }
 
-          port_name = port_wildcard_str.data();
+          module_path += wildcard_str.data();
 
-          port_wildcard_names.push_back(port_wildcard_str.data());
+          wildcard_names[sb_module].push_back(wildcard_str.data());
+        } else {
+          module_path += sb_instance_name;
         }
 
-        fp << "set_disable_timing ";
-        fp << module_path;
-        fp << port_name << std::endl;
+        module_path = format_dir_path(module_path);
 
-        fp << std::endl;
+        std::vector<std::string> port_wildcard_names;
+
+        /* Disable the outputs of the module */
+        for (const BasicPort& output_port : module_manager.module_ports_by_type(
+              sb_module, ModuleManager::MODULE_OUTPUT_PORT)) {
+          std::string port_name = output_port.get_name();
+
+          if (false == flatten_names) {
+            /* Try to adapt to a wildcard name: replace all the numbers with a
+            * wildcard character '*' */
+            WildCardString port_wildcard_str(output_port.get_name());
+            /* If the wildcard name is already in the list, we can skip this
+            * Otherwise, we have to
+            *   - output this port
+            *   - record the wildcard name in the vector
+            */
+            if (port_wildcard_names.end() !=
+                std::find(port_wildcard_names.begin(), port_wildcard_names.end(),
+                          port_wildcard_str.data())) {
+              continue;
+            }
+
+            port_name = port_wildcard_str.data();
+
+            port_wildcard_names.push_back(port_wildcard_str.data());
+          }
+
+          fp << "set_disable_timing ";
+          fp << module_path;
+          fp << port_name << std::endl;
+
+          fp << std::endl;
+        }
       }
     }
   }
@@ -247,6 +249,7 @@ static void print_pnr_sdc_compact_routing_disable_switch_block_outputs(
   /* Build unique switch block modules */
   for (size_t isb = 0; isb < device_rr_gsb.get_num_sb_unique_module(); ++isb) {
     const RRGSB& rr_gsb = device_rr_gsb.get_sb_unique_module(isb);
+    const size_t& layer = device_rr_gsb.get_sb_unique_module_layer(isb);
 
     if (false == rr_gsb.is_sb_exist(rr_graph)) {
       continue;
@@ -254,7 +257,7 @@ static void print_pnr_sdc_compact_routing_disable_switch_block_outputs(
 
     vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
     std::string sb_module_name =
-      generate_switch_block_module_name(gsb_coordinate);
+      generate_switch_block_module_name(gsb_coordinate, layer);
 
     ModuleId sb_module = module_manager.find_module(sb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(sb_module));

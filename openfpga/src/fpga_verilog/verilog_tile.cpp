@@ -31,9 +31,9 @@ static int print_verilog_tile_module_netlist(
   const std::string& subckt_dir_name, const FabricVerilogOption& options) {
   /* Create a module as the top-level fabric, and add it to the module manager
    */
-  vtr::Point<size_t> tile_coord = fabric_tile.tile_coordinate(fabric_tile_id);
+  PointWithLayer tile_coord = fabric_tile.tile_coordinate(fabric_tile_id);
   std::string tile_module_name =
-    module_name_map.name(generate_tile_module_name(tile_coord));
+    module_name_map.name(generate_tile_module_name(tile_coord.coordinates, tile_coord.layer));
   ModuleId tile_module = module_manager.find_module(tile_module_name);
   if (!module_manager.valid_module_id(tile_module)) {
     return CMD_EXEC_FATAL_ERROR;
