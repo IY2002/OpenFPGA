@@ -626,7 +626,7 @@ static void print_analysis_sdc_disable_unused_grid(
     is_io_type(grid_type), border_side);
   std::string grid_instance_name = generate_grid_block_instance_name(
     grid_module_name_prefix, std::string(grid_type->name),
-    is_io_type(grid_type), border_side, grid_coordinate);
+    is_io_type(grid_type), border_side, grid_coordinate, 0);
 
   ModuleId grid_module = module_manager.find_module(grid_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(grid_module));

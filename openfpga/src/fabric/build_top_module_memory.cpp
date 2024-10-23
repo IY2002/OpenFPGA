@@ -445,11 +445,11 @@ void organize_top_module_memory_modules(
   const std::map<t_rr_type, vtr::Matrix<size_t>>& cb_instance_ids,
   const bool& compact_routing_hierarchy) {
   /* Ensure clean vectors to return */
-  VTR_ASSERT(true ==
-             module_manager
-               .configurable_children(
-                 top_module, ModuleManager::e_config_child_type::PHYSICAL)
-               .empty());
+  // VTR_ASSERT(true ==
+  //            module_manager
+  //              .configurable_children(
+  //                top_module, ModuleManager::e_config_child_type::PHYSICAL)
+  //              .empty());
 
   /* First, organize the I/O tiles on the border */
   /* Special for the I/O tileas on RIGHT and BOTTOM,

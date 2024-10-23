@@ -85,7 +85,7 @@ static void print_spice_routing_connection_box_unique_module(
   std::string spice_fname(
     subckt_dir +
     generate_connection_block_netlist_name(
-      cb_type, gsb_coordinate, std::string(SPICE_NETLIST_FILE_POSTFIX)));
+      cb_type, gsb_coordinate, std::string(SPICE_NETLIST_FILE_POSTFIX), layer));
 
   /* Create the file stream */
   std::fstream fp;
@@ -188,7 +188,7 @@ static void print_spice_routing_switch_box_unique_module(
   std::string spice_fname(subckt_dir +
                           generate_routing_block_netlist_name(
                             SB_SPICE_FILE_NAME_PREFIX, gsb_coordinate,
-                            std::string(SPICE_NETLIST_FILE_POSTFIX)));
+                            std::string(SPICE_NETLIST_FILE_POSTFIX), layer));
 
   /* Create the file stream */
   std::fstream fp;

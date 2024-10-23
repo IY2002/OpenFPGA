@@ -868,7 +868,7 @@ static void build_physical_block_bitstream(
   }
   std::string grid_block_name = generate_grid_block_instance_name(
     grid_module_name_prefix, std::string(grid_type->name),
-    is_io_type(grid_type), border_side, grid_coord_in_unique_tile);
+    is_io_type(grid_type), border_side, grid_coord_in_unique_tile, layer);
 
   ConfigBlockId grid_configurable_block =
     bitstream_manager.add_block(grid_block_name);
