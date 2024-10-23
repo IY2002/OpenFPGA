@@ -364,7 +364,8 @@ int update_pb_pin_with_post_routing_results(
    * post-routing clustering result sync-up */
   vpr_clustering_annotation.clear_net_remapping();
 
-  size_t layer = 0;
+  size_t num_layers = device_ctx.grid.get_num_layers();
+  for (size_t layer = 0; layer < num_layers; ++layer){
   /* Update the core logic (center blocks of the FPGA) */
   for (size_t x = 1; x < device_ctx.grid.width() - 1; ++x) {
     for (size_t y = 1; y < device_ctx.grid.height() - 1; ++y) {
@@ -431,6 +432,7 @@ int update_pb_pin_with_post_routing_results(
         }
       }
     }
+  }
   }
   VTR_LOG("In total %lu fixup have been applied\n", num_fixup);
   return status;

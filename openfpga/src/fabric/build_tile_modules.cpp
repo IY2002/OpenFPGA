@@ -1541,7 +1541,7 @@ static int build_tile_module(
       module_manager.add_child_module(tile_module, pb_module, false);
       std::string pb_instance_name = generate_grid_block_instance_name(
         std::string(GRID_MODULE_NAME_PREFIX), std::string(phy_tile->name),
-        is_io_type(phy_tile), grid_side, grid_coord);
+        is_io_type(phy_tile), grid_side, grid_coord, layer);
       module_manager.set_child_instance_name(tile_module, pb_module,
                                              pb_instance, pb_instance_name);
       if (0 < find_module_num_config_bits(module_manager, pb_module,
@@ -1732,13 +1732,11 @@ int build_tile_modules(
 
   int status_code = CMD_EXEC_SUCCESS;
 
-  size_t layer = 0;
-
   /* Build a module for each unique tile  */
   for(size_t ilayer = 0; ilayer < device_rr_gsb.get_gsb_layers(); ++ilayer) {
     for (FabricTileId fabric_tile_id : fabric_tile.unique_tiles()) {
       status_code = build_tile_module(
-        module_manager, decoder_lib, fabric_tile, fabric_tile_id, grids, layer,
+        module_manager, decoder_lib, fabric_tile, fabric_tile_id, grids, ilayer,
         vpr_device_annotation, device_rr_gsb, rr_graph_view, tile_annotation,
         circuit_lib, sram_model, sram_orgz_type, name_module_using_index,
         perimeter_cb, frame_view, verbose);

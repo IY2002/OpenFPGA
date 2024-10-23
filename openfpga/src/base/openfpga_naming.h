@@ -77,21 +77,21 @@ std::string generate_routing_block_netlist_name(const std::string& prefix,
 
 std::string generate_routing_block_netlist_name(
   const std::string& prefix, const vtr::Point<size_t>& block_id,
-  const std::string& postfix);
+  const std::string& postfix, const size_t& layer);
 
 std::string generate_connection_block_netlist_name(
   const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate,
-  const std::string& postfix);
+  const std::string& postfix, const size_t& layer);
 
 std::string generate_routing_channel_module_name(const t_rr_type& chan_type,
                                                  const size_t& block_id);
 
 std::string generate_routing_channel_module_name(
-  const t_rr_type& chan_type, const vtr::Point<size_t>& coordinate);
+  const t_rr_type& chan_type, const vtr::Point<size_t>& coordinate, const size_t& layer);
 
 std::string generate_routing_track_port_name(
   const t_rr_type& chan_type, const vtr::Point<size_t>& coordinate,
-  const size_t& track_id, const PORTS& port_direction);
+  const size_t& track_id, const PORTS& port_direction, const size_t& layer);
 
 std::string generate_sb_module_track_port_name(const t_rr_type& chan_type,
                                                const e_side& module_side,
@@ -106,7 +106,7 @@ std::string generate_cb_module_track_port_name(const t_rr_type& chan_type,
 
 std::string generate_routing_track_middle_output_port_name(
   const t_rr_type& chan_type, const vtr::Point<size_t>& coordinate,
-  const size_t& track_id);
+  const size_t& track_id, const size_t& layer);
 
 std::string generate_switch_block_module_name(
   const vtr::Point<size_t>& coordinate, const size_t& layer);
@@ -253,7 +253,7 @@ std::string generate_grid_block_module_name(const std::string& prefix,
 std::string generate_grid_block_instance_name(
   const std::string& prefix, const std::string& block_name,
   const bool& is_block_io, const e_side& io_side,
-  const vtr::Point<size_t>& grid_coord);
+  const vtr::Point<size_t>& grid_coord, const size_t& layer);
 
 std::string generate_physical_block_module_name(t_pb_type* physical_pb_type);
 

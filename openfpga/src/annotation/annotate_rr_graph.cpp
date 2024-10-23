@@ -426,7 +426,6 @@ void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
            layers, gsb_range.x(), gsb_range.y());
 
   size_t gsb_cnt = 0;
-  // size_t layer = 0;
   /* For each switch block, determine the size of array */
   for (size_t ilayer = 0; ilayer < layers; ++ilayer){
     for (size_t ix = 0; ix < gsb_range.x(); ++ix) {

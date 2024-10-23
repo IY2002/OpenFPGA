@@ -38,7 +38,7 @@ namespace openfpga {
 static size_t add_top_module_grid_instance(
   ModuleManager& module_manager, const ModuleId& top_module,
   t_physical_tile_type_ptr grid_type, const e_side& border_side,
-  const vtr::Point<size_t>& grid_coord) {
+  const vtr::Point<size_t>& grid_coord, const size_t& layer) {
   /* Find the module name for this type of grid */
   std::string grid_module_name_prefix(GRID_MODULE_NAME_PREFIX);
   std::string grid_module_name = generate_grid_block_module_name(
@@ -55,7 +55,7 @@ static size_t add_top_module_grid_instance(
    */
   std::string instance_name = generate_grid_block_instance_name(
     grid_module_name_prefix, std::string(grid_type->name),
-    is_io_type(grid_type), border_side, grid_coord);
+    is_io_type(grid_type), border_side, grid_coord, layer);
   module_manager.set_child_instance_name(top_module, grid_module, grid_instance,
                                          instance_name);
 
@@ -136,7 +136,7 @@ static vtr::Matrix<size_t> add_top_module_grid_instances(
       /* Add a grid module to top_module*/
       grid_instance_ids[io_coordinate.x()][io_coordinate.y()] =
         add_top_module_grid_instance(module_manager, top_module, phy_tile_type,
-                                     io_side, io_coordinate);
+                                     io_side, io_coordinate, layer);
     }
   }
 
@@ -173,7 +173,7 @@ static vtr::Matrix<size_t> add_top_module_grid_instances(
       /* Add a grid module to top_module*/
       vtr::Point<size_t> grid_coord(ix, iy);
       grid_instance_ids[ix][iy] = add_top_module_grid_instance(
-        module_manager, top_module, phy_tile_type, NUM_SIDES, grid_coord);
+        module_manager, top_module, phy_tile_type, NUM_SIDES, grid_coord, layer);
     }
   }
 

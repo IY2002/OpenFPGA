@@ -263,10 +263,9 @@ std::string generate_routing_block_netlist_name(const std::string& prefix,
  *********************************************************************/
 std::string generate_routing_block_netlist_name(
   const std::string& prefix, const vtr::Point<size_t>& coordinate,
-  const std::string& postfix) {
-  return std::string(prefix + std::to_string(coordinate.x()) +
-                     std::string("__") + std::to_string(coordinate.y()) +
-                     std::string("_") + postfix);
+  const std::string& postfix, const size_t& layer) {
+  return std::string(prefix + std::string("_") + std::to_string(layer) + std::to_string(coordinate.x()) +
+                     std::string("_") + std::to_string(coordinate.y()) + std::string("_") + postfix);
 }
 
 /*********************************************************************
@@ -274,7 +273,7 @@ std::string generate_routing_block_netlist_name(
  *********************************************************************/
 std::string generate_connection_block_netlist_name(
   const t_rr_type& cb_type, const vtr::Point<size_t>& coordinate,
-  const std::string& postfix) {
+  const std::string& postfix, const size_t& layer) {
   std::string prefix("cb");
   switch (cb_type) {
     case CHANX:
@@ -288,7 +287,7 @@ std::string generate_connection_block_netlist_name(
       exit(1);
   }
 
-  return generate_routing_block_netlist_name(prefix, coordinate, postfix);
+  return generate_routing_block_netlist_name(prefix, coordinate, postfix, layer);
 }
 
 /*********************************************************************
@@ -313,7 +312,7 @@ std::string generate_routing_channel_module_name(const t_rr_type& chan_type,
  * Generate the module name for a routing channel with a given coordinate
  *********************************************************************/
 std::string generate_routing_channel_module_name(
-  const t_rr_type& chan_type, const vtr::Point<size_t>& coordinate) {
+  const t_rr_type& chan_type, const vtr::Point<size_t>& coordinate, const size_t& layer) {
   /* Channel must be either CHANX or CHANY */
   VTR_ASSERT((CHANX == chan_type) || (CHANY == chan_type));
 
@@ -324,6 +323,7 @@ std::string generate_routing_channel_module_name(
   module_prefix_map[CHANY] = std::string("chany");
 
   return std::string(module_prefix_map[chan_type] +
+                     std::to_string(layer) + std::string("_") +
                      std::to_string(coordinate.x()) + std::string("_") +
                      std::to_string(coordinate.y()) + std::string("_"));
 }
@@ -337,7 +337,7 @@ std::string generate_routing_channel_module_name(
  *********************************************************************/
 std::string generate_routing_track_port_name(
   const t_rr_type& chan_type, const vtr::Point<size_t>& coordinate,
-  const size_t& track_id, const PORTS& port_direction) {
+  const size_t& track_id, const PORTS& port_direction, const size_t& layer) {
   /* Channel must be either CHANX or CHANY */
   VTR_ASSERT((CHANX == chan_type) || (CHANY == chan_type));
 
@@ -349,7 +349,7 @@ std::string generate_routing_track_port_name(
 
   std::string port_name = module_prefix_map[chan_type];
   port_name +=
-    std::string("_" + std::to_string(coordinate.x()) + std::string("__") +
+    std::string("__" + std::to_string(layer) + std::string("_") + std::to_string(coordinate.x()) + std::string("_") +
                 std::to_string(coordinate.y()) + std::string("__"));
 
   switch (port_direction) {
@@ -499,7 +499,7 @@ std::string generate_cb_module_track_port_name(const t_rr_type& chan_type,
  *********************************************************************/
 std::string generate_routing_track_middle_output_port_name(
   const t_rr_type& chan_type, const vtr::Point<size_t>& coordinate,
-  const size_t& track_id) {
+  const size_t& track_id, const size_t& layer) {
   /* Channel must be either CHANX or CHANY */
   VTR_ASSERT((CHANX == chan_type) || (CHANY == chan_type));
 
@@ -511,7 +511,7 @@ std::string generate_routing_track_middle_output_port_name(
 
   std::string port_name = module_prefix_map[chan_type];
   port_name +=
-    std::string("_" + std::to_string(coordinate.x()) + std::string("__") +
+    std::string("__" + std::to_string(layer) + std::string("_") + std::to_string(coordinate.x()) + std::string("_") +
                 std::to_string(coordinate.y()) + std::string("__"));
 
   port_name += std::string("midout_");
@@ -527,9 +527,9 @@ std::string generate_routing_track_middle_output_port_name(
  *********************************************************************/
 std::string generate_switch_block_module_name(
   const vtr::Point<size_t>& coordinate, const size_t& layer) {
-  return std::string("sb_" + std::to_string(coordinate.x()) +
-                     std::string("__") + std::to_string(coordinate.y()) +
-                     std::string("_") + std::to_string(layer) + std::string("_"));
+  return std::string("sb_" + std::to_string(layer) + std::string("_") + 
+                     std::to_string(coordinate.x()) + std::string("_") + 
+                     std::to_string(coordinate.y()) + std::string("_") );
 }
 
 /*********************************************************************
@@ -543,8 +543,8 @@ std::string generate_switch_block_module_name_using_index(const size_t& index) {
  * Generate the module name for a tile module with a given coordinate
  *********************************************************************/
 std::string generate_tile_module_name(const vtr::Point<size_t>& tile_coord, const size_t& layer) {
-  return std::string("tile_" + std::to_string(layer) + "__" + 
-                     std::to_string(tile_coord.x()) + "__" +
+  return std::string("tile_" + std::to_string(layer) + "_" + 
+                     std::to_string(tile_coord.x()) + "_" +
                      std::to_string(tile_coord.y()) + "_");
 }
 
@@ -599,8 +599,8 @@ std::string generate_connection_block_module_name(
       exit(1);
   }
 
-  return std::string(prefix + std::to_string(layer) + std::string("__") + std::to_string(coordinate.x()) +
-                     std::string("__") + std::to_string(coordinate.y()) +
+  return std::string(prefix + std::to_string(layer) + std::string("_") + std::to_string(coordinate.x()) +
+                     std::string("_") + std::to_string(coordinate.y()) +
                      std::string("_"));
 }
 
@@ -1293,14 +1293,16 @@ std::string generate_pb_memory_instance_name(const std::string& prefix,
 std::string generate_grid_block_instance_name(
   const std::string& prefix, const std::string& block_name,
   const bool& is_block_io, const e_side& io_side,
-  const vtr::Point<size_t>& grid_coord) {
+  const vtr::Point<size_t>& grid_coord, const size_t& layer) {
   std::string module_name(prefix);
 
   module_name += generate_grid_block_netlist_name(block_name, is_block_io,
                                                   io_side, std::string());
   module_name += std::string("_");
+  module_name += std::to_string(layer);
+  module_name += std::string("_");
   module_name += std::to_string(grid_coord.x());
-  module_name += std::string("__");
+  module_name += std::string("_");
   module_name += std::to_string(grid_coord.y());
   module_name += std::string("_");
 

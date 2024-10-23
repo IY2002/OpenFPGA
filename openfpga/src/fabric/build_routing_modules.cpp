@@ -652,6 +652,12 @@ static void build_connection_block_mux_module(
     rr_gsb.get_ipin_node_in_edges(rr_graph, cb_ipin_side, ipin_index);
   std::vector<RRNodeId> driver_rr_nodes;
   for (const RREdgeId curr_edge : driver_rr_edges) {
+    short src_layer = rr_graph.node_layer(rr_graph.edge_src_node(curr_edge));
+    short sink_layer = rr_graph.node_layer(rr_graph.edge_sink_node(curr_edge));
+
+    // Only adds nodes that are on the same layer as their sink nodes
+    if(src_layer != sink_layer) continue;
+
     driver_rr_nodes.push_back(rr_graph.edge_src_node(curr_edge));
   }
 
