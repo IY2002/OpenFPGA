@@ -42,7 +42,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_global_net(
       for (ClusterPinId pin_id : cluster_nlist.net_pins(net_id)) {
         ClusterBlockId block_id = cluster_nlist.pin_block(pin_id);
         t_block_loc blk_loc = get_block_loc(block_id, false);
-        int phy_pin = placement_ctx.physical_pins[pin_id];
+        int phy_pin = placement_ctx.physical_pins()[pin_id];
         t_physical_tile_type_ptr phy_tile = device_ctx.grid.get_physical_type(
           t_physical_tile_loc(blk_loc.loc.x, blk_loc.loc.y, layer));
         int node_pin_num = phy_tile->num_pins;
@@ -114,14 +114,12 @@ void annotate_vpr_rr_node_nets(const DeviceContext& device_ctx,
                                const RoutingContext& routing_ctx,
                                VprRoutingAnnotation& vpr_routing_annotation,
                                const bool& verbose) {
-  vtr::vector<RRNodeId, ParentNetId> node2net =
-    annotate_rr_node_nets((const Netlist<>&)clustering_ctx.clb_nlist,
-                          device_ctx, routing_ctx, verbose, false);
+  vtr::vector<RRNodeId, ClusterNetId> node2net =
+    annotate_rr_node_nets(clustering_ctx, device_ctx, verbose);
   for (size_t node_id = 0; node_id < device_ctx.rr_graph.num_nodes();
        ++node_id) {
-    vpr_routing_annotation.set_rr_node_net(
-      RRNodeId(node_id),
-      convert_to_cluster_net_id(node2net[RRNodeId(node_id)]));
+    vpr_routing_annotation.set_rr_node_net(RRNodeId(node_id),
+                                           node2net[RRNodeId(node_id)]);
   }
   VTR_LOG("Loaded node-to-net mapping\n");
 }

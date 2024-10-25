@@ -430,7 +430,7 @@ void print_verilog_grids(
        *   i.e., one or more from {TOP, RIGHT, BOTTOM, LEFT},
        *   we will generate one module for each border side
        * - If a I/O block locates in the center of FPGA fabric:
-       *   we will generate one module with NUM_SIDES (same treatment as regular
+       *   we will generate one module with NUM_2D_SIDES (same treatment as regular
        * grids)
        */
       std::set<e_side> io_type_sides =
@@ -445,7 +445,7 @@ void print_verilog_grids(
       /* For CLB and heterogenenous blocks */
       print_verilog_physical_tile_netlist(
         netlist_manager, module_manager, module_name_map, subckt_dir,
-        subckt_dir_name, &physical_tile, NUM_SIDES, options);
+        subckt_dir_name, &physical_tile, NUM_2D_SIDES, options);
     }
   }
   VTR_LOG("Building physical tiles...");

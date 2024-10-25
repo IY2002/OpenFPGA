@@ -365,12 +365,12 @@ void DeviceRRGSB::resize_upon_need(const vtr::Point<size_t>& coordinate, const s
     cby_unique_module_id_[layer].resize(coordinate.x() + 1);
   }
 
-  if (coordinate.y() + 1 > rr_gsb_[coordinate.x()].size()) {
-    rr_gsb_[coordinate.x()].resize(coordinate.y() + 1);
-    sb_unique_module_id_[coordinate.x()].resize(coordinate.y() + 1);
+  if (coordinate.y() + 1 > rr_gsb_[layer][coordinate.x()].size()) {
+    rr_gsb_[layer][coordinate.x()].resize(coordinate.y() + 1);
+    sb_unique_module_id_[layer][coordinate.x()].resize(coordinate.y() + 1);
 
-    cbx_unique_module_id_[coordinate.x()].resize(coordinate.y() + 1);
-    cby_unique_module_id_[coordinate.x()].resize(coordinate.y() + 1);
+    cbx_unique_module_id_[layer][coordinate.x()].resize(coordinate.y() + 1);
+    cby_unique_module_id_[layer][coordinate.x()].resize(coordinate.y() + 1);
   }
 }
 
@@ -424,7 +424,7 @@ void DeviceRRGSB::build_cb_unique_module(const RRGraphView& rr_graph,
             /* This is a mirror, raise the flag and we finish */
             is_unique_module = false;
             /* Record the id of unique mirror */
-            set_cb_unique_module_id(cb_type, gsb_coordinate, ilayer, id);
+            set_cb_unique_module_id(cb_type, gsb_coordinate, id, ilayer);
             break;
           }
         }

@@ -25,7 +25,7 @@ static void write_rr_gsb_ipin_connection_to_xml(std::fstream& fp,
                                                 const RRGraphView& rr_graph,
                                                 const RRGSB& rr_gsb,
                                                 const enum e_side& gsb_side,
-                                                const bool& include_rr_info) {
+                                                const bool& include_rr_info, const size_t& layer) {
   /* Validate the file stream */
   valid_file_stream(fp);
 
@@ -41,10 +41,20 @@ static void write_rr_gsb_ipin_connection_to_xml(std::fstream& fp,
     }
     std::vector<RREdgeId> driver_rr_edges =
       rr_gsb.get_ipin_node_in_edges(rr_graph, gsb_side, inode);
+    // delete interlayer edges
+    for (auto it = driver_rr_edges.begin(); it != driver_rr_edges.end(); ){
+      if (rr_graph.node_layer(rr_graph.edge_src_node(*it)) != layer){
+        it = driver_rr_edges.erase(it);
+      } else {
+        ++it;
+      }
+    }
+
     fp << "\" mux_size=\"" << driver_rr_edges.size() << "\">" << std::endl;
     /* General information of each driving nodes */
     for (const RREdgeId& edge : driver_rr_edges) {
       RRNodeId driver_node = rr_graph.edge_src_node(edge);
+
       /* Skip OPINs: they should be in direct connections */
       if (OPIN == rr_graph.node_type(driver_node)) {
         continue;
@@ -86,7 +96,7 @@ static void write_rr_gsb_chan_connection_to_xml(
   std::fstream& fp, const DeviceGrid& vpr_device_grid,
   const VprDeviceAnnotation& vpr_device_annotation, const RRGraphView& rr_graph,
   const RRGSB& rr_gsb, const enum e_side& gsb_side,
-  const bool& include_rr_info) {
+  const bool& include_rr_info, const size_t& layer) {
   /* Validate the file stream */
   valid_file_stream(fp);
 
@@ -149,7 +159,8 @@ static void write_rr_gsb_chan_connection_to_xml(
     } else {
       for (const RREdgeId& driver_rr_edge : driver_rr_edges) {
         const RRNodeId& driver_rr_node = rr_graph.edge_src_node(driver_rr_edge);
-        e_side driver_node_side = NUM_SIDES;
+
+        e_side driver_node_side = NUM_2D_SIDES;
         int driver_node_index = -1;
         rr_gsb.get_node_side_and_index(rr_graph, driver_rr_node, IN_PORT,
                                        driver_node_side, driver_node_index);
@@ -244,7 +255,7 @@ static void write_rr_switch_block_to_xml(
     /* routing-track and related connections */
     write_rr_gsb_chan_connection_to_xml(fp, vpr_device_grid,
                                         vpr_device_annotation, rr_graph, rr_gsb,
-                                        gsb_side, options.include_rr_info());
+                                        gsb_side, options.include_rr_info(), layer);
   }
 
   fp << "</rr_sb>" << std::endl;
@@ -302,7 +313,7 @@ static void write_rr_connection_block_to_xml(const std::string fname_prefix,
   for (e_side side : rr_gsb.get_cb_ipin_sides(cb_type)) {
     /* IPIN nodes and related connections */
     write_rr_gsb_ipin_connection_to_xml(fp, rr_graph, rr_gsb, side,
-                                        options.include_rr_info());
+                                        options.include_rr_info(), layer);
   }
 
   fp << "</rr_cb>" << std::endl;

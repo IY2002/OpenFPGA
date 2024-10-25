@@ -6,7 +6,7 @@
 /********************************************************************
  * Main function to start OpenFPGA shell interface
  *******************************************************************/
-int main(int argc, char** argv) {
+ int main(int argc, char** argv) {
   OpenfpgaShell openfpga_shell;
   return openfpga_shell.start(argc, argv);
 }

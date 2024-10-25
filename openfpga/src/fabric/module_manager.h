@@ -275,7 +275,7 @@ class ModuleManager {
   ModuleManager::e_module_port_type port_type(const ModuleId& module,
                                               const ModulePortId& port) const;
   /* Get the physical side of a port. Note that not every pin has a valid side.
-   * An invalid value NUM_SIDES will be returned when the pin does not has a
+   * An invalid value NUM_2D_SIDES will be returned when the pin does not has a
    * specific physical location */
   e_side port_side(const ModuleId& module, const ModulePortId& port) const;
   /* Find if a port is a wire connection */
