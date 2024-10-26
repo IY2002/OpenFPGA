@@ -64,9 +64,9 @@ namespace openfpga {
 static void add_top_module_nets_connect_grids_and_sb(
   ModuleManager& module_manager, const ModuleId& top_module,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const size_t& layer, const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
-  const RRGSB& rr_gsb, const vtr::Matrix<size_t>& sb_instance_ids,
+  const RRGSB& rr_gsb, const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
   const bool& compact_routing_hierarchy) {
   /* Skip those Switch blocks that do not exist */
   if (false == rr_gsb.is_sb_exist(rr_graph)) {
@@ -99,7 +99,7 @@ static void add_top_module_nets_connect_grids_and_sb(
   ModuleId sink_sb_module = module_manager.find_module(sink_sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sink_sb_module));
   size_t sink_sb_instance =
-    sb_instance_ids[instance_sb_coordinate.x()][instance_sb_coordinate.y()];
+    sb_instance_ids[layer][instance_sb_coordinate.x()][instance_sb_coordinate.y()];
 
   /* Connect grid output pins (OPIN) to switch block grid pins */
   for (size_t side = 0; side < module_sb.get_num_sides(); ++side) {
@@ -122,7 +122,7 @@ static void add_top_module_nets_connect_grids_and_sb(
         module_manager.find_module(src_grid_module_name);
       VTR_ASSERT(true == module_manager.valid_module_id(src_grid_module));
       size_t src_grid_instance =
-        grid_instance_ids[grid_coordinate.x()][grid_coordinate.y()];
+        grid_instance_ids[layer][grid_coordinate.x()][grid_coordinate.y()];
       size_t src_grid_pin_index = rr_graph.node_pin_num(
         rr_gsb.get_opin_node(side_manager.get_side(), inode));
 
@@ -227,9 +227,9 @@ static void add_top_module_nets_connect_grids_and_sb(
 static void add_top_module_nets_connect_grids_and_sb_with_duplicated_pins(
   ModuleManager& module_manager, const ModuleId& top_module,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const size_t& layer, const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
-  const RRGSB& rr_gsb, const vtr::Matrix<size_t>& sb_instance_ids,
+  const RRGSB& rr_gsb, const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
   const bool& compact_routing_hierarchy) {
   /* Skip those Switch blocks that do not exist */
   if (false == rr_gsb.is_sb_exist(rr_graph)) {
@@ -262,7 +262,7 @@ static void add_top_module_nets_connect_grids_and_sb_with_duplicated_pins(
   ModuleId sink_sb_module = module_manager.find_module(sink_sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sink_sb_module));
   size_t sink_sb_instance =
-    sb_instance_ids[instance_sb_coordinate.x()][instance_sb_coordinate.y()];
+    sb_instance_ids[layer][instance_sb_coordinate.x()][instance_sb_coordinate.y()];
 
   /* Create a truth table for the postfix to be used regarding to the different
    * side of switch blocks */
@@ -296,7 +296,7 @@ static void add_top_module_nets_connect_grids_and_sb_with_duplicated_pins(
         module_manager.find_module(src_grid_module_name);
       VTR_ASSERT(true == module_manager.valid_module_id(src_grid_module));
       size_t src_grid_instance =
-        grid_instance_ids[grid_coordinate.x()][grid_coordinate.y()];
+        grid_instance_ids[layer][grid_coordinate.x()][grid_coordinate.y()];
       size_t src_grid_pin_index = rr_graph.node_pin_num(
         rr_gsb.get_opin_node(side_manager.get_side(), inode));
 
@@ -439,10 +439,10 @@ static void add_top_module_nets_connect_grids_and_sb_with_duplicated_pins(
 static void add_top_module_nets_connect_grids_and_cb(
   ModuleManager& module_manager, const ModuleId& top_module,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const size_t& layer, const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
   const RRGSB& rr_gsb, const t_rr_type& cb_type,
-  const vtr::Matrix<size_t>& cb_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& cb_instance_ids,
   const bool& compact_routing_hierarchy) {
   /* We could have two different coordinators, one is the instance, the other is
    * the module */
@@ -482,7 +482,7 @@ static void add_top_module_nets_connect_grids_and_cb(
   VTR_ASSERT(true == module_manager.valid_module_id(src_cb_module));
   /* Instance id should follow the instance cb coordinate */
   size_t src_cb_instance =
-    cb_instance_ids[instance_cb_coordinate.x()][instance_cb_coordinate.y()];
+    cb_instance_ids[layer][instance_cb_coordinate.x()][instance_cb_coordinate.y()];
 
   /* Iterate over the output pins of the Connection Block */
   std::vector<enum e_side> cb_ipin_sides = module_cb.get_cb_ipin_sides(cb_type);
@@ -519,7 +519,7 @@ static void add_top_module_nets_connect_grids_and_cb(
         module_manager.find_module(sink_grid_module_name);
       VTR_ASSERT(true == module_manager.valid_module_id(sink_grid_module));
       size_t sink_grid_instance =
-        grid_instance_ids[grid_coordinate.x()][grid_coordinate.y()];
+        grid_instance_ids[layer][grid_coordinate.x()][grid_coordinate.y()];
       size_t sink_grid_pin_index = rr_graph.node_pin_num(instance_ipin_node);
 
       t_physical_tile_type_ptr grid_type_descriptor = grids.get_physical_type(
@@ -602,7 +602,7 @@ static void add_top_module_nets_connect_grids_and_cb(
         module_manager.find_module(sink_grid_module_name);
       VTR_ASSERT(true == module_manager.valid_module_id(sink_grid_module));
       size_t sink_grid_instance =
-        grid_instance_ids[grid_coordinate.x()][grid_coordinate.y()];
+        grid_instance_ids[layer][grid_coordinate.x()][grid_coordinate.y()];
       size_t sink_grid_pin_index = rr_graph.node_pin_num(instance_opin_node);
 
       t_physical_tile_type_ptr grid_type_descriptor = grids.get_physical_type(
@@ -691,8 +691,8 @@ static void add_top_module_nets_connect_grids_and_cb(
 static void add_top_module_nets_connect_sb_and_cb(
   ModuleManager& module_manager, const ModuleId& top_module,
   const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
-  const RRGSB& rr_gsb, const vtr::Matrix<size_t>& sb_instance_ids,
-  const std::map<t_rr_type, vtr::Matrix<size_t>>& cb_instance_ids,
+  const RRGSB& rr_gsb, const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
+  const std::map<t_rr_type, vtr::NdMatrix<size_t, 3>>& cb_instance_ids,
   const bool& compact_routing_hierarchy, const size_t& layer) {
   /* We could have two different coordinators, one is the instance, the other is
    * the module */
@@ -723,7 +723,7 @@ static void add_top_module_nets_connect_sb_and_cb(
   ModuleId sb_module_id = module_manager.find_module(sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sb_module_id));
   size_t sb_instance =
-    sb_instance_ids[instance_sb_coordinate.x()][instance_sb_coordinate.y()];
+    sb_instance_ids[layer][instance_sb_coordinate.x()][instance_sb_coordinate.y()];
 
   /* Connect grid output pins (OPIN) to switch block grid pins */
   for (size_t side = 0; side < module_sb.get_num_sides(); ++side) {
@@ -799,7 +799,7 @@ static void add_top_module_nets_connect_sb_and_cb(
     vtr::Point<size_t> instance_cb_coordinate(instance_cb.get_cb_x(cb_type),
                                               instance_cb.get_cb_y(cb_type));
     size_t cb_instance = cb_instance_ids.at(
-      cb_type)[instance_cb_coordinate.x()][instance_cb_coordinate.y()];
+      cb_type)[layer][instance_cb_coordinate.x()][instance_cb_coordinate.y()];
 
     for (size_t itrack = 0;
          itrack < module_sb.get_chan_width(side_manager.get_side()); ++itrack) {
@@ -900,47 +900,50 @@ static void add_top_module_nets_connect_sb_and_cb(
 void add_top_module_nets_connect_grids_and_gsbs(
   ModuleManager& module_manager, const ModuleId& top_module,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
-  const vtr::Matrix<size_t>& sb_instance_ids,
-  const std::map<t_rr_type, vtr::Matrix<size_t>>& cb_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
+  const std::map<t_rr_type, vtr::NdMatrix<size_t, 3>>& cb_instance_ids,
   const bool& compact_routing_hierarchy, const bool& duplicate_grid_pin) {
   vtr::ScopedStartFinishTimer timer("Add module nets between grids and GSBs");
 
   vtr::Point<size_t> gsb_range = device_rr_gsb.get_gsb_range();
+  size_t num_layers = device_rr_gsb.get_gsb_layers();
 
-  for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
-    for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
-      vtr::Point<size_t> gsb_coordinate(ix, iy);
-      const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, layer);
+  for (size_t ilayer = 0; ilayer < num_layers; ++ilayer){
+    for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
+      for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
+        vtr::Point<size_t> gsb_coordinate(ix, iy);
+        const RRGSB& rr_gsb = device_rr_gsb.get_gsb(ix, iy, ilayer);
 
-      /* Connect the grid pins of the GSB to adjacent grids */
-      if (false == duplicate_grid_pin) {
-        add_top_module_nets_connect_grids_and_sb(
-          module_manager, top_module, vpr_device_annotation, grids, layer,
-          grid_instance_ids, rr_graph, device_rr_gsb, rr_gsb, sb_instance_ids,
-          compact_routing_hierarchy);
-      } else {
-        VTR_ASSERT_SAFE(true == duplicate_grid_pin);
-        add_top_module_nets_connect_grids_and_sb_with_duplicated_pins(
-          module_manager, top_module, vpr_device_annotation, grids, layer,
-          grid_instance_ids, rr_graph, device_rr_gsb, rr_gsb, sb_instance_ids,
-          compact_routing_hierarchy);
+        /* Connect the grid pins of the GSB to adjacent grids */
+        if (false == duplicate_grid_pin) {
+          add_top_module_nets_connect_grids_and_sb(
+            module_manager, top_module, vpr_device_annotation, grids, ilayer,
+            grid_instance_ids, rr_graph, device_rr_gsb, rr_gsb, sb_instance_ids,
+            compact_routing_hierarchy);
+        } else {
+          VTR_ASSERT_SAFE(true == duplicate_grid_pin);
+          add_top_module_nets_connect_grids_and_sb_with_duplicated_pins(
+            module_manager, top_module, vpr_device_annotation, grids, ilayer,
+            grid_instance_ids, rr_graph, device_rr_gsb, rr_gsb, sb_instance_ids,
+            compact_routing_hierarchy);
+        }
+
+        add_top_module_nets_connect_grids_and_cb(
+          module_manager, top_module, vpr_device_annotation, grids, ilayer,
+          grid_instance_ids, rr_graph, device_rr_gsb, rr_gsb, CHANX,
+          cb_instance_ids.at(CHANX), compact_routing_hierarchy);
+
+        add_top_module_nets_connect_grids_and_cb(
+          module_manager, top_module, vpr_device_annotation, grids, ilayer,
+          grid_instance_ids, rr_graph, device_rr_gsb, rr_gsb, CHANY,
+          cb_instance_ids.at(CHANY), compact_routing_hierarchy);
+
+        add_top_module_nets_connect_sb_and_cb(
+          module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
+          sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, ilayer);
       }
-
-      add_top_module_nets_connect_grids_and_cb(
-        module_manager, top_module, vpr_device_annotation, grids, layer,
-        grid_instance_ids, rr_graph, device_rr_gsb, rr_gsb, CHANX,
-        cb_instance_ids.at(CHANX), compact_routing_hierarchy);
-
-      add_top_module_nets_connect_grids_and_cb(
-        module_manager, top_module, vpr_device_annotation, grids, layer,
-        grid_instance_ids, rr_graph, device_rr_gsb, rr_gsb, CHANY,
-        cb_instance_ids.at(CHANY), compact_routing_hierarchy);
-
-      add_top_module_nets_connect_sb_and_cb(
-        module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
-        sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, layer);
     }
   }
 }
@@ -956,7 +959,7 @@ static int build_top_module_global_net_for_given_grid_module(
   const BasicPort& tile_port_to_connect,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
   const size_t& layer, const vtr::Point<size_t>& grid_coordinate,
-  const e_side& border_side, const vtr::Matrix<size_t>& grid_instance_ids,
+  const e_side& border_side, const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const bool& perimeter_cb) {
   t_physical_tile_type_ptr physical_tile = grids.get_physical_type(
     t_physical_tile_loc(grid_coordinate.x(), grid_coordinate.y(), layer));
@@ -968,7 +971,7 @@ static int build_top_module_global_net_for_given_grid_module(
   ModuleId grid_module = module_manager.find_module(grid_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(grid_module));
   size_t grid_instance =
-    grid_instance_ids[grid_coordinate.x()][grid_coordinate.y()];
+    grid_instance_ids[layer][grid_coordinate.x()][grid_coordinate.y()];
   /* Find the source port at the top-level module */
   BasicPort src_port = module_manager.module_port(top_module, top_module_port);
 
@@ -1095,7 +1098,7 @@ static int build_top_module_global_net_from_grid_modules(
   const ModulePortId& top_module_port, const TileAnnotation& tile_annotation,
   const TileGlobalPortId& tile_global_port,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const size_t& layer, const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const bool& perimeter_cb) {
   int status = CMD_EXEC_SUCCESS;
 
@@ -1240,7 +1243,7 @@ static int build_top_module_global_net_from_clock_arch_tree(
   ModuleManager& module_manager, const ModuleId& top_module,
   const ModulePortId& top_module_port, const RRGraphView& rr_graph,
   const DeviceRRGSB& device_rr_gsb,
-  const std::map<t_rr_type, vtr::Matrix<size_t>>& cb_instance_ids,
+  const std::map<t_rr_type, vtr::NdMatrix<size_t, 3>>& cb_instance_ids,
   const ClockNetwork& clk_ntwk, const std::string& clk_tree_name,
   const RRClockSpatialLookup& rr_clock_lookup, const size_t& layer) {
   int status = CMD_EXEC_SUCCESS;
@@ -1297,7 +1300,7 @@ static int build_top_module_global_net_from_clock_arch_tree(
         entry_track_type, entry_unique_cb_coord, layer);
       ModuleId cb_module = module_manager.find_module(cb_module_name);
       size_t cb_instance =
-        cb_instance_ids.at(entry_track_type)[entry_point.x()][entry_point.y()];
+        cb_instance_ids.at(entry_track_type)[layer][entry_point.x()][entry_point.y()];
       ModulePinInfo des_pin_info = find_connection_block_module_chan_port(
         module_manager, cb_module, rr_graph, rr_gsb, entry_track_type,
         entry_rr_node);
@@ -1322,10 +1325,10 @@ int add_top_module_global_ports_from_grid_modules(
   ModuleManager& module_manager, const ModuleId& top_module,
   const TileAnnotation& tile_annotation,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
-  const size_t& layer, const RRGraphView& rr_graph,
+  const RRGraphView& rr_graph,
   const DeviceRRGSB& device_rr_gsb,
-  const std::map<t_rr_type, vtr::Matrix<size_t>>& cb_instance_ids,
-  const vtr::Matrix<size_t>& grid_instance_ids, const ClockNetwork& clk_ntwk,
+  const std::map<t_rr_type, vtr::NdMatrix<size_t, 3>>& cb_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& grid_instance_ids, const ClockNetwork& clk_ntwk,
   const RRClockSpatialLookup& rr_clock_lookup, const bool& perimeter_cb) {
   int status = CMD_EXEC_SUCCESS;
 
@@ -1386,11 +1389,11 @@ int add_top_module_global_ports_from_grid_modules(
         module_manager, top_module, top_module_port, rr_graph, device_rr_gsb,
         cb_instance_ids, clk_ntwk,
         tile_annotation.global_port_clock_arch_tree_name(tile_global_port),
-        rr_clock_lookup, layer);
+        rr_clock_lookup, 0);
     } else {
       status = build_top_module_global_net_from_grid_modules(
         module_manager, top_module, top_module_port, tile_annotation,
-        tile_global_port, vpr_device_annotation, grids, layer,
+        tile_global_port, vpr_device_annotation, grids, 0,
         grid_instance_ids, perimeter_cb);
     }
     if (status == CMD_EXEC_FATAL_ERROR) {

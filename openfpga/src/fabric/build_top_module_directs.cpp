@@ -39,7 +39,7 @@ static void add_module_nets_tile_direct_connection(
   ModuleManager& module_manager, const ModuleId& top_module,
   const CircuitLibrary& circuit_lib,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const size_t& layer, const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const TileDirect& tile_direct, const TileDirectId& tile_direct_id,
   const ArchDirect& arch_direct) {
   vtr::Point<size_t> device_size(grids.width(), grids.height());
@@ -60,7 +60,7 @@ static void add_module_nets_tile_direct_connection(
   VTR_ASSERT(true == module_manager.valid_module_id(src_grid_module));
   /* Record the instance id */
   size_t src_grid_instance =
-    grid_instance_ids[src_clb_coord.x()][src_clb_coord.y()];
+    grid_instance_ids[layer][src_clb_coord.x()][src_clb_coord.y()];
 
   /* Find the module name of sink clb */
   vtr::Point<size_t> des_clb_coord =
@@ -79,7 +79,7 @@ static void add_module_nets_tile_direct_connection(
   VTR_ASSERT(true == module_manager.valid_module_id(sink_grid_module));
   /* Record the instance id */
   size_t sink_grid_instance =
-    grid_instance_ids[des_clb_coord.x()][des_clb_coord.y()];
+    grid_instance_ids[layer][des_clb_coord.x()][des_clb_coord.y()];
 
   /* Find the module id of a direct connection module */
   CircuitModelId direct_circuit_model =
@@ -213,7 +213,7 @@ void add_top_module_nets_tile_direct_connections(
   ModuleManager& module_manager, const ModuleId& top_module,
   const CircuitLibrary& circuit_lib,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const TileDirect& tile_direct, const ArchDirect& arch_direct) {
   vtr::ScopedStartFinishTimer timer(
     "Add module nets for inter-tile connections");
@@ -221,7 +221,7 @@ void add_top_module_nets_tile_direct_connections(
   for (const TileDirectId& tile_direct_id : tile_direct.directs()) {
     add_module_nets_tile_direct_connection(
       module_manager, top_module, circuit_lib, vpr_device_annotation, grids,
-      layer, grid_instance_ids, tile_direct, tile_direct_id, arch_direct);
+      0, grid_instance_ids, tile_direct, tile_direct_id, arch_direct);
   }
 }
 

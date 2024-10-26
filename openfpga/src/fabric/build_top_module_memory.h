@@ -33,10 +33,10 @@ void organize_top_module_memory_modules(
   ModuleManager& module_manager, const ModuleId& top_module,
   const CircuitLibrary& circuit_lib, const ConfigProtocol& config_protocol,
   const CircuitModelId& sram_model, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const DeviceRRGSB& device_rr_gsb, const RRGraphView& rr_graph,
-  const vtr::Matrix<size_t>& sb_instance_ids,
-  const std::map<t_rr_type, vtr::Matrix<size_t>>& cb_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
+  const std::map<t_rr_type, vtr::NdMatrix<size_t, 3>>& cb_instance_ids,
   const bool& compact_routing_hierarchy);
 
 void build_top_module_configurable_regions(

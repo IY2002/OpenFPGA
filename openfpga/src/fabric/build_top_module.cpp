@@ -72,11 +72,11 @@ int build_top_module(
   /* Label module usage */
   module_manager.set_module_usage(top_module, ModuleManager::MODULE_TOP);
 
-  for (size_t layer = 0; layer < grids.get_num_layers(); ++layer) {
+  // for (size_t layer = 0; layer < grids.get_num_layers(); ++layer) {
     if (fabric_tile.empty()) {
       status = build_top_module_fine_grained_child_instances(
         module_manager, top_module, blwl_sr_banks, circuit_lib, clk_ntwk,
-        rr_clock_lookup, vpr_device_annotation, grids, layer, tile_annotation,
+        rr_clock_lookup, vpr_device_annotation, grids, tile_annotation,
         rr_graph, device_rr_gsb, tile_direct, arch_direct, config_protocol,
         sram_model, frame_view, compact_routing_hierarchy, duplicate_grid_pin,
         fabric_key, group_config_block, perimeter_cb, verbose);
@@ -84,12 +84,12 @@ int build_top_module(
       /* Build the tile instances under the top module */
       status = build_top_module_tile_child_instances(
         module_manager, top_module, blwl_sr_banks, circuit_lib, clk_ntwk,
-        rr_clock_lookup, vpr_device_annotation, grids, layer, tile_annotation,
+        rr_clock_lookup, vpr_device_annotation, grids, 0, tile_annotation,
         rr_graph, device_rr_gsb, tile_direct, arch_direct, fabric_tile,
         config_protocol, sram_model, fabric_key, group_config_block,
         name_module_using_index, perimeter_cb, frame_view, verbose);
     }
-  }
+  // }
 
   if (status != CMD_EXEC_SUCCESS) {
     return CMD_EXEC_FATAL_ERROR;

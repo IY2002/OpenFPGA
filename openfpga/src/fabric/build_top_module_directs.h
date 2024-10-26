@@ -26,7 +26,7 @@ void add_top_module_nets_tile_direct_connections(
   ModuleManager& module_manager, const ModuleId& top_module,
   const CircuitLibrary& circuit_lib,
   const VprDeviceAnnotation& vpr_device_annotation, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const TileDirect& tile_direct, const ArchDirect& arch_direct);
 
 } /* end namespace openfpga */

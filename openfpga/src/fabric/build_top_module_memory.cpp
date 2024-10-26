@@ -38,7 +38,7 @@ static void organize_top_module_tile_cb_modules(
   ModuleManager& module_manager, const ModuleId& top_module,
   const CircuitLibrary& circuit_lib,
   const e_config_protocol_type& sram_orgz_type,
-  const CircuitModelId& sram_model, const vtr::Matrix<size_t>& cb_instance_ids,
+  const CircuitModelId& sram_model, const vtr::NdMatrix<size_t, 3>& cb_instance_ids,
   const DeviceRRGSB& device_rr_gsb, const RRGSB& rr_gsb,
   const t_rr_type& cb_type, const bool& compact_routing_hierarchy, const size_t& layer) {
   /* If the CB does not exist, we can skip addition */
@@ -85,7 +85,7 @@ static void organize_top_module_tile_cb_modules(
     /* Note that use the original CB coodinate for instance id searching ! */
     module_manager.add_configurable_child(
       top_module, cb_module,
-      cb_instance_ids[rr_gsb.get_cb_x(cb_type)][rr_gsb.get_cb_y(cb_type)],
+      cb_instance_ids[layer][rr_gsb.get_cb_x(cb_type)][rr_gsb.get_cb_y(cb_type)],
       ModuleManager::e_config_child_type::UNIFIED, config_coord);
   }
 }
@@ -133,10 +133,10 @@ static void organize_top_module_tile_memory_modules(
   const CircuitLibrary& circuit_lib,
   const e_config_protocol_type& sram_orgz_type,
   const CircuitModelId& sram_model, const DeviceGrid& grids,
-  const vtr::Matrix<size_t>& grid_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const DeviceRRGSB& device_rr_gsb, const RRGraphView& rr_graph,
-  const vtr::Matrix<size_t>& sb_instance_ids,
-  const std::map<t_rr_type, vtr::Matrix<size_t>>& cb_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
+  const std::map<t_rr_type, vtr::NdMatrix<size_t, 3>>& cb_instance_ids,
   const bool& compact_routing_hierarchy, const size_t& layer,
   const vtr::Point<size_t>& tile_coord, const e_side& tile_border_side) {
   vtr::Point<size_t> gsb_coord_range = device_rr_gsb.get_gsb_range();
@@ -174,7 +174,7 @@ static void organize_top_module_tile_memory_modules(
                                      rr_gsb.get_sb_y() * 2 + 1);
         module_manager.add_configurable_child(
           top_module, sb_module,
-          sb_instance_ids[rr_gsb.get_sb_x()][rr_gsb.get_sb_y()],
+          sb_instance_ids[layer][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()],
           ModuleManager::e_config_child_type::UNIFIED, config_coord);
       }
     }
@@ -221,7 +221,7 @@ static void organize_top_module_tile_memory_modules(
     vtr::Point<int> config_coord(tile_coord.x() * 2, tile_coord.y() * 2);
     module_manager.add_configurable_child(
       top_module, grid_module,
-      grid_instance_ids[tile_coord.x()][tile_coord.y()],
+      grid_instance_ids[layer][tile_coord.x()][tile_coord.y()],
       ModuleManager::e_config_child_type::UNIFIED, config_coord);
   }
 }
@@ -439,10 +439,10 @@ void organize_top_module_memory_modules(
   ModuleManager& module_manager, const ModuleId& top_module,
   const CircuitLibrary& circuit_lib, const ConfigProtocol& config_protocol,
   const CircuitModelId& sram_model, const DeviceGrid& grids,
-  const size_t& layer, const vtr::Matrix<size_t>& grid_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& grid_instance_ids,
   const DeviceRRGSB& device_rr_gsb, const RRGraphView& rr_graph,
-  const vtr::Matrix<size_t>& sb_instance_ids,
-  const std::map<t_rr_type, vtr::Matrix<size_t>>& cb_instance_ids,
+  const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
+  const std::map<t_rr_type, vtr::NdMatrix<size_t, 3>>& cb_instance_ids,
   const bool& compact_routing_hierarchy) {
   /* Ensure clean vectors to return */
   // VTR_ASSERT(true ==
@@ -493,43 +493,45 @@ void organize_top_module_memory_modules(
     io_coords[LEFT].push_back(vtr::Point<size_t>(0, iy));
   }
 
-  for (const e_side& io_side : io_sides) {
-    for (const vtr::Point<size_t>& io_coord : io_coords[io_side]) {
-      /* Identify the GSB that surrounds the grid */
+  for (size_t ilayer = 0; ilayer < grids.get_num_layers(); ++ilayer){
+    for (const e_side& io_side : io_sides) {
+      for (const vtr::Point<size_t>& io_coord : io_coords[io_side]) {
+        /* Identify the GSB that surrounds the grid */
+        organize_top_module_tile_memory_modules(
+          module_manager, top_module, circuit_lib, config_protocol.type(),
+          sram_model, grids, grid_instance_ids, device_rr_gsb, rr_graph,
+          sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, ilayer,
+          io_coord, io_side);
+      }
+    }
+
+    /* For the core grids */
+    std::vector<vtr::Point<size_t>> core_coords;
+    bool positive_direction = true;
+    for (size_t iy = 1; iy < grids.height() - 1; ++iy) {
+      /* For positive direction: -----> */
+      if (true == positive_direction) {
+        for (size_t ix = 1; ix < grids.width() - 1; ++ix) {
+          core_coords.push_back(vtr::Point<size_t>(ix, iy));
+        }
+      } else {
+        VTR_ASSERT(false == positive_direction);
+        /* For negative direction: -----> */
+        for (size_t ix = grids.width() - 2; ix >= 1; --ix) {
+          core_coords.push_back(vtr::Point<size_t>(ix, iy));
+        }
+      }
+      /* Flip the positive direction to be negative */
+      positive_direction = !positive_direction;
+    }
+
+    for (const vtr::Point<size_t>& core_coord : core_coords) {
       organize_top_module_tile_memory_modules(
         module_manager, top_module, circuit_lib, config_protocol.type(),
         sram_model, grids, grid_instance_ids, device_rr_gsb, rr_graph,
-        sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, layer,
-        io_coord, io_side);
+        sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, ilayer,
+        core_coord, NUM_2D_SIDES);
     }
-  }
-
-  /* For the core grids */
-  std::vector<vtr::Point<size_t>> core_coords;
-  bool positive_direction = true;
-  for (size_t iy = 1; iy < grids.height() - 1; ++iy) {
-    /* For positive direction: -----> */
-    if (true == positive_direction) {
-      for (size_t ix = 1; ix < grids.width() - 1; ++ix) {
-        core_coords.push_back(vtr::Point<size_t>(ix, iy));
-      }
-    } else {
-      VTR_ASSERT(false == positive_direction);
-      /* For negative direction: -----> */
-      for (size_t ix = grids.width() - 2; ix >= 1; --ix) {
-        core_coords.push_back(vtr::Point<size_t>(ix, iy));
-      }
-    }
-    /* Flip the positive direction to be negative */
-    positive_direction = !positive_direction;
-  }
-
-  for (const vtr::Point<size_t>& core_coord : core_coords) {
-    organize_top_module_tile_memory_modules(
-      module_manager, top_module, circuit_lib, config_protocol.type(),
-      sram_model, grids, grid_instance_ids, device_rr_gsb, rr_graph,
-      sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, layer,
-      core_coord, NUM_2D_SIDES);
   }
 
   /* Split memory modules into different regions */
