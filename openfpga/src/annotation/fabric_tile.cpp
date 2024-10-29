@@ -790,7 +790,7 @@ bool FabricTile::equivalent_tile(const FabricTileId& tile_a,
 int FabricTile::build_unique_tiles(const DeviceGrid& grids,
                                    const DeviceRRGSB& device_rr_gsb,
                                    const bool& verbose) {
-  for (size_t ilayer = 0; ilayer < grids.get_num_layers(); ++ilayer) {
+  for (size_t ilayer = 0; ilayer < (size_t)grids.get_num_layers(); ++ilayer) {
     for (size_t ix = 0; ix < grids.width(); ++ix) {
       for (size_t iy = 0; iy < grids.height(); ++iy) {
         if (!valid_tile_id(tile_coord2id_lookup_[ilayer][ix][iy])) {

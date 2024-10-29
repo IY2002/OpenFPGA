@@ -78,24 +78,27 @@ static void add_top_module_nets_connect_grids_and_sb(
   vtr::Point<size_t> instance_sb_coordinate(rr_gsb.get_sb_x(),
                                             rr_gsb.get_sb_y());
   vtr::Point<size_t> module_gsb_coordinate(rr_gsb.get_x(), rr_gsb.get_y());
+  size_t module_gsb_layer = layer;
 
   /* If we use compact routing hierarchy, we should find the unique module of
    * CB, which is added to the top module */
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
-    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord, layer);
+    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord, module_gsb_layer);
     module_gsb_coordinate.set_x(unique_mirror.get_x());
     module_gsb_coordinate.set_y(unique_mirror.get_y());
+    module_gsb_layer = device_rr_gsb.get_sb_unique_module_layer(
+      device_rr_gsb.get_sb_unique_module_index(gsb_coord, module_gsb_layer));
   }
 
   /* This is the source cb that is added to the top module */
-  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_coordinate, layer);
+  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_coordinate, module_gsb_layer);
   vtr::Point<size_t> module_sb_coordinate(module_sb.get_sb_x(),
                                           module_sb.get_sb_y());
 
   /* Collect sink-related information */
   std::string sink_sb_module_name =
-    generate_switch_block_module_name(module_sb_coordinate, layer);
+    generate_switch_block_module_name(module_sb_coordinate, module_gsb_layer);
   ModuleId sink_sb_module = module_manager.find_module(sink_sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sink_sb_module));
   size_t sink_sb_instance =
@@ -241,24 +244,27 @@ static void add_top_module_nets_connect_grids_and_sb_with_duplicated_pins(
   vtr::Point<size_t> instance_sb_coordinate(rr_gsb.get_sb_x(),
                                             rr_gsb.get_sb_y());
   vtr::Point<size_t> module_gsb_coordinate(rr_gsb.get_x(), rr_gsb.get_y());
+  size_t module_gsb_layer = layer;
 
   /* If we use compact routing hierarchy, we should find the unique module of
    * CB, which is added to the top module */
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
-    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord, layer);
+    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord, module_gsb_layer);
     module_gsb_coordinate.set_x(unique_mirror.get_x());
     module_gsb_coordinate.set_y(unique_mirror.get_y());
+    module_gsb_layer = device_rr_gsb.get_sb_unique_module_layer(
+      device_rr_gsb.get_sb_unique_module_index(gsb_coord, module_gsb_layer));
   }
 
   /* This is the source cb that is added to the top module */
-  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_coordinate, layer);
+  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_coordinate, module_gsb_layer);
   vtr::Point<size_t> module_sb_coordinate(module_sb.get_sb_x(),
                                           module_sb.get_sb_y());
 
   /* Collect sink-related information */
   std::string sink_sb_module_name =
-    generate_switch_block_module_name(module_sb_coordinate, layer);
+    generate_switch_block_module_name(module_sb_coordinate, module_gsb_layer);
   ModuleId sink_sb_module = module_manager.find_module(sink_sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sink_sb_module));
   size_t sink_sb_instance =
@@ -449,6 +455,7 @@ static void add_top_module_nets_connect_grids_and_cb(
   vtr::Point<size_t> instance_cb_coordinate(rr_gsb.get_cb_x(cb_type),
                                             rr_gsb.get_cb_y(cb_type));
   vtr::Point<size_t> module_gsb_coordinate(rr_gsb.get_x(), rr_gsb.get_y());
+  size_t module_gsb_layer = layer;
 
   /* Skip those Connection blocks that do not exist */
   if (false == rr_gsb.is_cb_exist(cb_type)) {
@@ -465,19 +472,22 @@ static void add_top_module_nets_connect_grids_and_cb(
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
     const RRGSB& unique_mirror =
-      device_rr_gsb.get_cb_unique_module(cb_type, gsb_coord, layer);
+      device_rr_gsb.get_cb_unique_module(cb_type, gsb_coord, module_gsb_layer);
     module_gsb_coordinate.set_x(unique_mirror.get_x());
     module_gsb_coordinate.set_y(unique_mirror.get_y());
+    module_gsb_layer = device_rr_gsb.get_cb_unique_module_layer(
+      cb_type, device_rr_gsb.get_cb_unique_module_index(cb_type, gsb_coord,
+                                                        module_gsb_layer));
   }
 
   /* This is the source cb that is added to the top module */
-  const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_coordinate, layer);
+  const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_coordinate, module_gsb_layer);
   vtr::Point<size_t> module_cb_coordinate(module_cb.get_cb_x(cb_type),
                                           module_cb.get_cb_y(cb_type));
 
   /* Collect source-related information */
   std::string src_cb_module_name =
-    generate_connection_block_module_name(cb_type, module_cb_coordinate, layer);
+    generate_connection_block_module_name(cb_type, module_cb_coordinate, module_gsb_layer);
   ModuleId src_cb_module = module_manager.find_module(src_cb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(src_cb_module));
   /* Instance id should follow the instance cb coordinate */
@@ -699,6 +709,7 @@ static void add_top_module_nets_connect_sb_and_cb(
   vtr::Point<size_t> instance_sb_coordinate(rr_gsb.get_sb_x(),
                                             rr_gsb.get_sb_y());
   vtr::Point<size_t> module_gsb_sb_coordinate(rr_gsb.get_x(), rr_gsb.get_y());
+  size_t module_gsb_layer = layer;
 
   /* Skip those Switch blocks that do not exist */
   if (false == rr_gsb.is_sb_exist(rr_graph)) {
@@ -709,17 +720,19 @@ static void add_top_module_nets_connect_sb_and_cb(
    * CB, which is added to the top module */
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
-    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord, layer);
+    const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(gsb_coord, module_gsb_layer);
     module_gsb_sb_coordinate.set_x(unique_mirror.get_x());
     module_gsb_sb_coordinate.set_y(unique_mirror.get_y());
+    module_gsb_layer = device_rr_gsb.get_sb_unique_module_layer(
+      device_rr_gsb.get_sb_unique_module_index(gsb_coord, layer));
   }
 
   /* This is the source cb that is added to the top module */
-  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_sb_coordinate, layer);
+  const RRGSB& module_sb = device_rr_gsb.get_gsb(module_gsb_sb_coordinate, module_gsb_layer);
   vtr::Point<size_t> module_sb_coordinate(module_sb.get_sb_x(),
                                           module_sb.get_sb_y());
   std::string sb_module_name =
-    generate_switch_block_module_name(module_sb_coordinate, layer);
+    generate_switch_block_module_name(module_sb_coordinate, module_gsb_layer);
   ModuleId sb_module_id = module_manager.find_module(sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sb_module_id));
   size_t sb_instance =
@@ -745,6 +758,8 @@ static void add_top_module_nets_connect_sb_and_cb(
     vtr::Point<size_t> module_gsb_cb_coordinate =
       find_top_module_gsb_coordinate_by_sb_side(rr_gsb,
                                                 side_manager.get_side());
+
+    size_t module_gsb_cb_layer = layer;
 
     /* Skip those Connection blocks that do not exist:
      * 1. The CB does not exist in the device level! We should skip!
@@ -782,16 +797,20 @@ static void add_top_module_nets_connect_sb_and_cb(
      * CB, which is added to the top module */
     if (true == compact_routing_hierarchy) {
       const RRGSB& unique_mirror =
-        device_rr_gsb.get_cb_unique_module(cb_type, module_gsb_cb_coordinate, layer);
+        device_rr_gsb.get_cb_unique_module(cb_type, module_gsb_cb_coordinate, module_gsb_cb_layer);
       module_gsb_cb_coordinate.set_x(unique_mirror.get_x());
       module_gsb_cb_coordinate.set_y(unique_mirror.get_y());
+      module_gsb_cb_layer = device_rr_gsb.get_cb_unique_module_layer(
+        cb_type, device_rr_gsb.get_cb_unique_module_index(cb_type,
+                                                          module_gsb_cb_coordinate,
+                                                          module_gsb_cb_layer));
     }
 
-    const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_cb_coordinate, layer);
+    const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_cb_coordinate, module_gsb_cb_layer);
     vtr::Point<size_t> module_cb_coordinate(module_cb.get_cb_x(cb_type),
                                             module_cb.get_cb_y(cb_type));
     std::string cb_module_name =
-      generate_connection_block_module_name(cb_type, module_cb_coordinate, layer);
+      generate_connection_block_module_name(cb_type, module_cb_coordinate, module_gsb_cb_layer);
     ModuleId cb_module_id = module_manager.find_module(cb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(cb_module_id));
     const RRGSB& instance_cb =

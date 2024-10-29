@@ -53,18 +53,21 @@ static void organize_top_module_tile_cb_modules(
 
   vtr::Point<size_t> cb_coord(rr_gsb.get_cb_x(cb_type),
                               rr_gsb.get_cb_y(cb_type));
+  size_t cb_layer = layer;
   /* If we use compact routing hierarchy, we should instanciate the unique
    * module of SB */
   if (true == compact_routing_hierarchy) {
     /* Note: use GSB coordinate when inquire for unique modules!!! */
     const RRGSB& unique_mirror = device_rr_gsb.get_cb_unique_module(
-      cb_type, vtr::Point<size_t>(rr_gsb.get_x(), rr_gsb.get_y()), layer);
+      cb_type, vtr::Point<size_t>(rr_gsb.get_x(), rr_gsb.get_y()), cb_layer);
     cb_coord.set_x(unique_mirror.get_cb_x(cb_type));
     cb_coord.set_y(unique_mirror.get_cb_y(cb_type));
+    cb_layer = device_rr_gsb.get_cb_unique_module_layer(
+      cb_type, device_rr_gsb.get_cb_unique_module_index(cb_type, vtr::Point<size_t>(rr_gsb.get_x(), rr_gsb.get_y()), cb_layer));
   }
 
   std::string cb_module_name =
-    generate_connection_block_module_name(cb_type, cb_coord, layer);
+    generate_connection_block_module_name(cb_type, cb_coord, cb_layer);
   ModuleId cb_module = module_manager.find_module(cb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
 
@@ -151,14 +154,17 @@ static void organize_top_module_tile_memory_modules(
      * Note that switch block does always exist in a GSB
      */
     vtr::Point<size_t> sb_coord(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
+    size_t sb_layer = layer;
     /* If we use compact routing hierarchy, we should instanciate the unique
      * module of SB */
     if (true == compact_routing_hierarchy) {
-      const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(sb_coord, layer);
+      const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(sb_coord, sb_layer);
       sb_coord.set_x(unique_mirror.get_sb_x());
       sb_coord.set_y(unique_mirror.get_sb_y());
+      sb_layer = device_rr_gsb.get_sb_unique_module_layer(
+        device_rr_gsb.get_sb_unique_module_index(sb_coord, sb_layer));
     }
-    std::string sb_module_name = generate_switch_block_module_name(sb_coord, layer);
+    std::string sb_module_name = generate_switch_block_module_name(sb_coord, sb_layer);
     ModuleId sb_module = module_manager.find_module(sb_module_name);
     VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
 
@@ -493,7 +499,7 @@ void organize_top_module_memory_modules(
     io_coords[LEFT].push_back(vtr::Point<size_t>(0, iy));
   }
 
-  for (size_t ilayer = 0; ilayer < grids.get_num_layers(); ++ilayer){
+  for (size_t ilayer = 0; ilayer < (size_t)grids.get_num_layers(); ++ilayer){
     for (const e_side& io_side : io_sides) {
       for (const vtr::Point<size_t>& io_coord : io_coords[io_side]) {
         /* Identify the GSB that surrounds the grid */

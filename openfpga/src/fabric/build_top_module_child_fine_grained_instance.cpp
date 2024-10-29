@@ -99,7 +99,7 @@ static vtr::NdMatrix<size_t, 3> add_top_module_grid_instances(
   vtr::ScopedStartFinishTimer timer("Add grid instances to top module");
 
   /* Reserve an array for the instance ids */
-  vtr::NdMatrix<size_t, 3> grid_instance_ids({grids.get_num_layers(), grids.width(), grids.height()});
+  vtr::NdMatrix<size_t, 3> grid_instance_ids({(size_t)grids.get_num_layers(), grids.width(), grids.height()});
   grid_instance_ids.fill(size_t(-1));
 
   /* Instanciate I/O grids */
@@ -107,7 +107,7 @@ static vtr::NdMatrix<size_t, 3> add_top_module_grid_instances(
   std::map<e_side, std::vector<vtr::Point<size_t>>> io_coordinates =
     generate_perimeter_grid_coordinates(grids);
 
-  for (size_t ilayer = 0; ilayer < grids.get_num_layers(); ++ilayer) {
+  for (size_t ilayer = 0; ilayer < (size_t)grids.get_num_layers(); ++ilayer) {
     for (const e_side& io_side : FPGA_SIDES_CLOCKWISE) {
       for (const vtr::Point<size_t>& io_coordinate : io_coordinates[io_side]) {
         t_physical_tile_loc phy_tile_loc(io_coordinate.x(), io_coordinate.y(),
@@ -211,15 +211,17 @@ static vtr::NdMatrix<size_t, 3> add_top_module_switch_block_instances(
         }
 
         vtr::Point<size_t> sb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
+        size_t sb_layer = ilayer;
         if (true == compact_routing_hierarchy) {
           vtr::Point<size_t> sb_coord(ix, iy);
           const RRGSB& unique_mirror =
-            device_rr_gsb.get_sb_unique_module(sb_coord, ilayer);
+            device_rr_gsb.get_sb_unique_module(sb_coord, sb_layer);
           sb_coordinate.set_x(unique_mirror.get_sb_x());
           sb_coordinate.set_y(unique_mirror.get_sb_y());
+          sb_layer = device_rr_gsb.get_sb_unique_module_layer(device_rr_gsb.get_sb_unique_module_index(sb_coord, sb_layer));
         }
         std::string sb_module_name =
-          generate_switch_block_module_name(sb_coordinate, ilayer);
+          generate_switch_block_module_name(sb_coordinate, sb_layer);
         ModuleId sb_module = module_manager.find_module(sb_module_name);
         VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
         /* Record the instance id */
@@ -269,6 +271,7 @@ static vtr::NdMatrix<size_t, 3> add_top_module_connection_block_instances(
                 cb_type == CHANX ? "X-" : "Y-", ilayer, ix, iy);
         vtr::Point<size_t> cb_coordinate(rr_gsb.get_cb_x(cb_type),
                                         rr_gsb.get_cb_y(cb_type));
+        size_t cb_layer = ilayer;
         if (false == rr_gsb.is_cb_exist(cb_type)) {
           VTR_LOGV(
             verbose,
@@ -282,12 +285,13 @@ static vtr::NdMatrix<size_t, 3> add_top_module_connection_block_instances(
           vtr::Point<size_t> cb_coord(ix, iy);
           /* Note: use GSB coordinate when inquire for unique modules!!! */
           const RRGSB& unique_mirror =
-            device_rr_gsb.get_cb_unique_module(cb_type, cb_coord, ilayer);
+            device_rr_gsb.get_cb_unique_module(cb_type, cb_coord, cb_layer);
           cb_coordinate.set_x(unique_mirror.get_cb_x(cb_type));
           cb_coordinate.set_y(unique_mirror.get_cb_y(cb_type));
+          cb_layer = device_rr_gsb.get_cb_unique_module_layer(cb_type, device_rr_gsb.get_cb_unique_module_index(cb_type, cb_coord, cb_layer));
         }
         std::string cb_module_name =
-          generate_connection_block_module_name(cb_type, cb_coordinate, ilayer);
+          generate_connection_block_module_name(cb_type, cb_coordinate, cb_layer);
         ModuleId cb_module = module_manager.find_module(cb_module_name);
         VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
         /* Record the instance id */
@@ -342,7 +346,7 @@ static void add_top_module_io_children(
   std::map<e_side, std::vector<vtr::Point<size_t>>> io_coordinates =
     generate_perimeter_grid_coordinates(grids);
 
-  for (size_t ilayer = 0; ilayer < grids.get_num_layers(); ++ilayer) {
+  for (size_t ilayer = 0; ilayer < (size_t)grids.get_num_layers(); ++ilayer) {
     for (const e_side& io_side : FPGA_SIDES_CLOCKWISE) {
       for (const vtr::Point<size_t>& io_coord : io_coordinates[io_side]) {
         t_physical_tile_loc phy_tile_loc(io_coord.x(), io_coord.y(), ilayer);

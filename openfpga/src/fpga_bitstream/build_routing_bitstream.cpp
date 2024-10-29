@@ -510,8 +510,12 @@ static void build_connection_block_bitstreams(
             device_rr_gsb.get_cb_unique_module(cb_type, unique_cb_coord, ilayer);
           unique_cb_coord.set_x(unique_mirror.get_cb_x(cb_type));
           unique_cb_coord.set_y(unique_mirror.get_cb_y(cb_type));
+          size_t unique_cb_index = device_rr_gsb.get_cb_unique_module_index(
+            cb_type, unique_cb_coord, ilayer);
+          size_t unqiue_cb_layer = device_rr_gsb.get_cb_unique_module_layer(cb_type, unique_cb_index);
+
           cb_module_name =
-            generate_connection_block_module_name(cb_type, unique_cb_coord, ilayer);
+            generate_connection_block_module_name(cb_type, unique_cb_coord, unqiue_cb_layer);
         }
         ModuleId cb_module =
           module_manager.find_module(module_name_map.name(cb_module_name));
@@ -654,7 +658,9 @@ void build_routing_bitstream(
             device_rr_gsb.get_sb_unique_module(sb_coord , ilayer);
           unique_sb_coord.set_x(unique_mirror.get_sb_x());
           unique_sb_coord.set_y(unique_mirror.get_sb_y());
-          sb_module_name = generate_switch_block_module_name(unique_sb_coord, ilayer);
+          size_t unique_mirror_index = device_rr_gsb.get_sb_unique_module_index(sb_coord , ilayer);
+          size_t unique_mirror_layer = device_rr_gsb.get_sb_unique_module_layer(unique_mirror_index);
+          sb_module_name = generate_switch_block_module_name(unique_sb_coord, unique_mirror_layer);
         }
         ModuleId sb_module =
           module_manager.find_module(module_name_map.name(sb_module_name));

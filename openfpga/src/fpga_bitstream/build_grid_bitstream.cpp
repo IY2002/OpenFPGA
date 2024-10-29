@@ -973,47 +973,49 @@ void build_grid_bitstream(
   VTR_LOGV(verbose, "Generating bitstream for core grids...");
 
   /* Generate bitstream for the core logic block one by one */
-  for (size_t ix = 1; ix < grids.width() - 1; ++ix) {
-    for (size_t iy = 1; iy < grids.height() - 1; ++iy) {
-      t_physical_tile_loc phy_tile_loc(ix, iy, layer);
-      /* Bypass EMPTY grid */
-      if (true == is_empty_type(grids.get_physical_type(phy_tile_loc))) {
-        continue;
-      }
-      /* Skip width > 1 or height > 1 tiles (mostly heterogeneous blocks) */
-      if ((0 < grids.get_width_offset(phy_tile_loc)) ||
-          (0 < grids.get_height_offset(phy_tile_loc))) {
-        continue;
-      }
-      /* Add a grid module to top_module*/
-      vtr::Point<size_t> grid_coord(ix, iy);
-      PointWithLayer grid_coord_with_layer;
-      grid_coord_with_layer.coordinates = grid_coord;
-      grid_coord_with_layer.layer = layer;
-      /* TODO: If the fabric tile is not empty, find the tile module and create
-      * the block accordingly. Also to support future hierarchy changes, when
-      * creating the blocks, trace backward until reach the current top block.
-      * If any block is missing during the back tracing, create it. */
-      ConfigBlockId parent_block = top_block;
-      FabricTileId curr_tile =
-        fabric_tile.find_tile_by_pb_coordinate(grid_coord_with_layer);
-      if (fabric_tile.valid_tile_id(curr_tile)) {
-        PointWithLayer tile_coord = fabric_tile.tile_coordinate(curr_tile);
-        std::string tile_inst_name = generate_tile_module_name(tile_coord.coordinates, tile_coord.layer);
-        parent_block = bitstream_manager.find_or_create_child_block(
-          top_block, tile_inst_name);
-        VTR_LOGV(verbose,
-                "Add configurable block '%s' as a child under configurable "
-                "block '%s'\n",
-                tile_inst_name.c_str(),
-                bitstream_manager.block_name(top_block).c_str());
-      }
+  for (size_t ilayer = 0; ilayer < (size_t)grids.get_num_layers(); ++ilayer){
+    for (size_t ix = 1; ix < grids.width() - 1; ++ix) {
+      for (size_t iy = 1; iy < grids.height() - 1; ++iy) {
+        t_physical_tile_loc phy_tile_loc(ix, iy, ilayer);
+        /* Bypass EMPTY grid */
+        if (true == is_empty_type(grids.get_physical_type(phy_tile_loc))) {
+          continue;
+        }
+        /* Skip width > 1 or height > 1 tiles (mostly heterogeneous blocks) */
+        if ((0 < grids.get_width_offset(phy_tile_loc)) ||
+            (0 < grids.get_height_offset(phy_tile_loc))) {
+          continue;
+        }
+        /* Add a grid module to top_module*/
+        vtr::Point<size_t> grid_coord(ix, iy);
+        PointWithLayer grid_coord_with_layer;
+        grid_coord_with_layer.coordinates = grid_coord;
+        grid_coord_with_layer.layer = ilayer;
+        /* TODO: If the fabric tile is not empty, find the tile module and create
+        * the block accordingly. Also to support future hierarchy changes, when
+        * creating the blocks, trace backward until reach the current top block.
+        * If any block is missing during the back tracing, create it. */
+        ConfigBlockId parent_block = top_block;
+        FabricTileId curr_tile =
+          fabric_tile.find_tile_by_pb_coordinate(grid_coord_with_layer);
+        if (fabric_tile.valid_tile_id(curr_tile)) {
+          PointWithLayer tile_coord = fabric_tile.tile_coordinate(curr_tile);
+          std::string tile_inst_name = generate_tile_module_name(tile_coord.coordinates, tile_coord.layer);
+          parent_block = bitstream_manager.find_or_create_child_block(
+            top_block, tile_inst_name);
+          VTR_LOGV(verbose,
+                  "Add configurable block '%s' as a child under configurable "
+                  "block '%s'\n",
+                  tile_inst_name.c_str(),
+                  bitstream_manager.block_name(top_block).c_str());
+        }
 
-      build_physical_block_bitstream(
-        bitstream_manager, parent_block, module_manager, module_name_map,
-        fabric_tile, curr_tile, circuit_lib, mux_lib, atom_ctx,
-        device_annotation, cluster_annotation, place_annotation,
-        bitstream_annotation, grids, layer, grid_coord, NUM_2D_SIDES, verbose);
+        build_physical_block_bitstream(
+          bitstream_manager, parent_block, module_manager, module_name_map,
+          fabric_tile, curr_tile, circuit_lib, mux_lib, atom_ctx,
+          device_annotation, cluster_annotation, place_annotation,
+          bitstream_annotation, grids, ilayer, grid_coord, NUM_2D_SIDES, verbose);
+      }
     }
   }
   
@@ -1026,47 +1028,49 @@ void build_grid_bitstream(
     generate_perimeter_grid_coordinates(grids);
 
   /* Add instances of I/O grids to top_module */
-  for (const e_side& io_side : FPGA_SIDES_CLOCKWISE) {
-    for (const vtr::Point<size_t>& io_coordinate : io_coordinates[io_side]) {
-      t_physical_tile_loc phy_tile_loc(io_coordinate.x(), io_coordinate.y(),
-                                       layer);
-      /* Bypass EMPTY grid */
-      if (true == is_empty_type(grids.get_physical_type(phy_tile_loc))) {
-        continue;
-      }
-      /* Skip height > 1 tiles (mostly heterogeneous blocks) */
-      if ((0 < grids.get_width_offset(phy_tile_loc)) ||
-          (0 < grids.get_height_offset(phy_tile_loc))) {
-        continue;
-      }
+  for (size_t ilayer = 0; ilayer < (size_t)grids.get_num_layers(); ++ilayer){
+    for (const e_side& io_side : FPGA_SIDES_CLOCKWISE) {
+      for (const vtr::Point<size_t>& io_coordinate : io_coordinates[io_side]) {
+        t_physical_tile_loc phy_tile_loc(io_coordinate.x(), io_coordinate.y(),
+                                        ilayer);
+        /* Bypass EMPTY grid */
+        if (true == is_empty_type(grids.get_physical_type(phy_tile_loc))) {
+          continue;
+        }
+        /* Skip height > 1 tiles (mostly heterogeneous blocks) */
+        if ((0 < grids.get_width_offset(phy_tile_loc)) ||
+            (0 < grids.get_height_offset(phy_tile_loc))) {
+          continue;
+        }
 
-      PointWithLayer io_coord_with_layer;
-      io_coord_with_layer.coordinates = io_coordinate;
-      io_coord_with_layer.layer = layer;
-      /* TODO: If the fabric tile is not empty, find the tile module and create
-       * the block accordingly. Also to support future hierarchy changes, when
-       * creating the blocks, trace backward until reach the current top block.
-       * If any block is missing during the back tracing, create it. */
-      ConfigBlockId parent_block = top_block;
-      FabricTileId curr_tile =
-        fabric_tile.find_tile_by_pb_coordinate(io_coord_with_layer);
-      if (fabric_tile.valid_tile_id(curr_tile)) {
-        PointWithLayer tile_coord = fabric_tile.tile_coordinate(curr_tile);
-        std::string tile_inst_name = generate_tile_module_name(tile_coord.coordinates, tile_coord.layer);
-        parent_block = bitstream_manager.find_or_create_child_block(
-          top_block, tile_inst_name);
-        VTR_LOGV(verbose,
-                 "Add configurable block '%s' as a child under configurable "
-                 "block '%s'\n",
-                 tile_inst_name.c_str(),
-                 bitstream_manager.block_name(parent_block).c_str());
-      }
+        PointWithLayer io_coord_with_layer;
+        io_coord_with_layer.coordinates = io_coordinate;
+        io_coord_with_layer.layer = ilayer;
+        /* TODO: If the fabric tile is not empty, find the tile module and create
+        * the block accordingly. Also to support future hierarchy changes, when
+        * creating the blocks, trace backward until reach the current top block.
+        * If any block is missing during the back tracing, create it. */
+        ConfigBlockId parent_block = top_block;
+        FabricTileId curr_tile =
+          fabric_tile.find_tile_by_pb_coordinate(io_coord_with_layer);
+        if (fabric_tile.valid_tile_id(curr_tile)) {
+          PointWithLayer tile_coord = fabric_tile.tile_coordinate(curr_tile);
+          std::string tile_inst_name = generate_tile_module_name(tile_coord.coordinates, tile_coord.layer);
+          parent_block = bitstream_manager.find_or_create_child_block(
+            top_block, tile_inst_name);
+          VTR_LOGV(verbose,
+                  "Add configurable block '%s' as a child under configurable "
+                  "block '%s'\n",
+                  tile_inst_name.c_str(),
+                  bitstream_manager.block_name(parent_block).c_str());
+        }
 
-      build_physical_block_bitstream(
-        bitstream_manager, parent_block, module_manager, module_name_map,
-        fabric_tile, curr_tile, circuit_lib, mux_lib, atom_ctx,
-        device_annotation, cluster_annotation, place_annotation,
-        bitstream_annotation, grids, layer, io_coordinate, io_side, verbose);
+        build_physical_block_bitstream(
+          bitstream_manager, parent_block, module_manager, module_name_map,
+          fabric_tile, curr_tile, circuit_lib, mux_lib, atom_ctx,
+          device_annotation, cluster_annotation, place_annotation,
+          bitstream_annotation, grids, ilayer, io_coordinate, io_side, verbose);
+      }
     }
   }
   VTR_LOGV(verbose, "Done\n");
