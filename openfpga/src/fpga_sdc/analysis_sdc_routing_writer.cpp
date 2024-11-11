@@ -49,6 +49,10 @@ static void print_analysis_sdc_disable_cb_unused_resources(
    * !*/
   vtr::Point<size_t> cb_coordinate(rr_gsb.get_cb_x(cb_type),
                                    rr_gsb.get_cb_y(cb_type));
+
+  std::string cb_module_name =
+    generate_connection_block_module_name(cb_type, cb_coordinate, layer);
+
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> cb_coord(rr_gsb.get_x(), rr_gsb.get_y());
     /* Note: use GSB coordinate when inquire for unique modules!!! */
@@ -56,10 +60,12 @@ static void print_analysis_sdc_disable_cb_unused_resources(
       device_rr_gsb.get_cb_unique_module(cb_type, cb_coord, layer);
     cb_coordinate.set_x(unique_mirror.get_cb_x(cb_type));
     cb_coordinate.set_y(unique_mirror.get_cb_y(cb_type));
+    size_t unique_mirror_index = device_rr_gsb.get_cb_unique_module_index(cb_type, cb_coord, layer);
+    size_t unique_mirror_layer = device_rr_gsb.get_cb_unique_module_layer(
+      cb_type, unique_mirror_index);
+    cb_module_name = generate_connection_block_module_name(cb_type, cb_coordinate, unique_mirror_layer);
   }
 
-  std::string cb_module_name =
-    generate_connection_block_module_name(cb_type, cb_coordinate, layer);
 
   ModuleId cb_module = module_manager.find_module(cb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(cb_module));
@@ -313,15 +319,21 @@ static void print_analysis_sdc_disable_sb_unused_resources(
   /* If we use the compact routing hierarchy, we need to find the module name
    * !*/
   vtr::Point<size_t> sb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
+
+  std::string sb_module_name = generate_switch_block_module_name(sb_coordinate, layer);
+
   if (true == compact_routing_hierarchy) {
     vtr::Point<size_t> sb_coord(rr_gsb.get_x(), rr_gsb.get_y());
     /* Note: use GSB coordinate when inquire for unique modules!!! */
     const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(sb_coord, layer);
     sb_coordinate.set_x(unique_mirror.get_sb_x());
     sb_coordinate.set_y(unique_mirror.get_sb_y());
+    size_t unique_mirror_index = device_rr_gsb.get_sb_unique_module_index(sb_coord, layer);
+    size_t unique_mirror_layer = device_rr_gsb.get_sb_unique_module_layer(unique_mirror_index);
+    sb_module_name = generate_switch_block_module_name(sb_coordinate, unique_mirror_layer);
   }
 
-  std::string sb_module_name = generate_switch_block_module_name(sb_coordinate, layer);
+  
 
   ModuleId sb_module = module_manager.find_module(sb_module_name);
   VTR_ASSERT(true == module_manager.valid_module_id(sb_module));
