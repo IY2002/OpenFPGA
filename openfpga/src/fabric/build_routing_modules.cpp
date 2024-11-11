@@ -357,24 +357,27 @@ static void build_switch_block_interc_modules(
  *
  * Switch Block pin location map
  *
- *                       Grid[x][y+1]   ChanY[x][y+1]  Grid[x+1][y+1]
+ *                       Grid[x][y+1]   ChanY[x][y+1]  Grid[x+1][y+1] 
  *                        right_pins  inputs/outputs     left_pins
  *                            |             ^                |
  *                            |             |                |
  *                            v             v                v
  *                    +-----------------------------------------------+
  *                    |                                               |
- *    Grid[x][y+1]    |                                               |
- *Grid[x+1][y+1] bottom_pins---->| |<---- bottom_pins | | ChanX[x][y]        |
- *Switch Box [x][y]                |     ChanX[x+1][y] inputs/outputs<--->|
- *|<---> inputs/outputs |                                               |
- *    Grid[x][y+1]    |                                               |
- *Grid[x+1][y+1] top_pins---->| |<---- top_pins | |
+ *    Grid[x][y+1]    |                                               |    Grid[x+1][y+1]
+ *    bottom_pins---->|                                               |<---- bottom_pins
+ *                    |                                               |
+ * ChanX[x][y]        |              Switch Box [x][y]                |     ChanX[x+1][y]
+ * inputs/outputs<--->|                                               |<---> inputs/outputs
+ *                    |                                               |
+ *    Grid[x][y+1]    |                                               |    Grid[x+1][y+1]
+ *       top_pins---->|                                               |<---- top_pins
+ *                    |                                               |
  *                    +-----------------------------------------------+
  *                            ^             ^                ^
  *                            |             |                |
  *                            |             v                |
- *                       Grid[x][y]     ChanY[x][y]      Grid[x+1][y]
+ *                       Grid[x][y]     ChanY[x][y]      Grid[x+1][y] 
  *                       right_pins    inputs/outputs      left_pins
  *
  *
