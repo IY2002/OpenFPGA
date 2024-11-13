@@ -1166,12 +1166,17 @@ std::string generate_sb_memory_instance_name(const std::string& prefix,
                                              const e_side& sb_side,
                                              const size_t& track_id,
                                              const std::string& postfix,
-                                             const bool& feedthrough_memory) {
+                                             const bool& feedthrough_memory,
+                                             const std::string& vertical_direction) {
   std::string instance_name(prefix);
   if (feedthrough_memory) {
     instance_name = std::string("feedthrough_") + instance_name;
   }
-  instance_name += SideManager(sb_side).to_string();
+  if (SideManager(sb_side).get_side() != e_side::NUM_2D_SIDES){
+    instance_name += SideManager(sb_side).to_string();
+  } else {
+    instance_name += vertical_direction;
+  }
   instance_name += std::string("_track_") + std::to_string(track_id);
   instance_name += postfix;
 

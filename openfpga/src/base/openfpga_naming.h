@@ -139,7 +139,7 @@ std::string generate_sb_mux_instance_name(const std::string& prefix,
 
 std::string generate_sb_memory_instance_name(
   const std::string& prefix, const e_side& sb_side, const size_t& track_id,
-  const std::string& postfix, const bool& feedthrough_memory = false);
+  const std::string& postfix, const bool& feedthrough_memory = false, const std::string& vertical_direction = "");
 
 std::string generate_cb_mux_instance_name(const std::string& prefix,
                                           const e_side& cb_side,

@@ -18,12 +18,14 @@
 #include "build_module_graph_utils.h"
 #include "build_routing_module_utils.h"
 #include "build_routing_modules.h"
+#include "build_3d_switch_block_module.h"
 #include "module_manager_utils.h"
 #include "openfpga_naming.h"
 #include "openfpga_reserved_words.h"
 #include "openfpga_rr_graph_utils.h"
 #include "openfpga_side_manager.h"
 #include "rr_gsb_utils.h"
+
 
 /* begin namespace openfpga */
 namespace openfpga {
@@ -1210,10 +1212,17 @@ void build_flatten_routing_modules(
         if (false == rr_gsb.is_sb_exist(device_ctx.rr_graph)) {
           continue;
         }
-        build_switch_block_module(
-          module_manager, decoder_lib, device_annotation, device_ctx.grid,
-          device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
-          device_rr_gsb, rr_gsb, group_config_block, verbose, ilayer);
+        if (layer_range == 1){
+          build_switch_block_module(
+            module_manager, decoder_lib, device_annotation, device_ctx.grid,
+            device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
+            device_rr_gsb, rr_gsb, group_config_block, verbose, ilayer);
+        } else{
+           build_3d_switch_block_module(
+            module_manager, decoder_lib, device_annotation, device_ctx.grid,
+            device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
+            device_rr_gsb, rr_gsb, group_config_block, verbose, ilayer);
+        }
       }
     }
   }

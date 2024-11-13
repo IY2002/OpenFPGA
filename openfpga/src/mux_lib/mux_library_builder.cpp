@@ -28,7 +28,7 @@ namespace openfpga {
  *******************************************************************/
 static void build_routing_arch_mux_library(
   const RRGraphView& rr_graph, const CircuitLibrary& circuit_lib,
-  const VprDeviceAnnotation& vpr_device_annotation, MuxLibrary& mux_lib) {
+  const VprDeviceAnnotation& vpr_device_annotation, MuxLibrary& mux_lib, const DeviceGrid& grids) {
   /* The routing path is.
    * OPIN ----> CHAN ----> ... ----> CHAN ----> IPIN
    * Each edge is a switch, for IPIN, the switch is a connection block,
@@ -78,7 +78,24 @@ static void build_routing_arch_mux_library(
             ++it;
           }
         }
+
         if (in_edges.size() < 2 ) break;
+        mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
+                        in_edges.size());
+
+        // 3D SBs have extra inputs to muxes, inlcude both the top and bottom layer
+        // 2 MUXes are added to library since we could want to have a mix of 3D and 2D SBs,
+        // also CBs aren't 3D so we need to account for that as well
+        if (grids.get_num_layers() > 1) { // Need to build muxes to account for 3D SBs
+          if (rr_graph.node_layer(node) == 0 || rr_graph.node_layer(node) == grids.get_num_layers() - 1) { // if top or bottom layer there is only 1 extra input to mux (above or below)
+            // push invalid edge to represent the extra input, in_edges is only used for size calculation
+            in_edges.push_back(RREdgeId::INVALID()); 
+          } else { // else there are 2 extra inputs to mux (above and below)
+            // push invalid edges to represent the extra input, in_edges is only used for size calculation
+            in_edges.push_back(RREdgeId::INVALID());
+            in_edges.push_back(RREdgeId::INVALID());
+          }
+        }
         mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
                         in_edges.size());
         break;
@@ -225,7 +242,7 @@ MuxLibrary build_device_mux_library(const DeviceContext& vpr_device_ctx,
    * architecture.*/
   build_routing_arch_mux_library(vpr_device_ctx.rr_graph,
                                  openfpga_ctx.arch().circuit_lib,
-                                 openfpga_ctx.vpr_device_annotation(), mux_lib);
+                                 openfpga_ctx.vpr_device_annotation(), mux_lib, vpr_device_ctx.grid);
 
   /* Step 2: Count the sizes of multiplexers in complex logic blocks */
   for (const t_logical_block_type& lb_type :

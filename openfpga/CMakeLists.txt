@@ -24,6 +24,8 @@ endif()
 #Create the library
 #Static linked library for other C++ libraries
 add_library(libopenfpga STATIC
+            src/fabric/build_3d_switch_block_module.h
+            src/fabric/build_3d_switch_block_module.cpp
             ${LIB_HEADERS}
             ${LIB_SOURCES})
 target_include_directories(libopenfpga PUBLIC ${LIB_INCLUDE_DIRS})
