@@ -23,5 +23,12 @@
 #include "vtr_geometry.h"
 #include "vtr_ndmatrix.h"
 
+namespace openfpga{
+    void add_top_module_nets_connect_sb_and_sb(
+        ModuleManager& module_manager, const ModuleId& top_module,
+        const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
+        const RRGSB& rr_gsb, const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
+        const bool& compact_routing_hierarchy, const size_t& layer);
+}
 
 #endif
