@@ -548,7 +548,7 @@ int Shell<T>::execute_command(const char* cmd_line,
     }
   }
 
-  /* Check the dependency graph to see if all the prequistics have been met */
+  /* Check the dependency graph to see if all the prerequisites have been met */
   for (const ShellCommandId& dep_cmd : command_dependencies_[cmd_id]) {
     if ( (CMD_EXEC_NONE == command_status_[dep_cmd])
       || (CMD_EXEC_FATAL_ERROR == command_status_[dep_cmd]) ) {

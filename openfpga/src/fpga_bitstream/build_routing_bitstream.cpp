@@ -182,7 +182,7 @@ static void build_switch_block_interc_bitstream(
     }
   }
 
-  if ((0 == driver_rr_nodes.size()) || (0 == driver_rr_nodes.size())) {
+  if ((0 == driver_rr_nodes.size()) || (1 == driver_rr_nodes.size())) {
     /* No bitstream generation required by a special direct connection*/
     return;
   } else if (1 < driver_rr_nodes.size()) {
