@@ -914,7 +914,7 @@ static void build_physical_block_bitstream(
    * it as a mode under a <pb_type>
    */
   std::map<std::string, size_t> grouped_mem_inst_scoreboard;
-  for (size_t z = 0; z < place_annotation.grid_blocks(grid_coord).size(); ++z) {
+  for (size_t z = 0; z < place_annotation.grid_blocks(grid_coord, layer).size(); ++z) {
     int sub_tile_index =
       device_annotation.physical_tile_z_to_subtile_index(grid_type, z);
     VTR_ASSERT(1 ==
@@ -927,7 +927,7 @@ static void build_physical_block_bitstream(
       }
 
       if (ClusterBlockId::INVALID() ==
-          place_annotation.grid_blocks(grid_coord)[z]) {
+          place_annotation.grid_blocks(grid_coord, layer)[z]) {
         /* Recursively traverse the pb_graph and generate bitstream */
         rec_build_physical_block_bitstream(
           bitstream_manager, grouped_mem_inst_scoreboard,
@@ -937,7 +937,7 @@ static void build_physical_block_bitstream(
           lb_type->pb_graph_head, z, verbose);
       } else {
         const PhysicalPb& phy_pb = cluster_annotation.physical_pb(
-          place_annotation.grid_blocks(grid_coord)[z]);
+          place_annotation.grid_blocks(grid_coord, layer)[z]);
 
         /* Get the top-level node of the pb_graph */
         t_pb_graph_node* pb_graph_head = lb_type->pb_graph_head;

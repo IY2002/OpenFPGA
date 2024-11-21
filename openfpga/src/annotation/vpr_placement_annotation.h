@@ -23,18 +23,18 @@ namespace openfpga {
 class VprPlacementAnnotation {
  public: /* Public accessors */
   std::vector<ClusterBlockId> grid_blocks(
-    const vtr::Point<size_t>& grid_coord) const;
+    const vtr::Point<size_t>& grid_coord, const size_t &layer) const;
 
  public: /* Public mutators */
   void init_mapped_blocks(const DeviceGrid& grids);
   void add_mapped_block(const vtr::Point<size_t>& grid_coord, const size_t& z,
-                        const ClusterBlockId& mapped_block);
+                        const ClusterBlockId& mapped_block, const size_t& layer);
 
  private: /* Internal data */
   /* A direct mapping show each mapped/unmapped blocks in grids
    * The blocks_ array represents each grid on the FPGA fabric
-   * For example, block_[x][y] showed the mapped/unmapped blocks
-   * at grid[x][y]. The third coordinate 'z' is the index of the same
+   * For example, block_[layer][x][y] showed the mapped/unmapped blocks
+   * at grid[layer][x][y]. The third coordinate 'z' is the index of the same
    * type of blocks in the grids. This is mainly applied to I/O
    * blocks where you may have >1 I/O in a grid
    *
@@ -43,7 +43,7 @@ class VprPlacementAnnotation {
    * considers both unmapped and mapped blocks
    * Unmapped blocks will be labelled as an invalid id in the vector
    */
-  vtr::Matrix<std::vector<ClusterBlockId>> blocks_;
+  vtr::NdMatrix<std::vector<ClusterBlockId>, 3> blocks_;
 };
 
 } /* End namespace openfpga*/

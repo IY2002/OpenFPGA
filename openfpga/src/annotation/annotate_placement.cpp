@@ -27,8 +27,9 @@ void annotate_mapped_blocks(const DeviceContext& device_ctx,
   for (const ClusterBlockId& blk_id : cluster_ctx.clb_nlist.blocks()) {
     vtr::Point<size_t> grid_coord(place_ctx.block_locs()[blk_id].loc.x,
                                   place_ctx.block_locs()[blk_id].loc.y);
+    size_t grid_layer = place_ctx.block_locs()[blk_id].loc.layer;
     place_annotation.add_mapped_block(
-      grid_coord, place_ctx.block_locs()[blk_id].loc.sub_tile, blk_id);
+      grid_coord, place_ctx.block_locs()[blk_id].loc.sub_tile, blk_id, grid_layer);
   }
   VTR_LOG("Done\n");
 }

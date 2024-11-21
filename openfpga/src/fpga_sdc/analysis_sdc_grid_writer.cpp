@@ -643,7 +643,7 @@ static void print_analysis_sdc_disable_unused_grid(
    */
   size_t grid_z = 0;
   for (const ClusterBlockId& blk_id :
-       place_annotation.grid_blocks(grid_coordinate)) {
+       place_annotation.grid_blocks(grid_coordinate, 0)) { // TODO: 0 to be replaced with actual layer, need to fix all of SDC writer
     if (ClusterBlockId::INVALID() != blk_id) {
       const PhysicalPb& physical_pb = cluster_annotation.physical_pb(blk_id);
       print_analysis_sdc_disable_pb_block_unused_resources(
