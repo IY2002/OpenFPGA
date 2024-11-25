@@ -448,7 +448,7 @@ static void build_3d_switch_block_vertical_mux_module(
       module_manager.module_port(mux_module, mux_output_port_id);
 
     ModulePortId output_chan_port_id =
-            module_manager.find_module_port(sb_module, direction + "_out");
+            module_manager.find_module_port(sb_module, direction + "_out_TSV");
     
     ModulePinInfo sb_output_port_id = ModulePinInfo(output_chan_port_id, chan_node_id);
 
@@ -747,7 +747,7 @@ void build_3d_switch_block_module(
   // Assuming equal channel width for all sides, the vertical channels will have the same width
   // Add vertical channels to module
   if (layer == 0){ // only above vertical channels
-    std::string above_chan_input_port_name = "above_in";
+    std::string above_chan_input_port_name = "above_in_TSV";
     BasicPort above_chan_input_port(above_chan_input_port_name, input_chan_width);
     ModulePortId above_chan_input_port_id = module_manager.add_port(
       sb_module, above_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
@@ -762,7 +762,7 @@ void build_3d_switch_block_module(
       input_port_to_module_nets[ModulePinInfo(above_chan_input_port_id, pin)] = net;
     }
 
-    std::string above_chan_output_port_name = "above_out";
+    std::string above_chan_output_port_name = "above_out_TSV";
     BasicPort above_chan_output_port(above_chan_output_port_name, output_chan_width);
     ModulePortId above_chan_output_port_id = module_manager.add_port(
       sb_module, above_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
@@ -771,7 +771,7 @@ void build_3d_switch_block_module(
                                  NUM_2D_SIDES);
   } else if (layer == grids.get_num_layers()-1){ // only below vertical channels
 
-    std::string below_chan_input_port_name = "below_in";
+    std::string below_chan_input_port_name = "below_in_TSV";
     BasicPort below_chan_input_port(below_chan_input_port_name, input_chan_width);
     ModulePortId below_chan_input_port_id = module_manager.add_port(
       sb_module, below_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
@@ -786,7 +786,7 @@ void build_3d_switch_block_module(
       input_port_to_module_nets[ModulePinInfo(below_chan_input_port_id, pin)] = net;
     }
 
-    std::string below_chan_output_port_name = "below_out";
+    std::string below_chan_output_port_name = "below_out_TSV";
     BasicPort below_chan_output_port(below_chan_output_port_name, output_chan_width);
     ModulePortId below_chan_output_port_id = module_manager.add_port(
       sb_module, below_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
@@ -797,7 +797,7 @@ void build_3d_switch_block_module(
     
     /* Add the above vertical channel */
 
-    std::string above_chan_input_port_name = "above_in";
+    std::string above_chan_input_port_name = "above_in_TSV";
     BasicPort above_chan_input_port(above_chan_input_port_name, input_chan_width);
     ModulePortId above_chan_input_port_id = module_manager.add_port(
       sb_module, above_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
@@ -812,7 +812,7 @@ void build_3d_switch_block_module(
       input_port_to_module_nets[ModulePinInfo(above_chan_input_port_id, pin)] = net;
     }
 
-    std::string above_chan_output_port_name = "above_out";
+    std::string above_chan_output_port_name = "above_out_TSV";
     BasicPort above_chan_output_port(above_chan_output_port_name, output_chan_width);
     ModulePortId above_chan_output_port_id = module_manager.add_port(
       sb_module, above_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
@@ -822,7 +822,7 @@ void build_3d_switch_block_module(
 
     /* Add the below vertical channel */
 
-    std::string below_chan_input_port_name = "below_in";
+    std::string below_chan_input_port_name = "below_in_TSV";
     BasicPort below_chan_input_port(below_chan_input_port_name, input_chan_width);
     ModulePortId below_chan_input_port_id = module_manager.add_port(
       sb_module, below_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
@@ -837,7 +837,7 @@ void build_3d_switch_block_module(
       input_port_to_module_nets[ModulePinInfo(below_chan_input_port_id, pin)] = net;
     }
 
-    std::string below_chan_output_port_name = "below_out";
+    std::string below_chan_output_port_name = "below_out_TSV";
     BasicPort below_chan_output_port(below_chan_output_port_name, output_chan_width);
     ModulePortId below_chan_output_port_id = module_manager.add_port(
       sb_module, below_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);

@@ -37,14 +37,14 @@ namespace openfpga {
             /**
              * Goal of function is to connect the vertical tracks of the switch blocks in the top module
              * If the switch block is on layer 0 then there's only the above channel where the SB at layer 0 is the source 
-             * and the SB at layer 1 is the sink for the above_out track
+             * and the SB at layer 1 is the sink for the above_out_TSV track
              * 
              * If the switch block is on the last layer then there's only the below channel where the SB at the last layer is the source
-             * and the SB at the second last layer is the sink for the below_out track
+             * and the SB at the second last layer is the sink for the below_out_TSV track
              * 
              * If the switch block is on any other layer then there are both above and below channels 
-             * where the SB at the current layer is the source and the SB at the layer above is the sink for the above_out track
-             * and the SB at the layer below is the sink for the below_out track
+             * where the SB at the current layer is the source and the SB at the layer above is the sink for the above_out_TSV track
+             * and the SB at the layer below is the sink for the below_out_TSV track
              * 
              * In this function each SB only adds the nets for the channels in which it is the source, since each SB is looped over
              * the nets for all channels are added to the top module eventually
@@ -56,14 +56,14 @@ namespace openfpga {
 
             size_t sb_instance_id = sb_instance_ids[layer][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()];
 
-            if (layer == 0){ // only worry about "above_out"
+            if (layer == 0){ // only worry about "above_out_TSV"
 
                 const RRGSB& above_sb = device_rr_gsb.get_gsb(rr_gsb.get_sb_coordinate(), layer + 1);
                 std::string above_sb_module_name = generate_switch_block_module_name(above_sb.get_sb_coordinate(), layer + 1);
                 
-                std::string above_port_name = "above_out";
+                std::string above_port_name = "above_out_TSV";
 
-                std::string input_below_port_name = "below_in";
+                std::string input_below_port_name = "below_in_TSV";
 
                 ModuleId above_sb_module_id = module_manager.find_module(above_sb_module_name);
 
@@ -75,7 +75,7 @@ namespace openfpga {
 
                 ModulePortId above_sb_port_id = module_manager.find_module_port(above_sb_module_id, input_below_port_name);
 
-                // connect the source SB to the sink SB (above_out to below_in)
+                // connect the source SB to the sink SB (above_out_TSV to below_in_TSV)
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
                     ModuleNetId net =
                         create_module_source_pin_net(module_manager, top_module, sb_module_id,
@@ -84,14 +84,14 @@ namespace openfpga {
                                                     above_sb_instance_id, above_sb_port_id, itrack);
                 }
 
-            } else if (layer == device_rr_gsb.get_gsb_layers() - 1){ // only worry about "below_out"
+            } else if (layer == device_rr_gsb.get_gsb_layers() - 1){ // only worry about "below_out_TSV"
 
                 const RRGSB& below_sb = device_rr_gsb.get_gsb(rr_gsb.get_sb_coordinate(), layer - 1);
                 std::string below_sb_module_name = generate_switch_block_module_name(below_sb.get_sb_coordinate(), layer - 1);
 
-                std::string below_port_name = "below_out";
+                std::string below_port_name = "below_out_TSV";
 
-                std::string input_above_port_name = "above_in";
+                std::string input_above_port_name = "above_in_TSV";
 
                 ModuleId below_sb_module_id = module_manager.find_module(below_sb_module_name);
 
@@ -103,7 +103,7 @@ namespace openfpga {
 
                 ModulePortId below_sb_port_id = module_manager.find_module_port(below_sb_module_id, input_above_port_name); 
 
-                // connect the source SB to the sink SB (below_out to above_in)
+                // connect the source SB to the sink SB (below_out_TSV to above_in_TSV)
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
                     ModuleNetId net =
                         create_module_source_pin_net(module_manager, top_module, sb_module_id,
@@ -113,7 +113,7 @@ namespace openfpga {
                 }
 
 
-            } else{ // worry about both "above_out" and "below_out"
+            } else{ // worry about both "above_out_TSV" and "below_out_TSV"
 
                 const RRGSB& above_sb = device_rr_gsb.get_gsb(rr_gsb.get_sb_coordinate(), layer + 1);
                 std::string above_sb_module_name = generate_switch_block_module_name(above_sb.get_sb_coordinate(), layer + 1);
@@ -121,11 +121,11 @@ namespace openfpga {
                 const RRGSB& below_sb = device_rr_gsb.get_gsb(rr_gsb.get_sb_coordinate(), layer - 1);
                 std::string below_sb_module_name = generate_switch_block_module_name(below_sb.get_sb_coordinate(), layer - 1);
 
-                std::string above_port_name = "above_out";
-                std::string below_port_name = "below_out";
+                std::string above_port_name = "above_out_TSV";
+                std::string below_port_name = "below_out_TSV";
 
-                std::string input_below_port_name = "below_in";
-                std::string input_above_port_name = "above_in";
+                std::string input_below_port_name = "below_in_TSV";
+                std::string input_above_port_name = "above_in_TSV";
 
                 ModuleId above_sb_module_id = module_manager.find_module(above_sb_module_name);
                 ModuleId below_sb_module_id = module_manager.find_module(below_sb_module_name);
@@ -139,7 +139,7 @@ namespace openfpga {
 
                 ModulePortId above_sb_port_id = module_manager.find_module_port(above_sb_module_id, input_below_port_name);
 
-                // connect the source SB to the sink SB (above_out to below_in)
+                // connect the source SB to the sink SB (above_out_TSV to below_in_TSV)
 
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
                     ModuleNetId net =
@@ -155,7 +155,7 @@ namespace openfpga {
 
                 ModulePortId below_sb_port_id = module_manager.find_module_port(below_sb_module_id, input_above_port_name);
 
-                // connect the source SB to the sink SB (below_out to above_in)
+                // connect the source SB to the sink SB (below_out_TSV to above_in_TSV)
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
                     ModuleNetId net =
                         create_module_source_pin_net(module_manager, top_module, sb_module_id,

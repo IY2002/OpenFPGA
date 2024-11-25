@@ -21,11 +21,15 @@ lut_truth_table_fixup
 # Build the module graph
 #  - Enabled compression on routing architecture modules
 #  - Enable pin duplication on grid modules
-build_fabric --compress_routing #--verbose
+build_fabric #--compress_routing #--verbose
 
 # Write the fabric hierarchy of module graph to a file
 # This is used by hierarchical PnR flows
 write_fabric_hierarchy --file ./fabric_hierarchy.txt
+
+# Write the Verilog netlist for FPGA fabric
+#  - Enable the use of explicit port mapping in Verilog netlist
+write_fabric_verilog --file ./SRC --explicit_port_mapping --include_timing --print_user_defined_template --verbose
 
 # Repack the netlist to physical pbs
 # This must be done before bitstream generator and testbench generation
@@ -41,10 +45,6 @@ build_fabric_bitstream --verbose
 
 # Write fabric-dependent bitstream
 write_fabric_bitstream --file fabric_bitstream.bit --format plain_text
-
-# Write the Verilog netlist for FPGA fabric
-#  - Enable the use of explicit port mapping in Verilog netlist
-write_fabric_verilog --file ./SRC --explicit_port_mapping --include_timing --print_user_defined_template --verbose
 
 # Write the Verilog testbench for FPGA fabric
 #  - We suggest the use of same output directory as fabric Verilog netlists
