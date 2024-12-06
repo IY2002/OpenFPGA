@@ -930,6 +930,11 @@ void add_top_module_nets_connect_grids_and_gsbs(
   vtr::Point<size_t> gsb_range = device_rr_gsb.get_gsb_range();
   size_t num_layers = device_rr_gsb.get_gsb_layers();
 
+  /* Boolean to indicate to use 3D cbs or not 
+     TODO: This should be a parameter
+  */
+  bool is_3d_cb = true;
+
   for (size_t ilayer = 0; ilayer < num_layers; ++ilayer){
     for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
       for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
@@ -964,7 +969,7 @@ void add_top_module_nets_connect_grids_and_gsbs(
           module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
           sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, ilayer);
 
-        if (num_layers > 1){
+        if (num_layers > 1 && !is_3d_cb){
           add_top_module_nets_connect_sb_and_sb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
             sb_instance_ids, compact_routing_hierarchy, ilayer);
         }

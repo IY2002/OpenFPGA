@@ -42,6 +42,65 @@ static RRChan build_one_rr_chan(const DeviceContext& vpr_device_ctx,
   return rr_chan;
 }
 
+/** 
+ * Helper function to get all opin nodes on other layers for 3D CB option
+ * TODO: Only get OPIN nodes that are connected to this channel, not all OPIN nodes 
+*/
+std::vector<RRNodeId> find_interlayer_rr_graph_grid_nodes(const RRGraphView& rr_graph,
+                                               const DeviceGrid& device_grid,
+                                               const size_t& layer,
+                                               const int& x,
+                                               const int& y,
+                                               const t_rr_type& rr_type,
+                                               const e_side& side,
+                                               bool include_clock=false) {
+
+    size_t num_layers = device_grid.get_num_layers();
+    std::vector<RRNodeId> indices;
+
+    VTR_ASSERT(rr_type == IPIN || rr_type == OPIN);
+
+    /* Ensure that (x, y) is a valid location in grids */
+    if (size_t(x) > device_grid.width() - 1 || size_t(y) > device_grid.height() - 1) {
+      return indices;
+    }
+
+    /* Ensure we have a valid side */
+    VTR_ASSERT(side != NUM_2D_SIDES);
+    for (size_t ilayer = 0; ilayer < num_layers; ++ilayer) {
+      if (ilayer == layer) {
+        continue;
+      }
+      /* Find all the pins on the side of the grid */
+      t_physical_tile_loc tile_loc(x, y, ilayer);
+      int width_offset = device_grid.get_width_offset(tile_loc);
+      int height_offset = device_grid.get_height_offset(tile_loc);
+      
+      for (int pin = 0; pin < device_grid.get_physical_type(tile_loc)->num_pins; ++pin) {
+          /* Skip those pins have been ignored during rr_graph build-up */
+          if (true == device_grid.get_physical_type(tile_loc)->is_ignored_pin[pin]) {
+              /* If specified, force to include all the clock pins */
+              if (!include_clock || std::find(device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().begin(), device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().end(), pin) == device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().end()) {
+                  continue;
+              }
+          }
+          
+          if (false == device_grid.get_physical_type(tile_loc)->pinloc[width_offset][height_offset][side][pin]) {
+              /* Not the pin on this side, we skip */
+              continue;
+          }
+
+          /* Try to find the rr node */
+          RRNodeId rr_node_index = rr_graph.node_lookup().find_node(ilayer, x, y, rr_type, pin, side);
+          if (rr_node_index != RRNodeId::INVALID()) {
+              indices.push_back(rr_node_index);
+          }
+      }
+    }
+
+    return indices;
+}
+
 /* Build a General Switch Block (GSB)
  * which includes:
  * [I] A Switch Box subckt consists of following ports:
@@ -102,6 +161,12 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
   /* Create an object to return */
   RRGSB rr_gsb;
 
+  /**
+   * temporary variable to check if the CB is 3D
+   * TODO: make this variable passed as an argument, receive it from the command line
+   */
+  bool is_3d_cb = true;
+
   VTR_ASSERT(gsb_coord.x() <= gsb_range.x());
   VTR_ASSERT(gsb_coord.y() <= gsb_range.y());
 
@@ -154,6 +219,18 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer,
           gsb_coord.x() + 1, gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
 
+        if (true == is_3d_cb){
+          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
+          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+            gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
+          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+        }
+
         break;
       case RIGHT: /* RIGHT = 1 */
         if (gsb_coord.x() == gsb_range.x()) {
@@ -185,6 +262,18 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
         temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer,
           gsb_coord.x() + 1, gsb_coord.y(), OPIN, opin_grid_side[1]);
+
+        if (true == is_3d_cb){
+          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
+          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+            gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
+          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+        }
         break;
       case BOTTOM: /* BOTTOM = 2*/
         if (!perimeter_cb && gsb_coord.y() == 0) {
@@ -215,6 +304,18 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
         temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
+
+        if (true == is_3d_cb){
+          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
+          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+            gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
+          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+        }
         break;
       case LEFT: /* LEFT = 3 */
         if (!perimeter_cb && gsb_coord.x() == 0) {
@@ -244,6 +345,18 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
         temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
+        
+        if (true == is_3d_cb){
+          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
+          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+            gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
+          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+        }
         break;
       default:
         VTR_LOG_ERROR("Invalid side index!\n");
@@ -289,7 +402,6 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
           continue;
         }
 
-        /* Grid[x+1][y+1] Bottom side outputs pins */
         rr_gsb.add_opin_node(inode, side_manager.get_side());
       }
     }
@@ -369,6 +481,12 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
     temp_ipin_rr_nodes = find_rr_graph_grid_nodes(
       vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN,
       ipin_rr_node_grid_side, include_clock);
+
+    if (is_3d_cb){
+      std::vector<RRNodeId> temp_ipin_rr_nodes_3d = find_interlayer_rr_graph_grid_nodes(
+        vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN, ipin_rr_node_grid_side, include_clock);
+      temp_ipin_rr_nodes.insert(temp_ipin_rr_nodes.end(), temp_ipin_rr_nodes_3d.begin(), temp_ipin_rr_nodes_3d.end());
+    }
     /* Fill the ipin nodes of RRGSB */
     for (const RRNodeId& inode : temp_ipin_rr_nodes) {
       /* Skip those has no configurable outgoing, they should NOT appear in the
@@ -390,12 +508,13 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
 
       rr_gsb.add_ipin_node(inode, side_manager.get_side());
     }
+    
     /* Clear the temp data */
     temp_ipin_rr_nodes.clear();
   }
 
   /* Build OPIN node lists for connection blocks */
-  rr_gsb.build_cb_opin_nodes(vpr_device_ctx.rr_graph);
+  rr_gsb.build_cb_opin_nodes(vpr_device_ctx.rr_graph, is_3d_cb);
 
   return rr_gsb;
 }

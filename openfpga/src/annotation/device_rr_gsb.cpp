@@ -452,6 +452,7 @@ void DeviceRRGSB::build_sb_unique_module(const RRGraphView& rr_graph) {
       for (size_t iy = 0; iy < rr_gsb_[ilayer][ix].size(); ++iy) {
         bool is_unique_module = true;
         vtr::Point<size_t> sb_coordinate(ix, iy);
+        size_t sb_layer = ilayer;
 
         /* Traverse the unique_mirror list and check it is an mirror of another
         */
@@ -461,6 +462,13 @@ void DeviceRRGSB::build_sb_unique_module(const RRGraphView& rr_graph) {
           * unique. else the sb is unique
           */
           const RRGSB& unique_module = get_sb_unique_module(id);
+          size_t unique_layer = get_sb_unique_module_layer(id);
+          // Check if the unique module is in the same layer, if not then skip
+          // This is done using the assumption that SBs on different layers are different since the vertical connections are different.
+          // SBs in layer 0 have an above channel, SBs in layer 1 have a below channel, so they are different verilog modules. (This is a simplification)
+          if (unique_layer != sb_layer) {
+            continue;
+          }
           if (true == is_sb_mirror(rr_graph, device_annotation_, rr_gsb_[ilayer][ix][iy],
                                   unique_module)) {
             /* This is a mirror, raise the flag and we finish */

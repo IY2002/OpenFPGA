@@ -283,6 +283,10 @@ static void build_switch_block_interc_modules(
   const bool& group_config_block) {
   std::vector<RRNodeId> driver_rr_nodes;
 
+  /* Boolean to indicate whether the CBs are 3D
+     TODO: Make variable a function parameter*/
+  bool is_3d_cb = true;
+
   /* Get the node */
   const RRNodeId& cur_rr_node = rr_gsb.get_chan_node(chan_side, chan_node_id);
 
@@ -297,6 +301,10 @@ static void build_switch_block_interc_modules(
       return;
     }
   }
+
+  // if (is_3d_cb){
+  //   std::vector<RRNodeId> driver_3d_nodes = 
+  // }
 
   if (0 == driver_rr_nodes.size()) {
     /* Print a special direct connection*/
@@ -647,7 +655,7 @@ static void build_connection_block_mux_module(
   const CircuitLibrary& circuit_lib, const e_side& cb_ipin_side,
   const size_t& ipin_index,
   const std::map<ModulePinInfo, ModuleNetId>& input_port_to_module_nets,
-  const bool& group_config_block) {
+  const bool& group_config_block, bool is_3d_cb=false) {
   const RRNodeId& cur_rr_node = rr_gsb.get_ipin_node(cb_ipin_side, ipin_index);
   /* Check current rr_node is an input pin of a CLB */
   VTR_ASSERT(IPIN == rr_graph.node_type(cur_rr_node));
@@ -655,13 +663,19 @@ static void build_connection_block_mux_module(
   /* Build a vector of driver rr_nodes */
   std::vector<RREdgeId> driver_rr_edges =
     rr_gsb.get_ipin_node_in_edges(rr_graph, cb_ipin_side, ipin_index);
+  
+  if(is_3d_cb){
+    std::vector<RREdgeId> driver_rr_3d_edges =
+      rr_gsb.get_ipin_node_in_3d_edges(rr_graph, cb_ipin_side, ipin_index);
+    driver_rr_edges.insert(driver_rr_edges.end(), driver_rr_3d_edges.begin(), driver_rr_3d_edges.end());
+  }
   std::vector<RRNodeId> driver_rr_nodes;
   for (const RREdgeId curr_edge : driver_rr_edges) {
-    short src_layer = rr_graph.node_layer(rr_graph.edge_src_node(curr_edge));
-    short sink_layer = rr_graph.node_layer(rr_graph.edge_sink_node(curr_edge));
+    // short src_layer = rr_graph.node_layer(rr_graph.edge_src_node(curr_edge));
+    // short sink_layer = rr_graph.node_layer(rr_graph.edge_sink_node(curr_edge));
 
-    // Only adds nodes that are on the same layer as their sink nodes
-    if(src_layer != sink_layer) continue;
+    // // Only adds nodes that are on the same layer as their sink nodes
+    // if(src_layer != sink_layer) continue;
 
     driver_rr_nodes.push_back(rr_graph.edge_src_node(curr_edge));
   }
@@ -834,9 +848,15 @@ static void build_connection_block_interc_modules(
   const CircuitLibrary& circuit_lib, const e_side& cb_ipin_side,
   const size_t& ipin_index,
   const std::map<ModulePinInfo, ModuleNetId>& input_port_to_module_nets,
-  const bool& group_config_block) {
+  const bool& group_config_block, bool is_3d_cb=false) {
   std::vector<RREdgeId> driver_rr_edges =
     rr_gsb.get_ipin_node_in_edges(rr_graph, cb_ipin_side, ipin_index);
+
+    if (is_3d_cb){
+      std::vector<RREdgeId> driver_rr_3d_edges = 
+        rr_gsb.get_ipin_node_in_3d_edges(rr_graph, cb_ipin_side, ipin_index);
+      driver_rr_edges.insert(driver_rr_edges.end(), driver_rr_3d_edges.begin(), driver_rr_3d_edges.end());
+    }
 
   if (1 > driver_rr_edges.size()) {
     return; /* This port has no driver, skip it */
@@ -851,7 +871,7 @@ static void build_connection_block_interc_modules(
     build_connection_block_mux_module(
       module_manager, cb_module, device_annotation, grids, rr_graph, rr_gsb,
       cb_type, circuit_lib, cb_ipin_side, ipin_index, input_port_to_module_nets,
-      group_config_block);
+      group_config_block, is_3d_cb);
   } /*Nothing should be done else*/
 }
 
@@ -942,10 +962,13 @@ static void build_connection_block_module(
   /* Upper input port: W/2 == 0 tracks */
   std::string chan_upper_input_port_name =
     generate_cb_module_track_port_name(cb_type, IN_PORT, true);
+
   BasicPort chan_upper_input_port(chan_upper_input_port_name,
                                   rr_gsb.get_cb_chan_width(cb_type) / 2);
+
   ModulePortId chan_upper_input_port_id = module_manager.add_port(
     cb_module, chan_upper_input_port, ModuleManager::MODULE_INPUT_PORT);
+
   /* Add side to the port */
   module_manager.set_port_side(cb_module, chan_upper_input_port_id,
                                get_cb_module_track_port_side(cb_type, true));
@@ -953,10 +976,13 @@ static void build_connection_block_module(
   /* Lower input port: W/2 == 1 tracks */
   std::string chan_lower_input_port_name =
     generate_cb_module_track_port_name(cb_type, IN_PORT, false);
+
   BasicPort chan_lower_input_port(chan_lower_input_port_name,
                                   rr_gsb.get_cb_chan_width(cb_type) / 2);
+
   ModulePortId chan_lower_input_port_id = module_manager.add_port(
     cb_module, chan_lower_input_port, ModuleManager::MODULE_INPUT_PORT);
+
   /* Add side to the port */
   module_manager.set_port_side(cb_module, chan_lower_input_port_id,
                                get_cb_module_track_port_side(cb_type, false));
@@ -991,8 +1017,10 @@ static void build_connection_block_module(
     for (size_t inode = 0; inode < rr_gsb.get_num_ipin_nodes(cb_ipin_side);
          ++inode) {
       RRNodeId ipin_node = rr_gsb.get_ipin_node(cb_ipin_side, inode);
+
       std::string port_name = generate_cb_module_grid_port_name(
         cb_ipin_side, grids, device_annotation, rr_graph, ipin_node);
+
       BasicPort module_port(port_name,
                             1); /* Every grid output has a port size of 1 */
       /* Grid outputs are inputs of switch blocks */
@@ -1005,21 +1033,29 @@ static void build_connection_block_module(
 
   /* Add the output pins of grids which are input ports of the connection block,
    * if there is any */
+
   std::vector<ModulePortId> opin_module_port_ids;
+
   std::vector<enum e_side> cb_opin_sides = rr_gsb.get_cb_opin_sides(cb_type);
+
   for (size_t iside = 0; iside < cb_opin_sides.size(); ++iside) {
     enum e_side cb_opin_side = cb_opin_sides[iside];
+
     for (size_t inode = 0;
          inode < rr_gsb.get_num_cb_opin_nodes(cb_type, cb_opin_side); ++inode) {
       RRNodeId opin_node =
         rr_gsb.get_cb_opin_node(cb_type, cb_opin_side, inode);
+
       std::string port_name = generate_cb_module_grid_port_name(
         cb_opin_side, grids, device_annotation, rr_graph, opin_node);
+
       BasicPort module_port(port_name,
                             1); /* Every grid output has a port size of 1 */
+
       /* Grid outputs are inputs of switch blocks */
       ModulePortId module_port_id = module_manager.add_port(
         cb_module, module_port, ModuleManager::MODULE_INPUT_PORT);
+
       /* Add side to the port */
       module_manager.set_port_side(cb_module, module_port_id, cb_opin_side);
       opin_module_port_ids.push_back(module_port_id);
@@ -1054,6 +1090,7 @@ static void build_connection_block_module(
 
   VTR_ASSERT(chan_lower_input_port.get_width() ==
              chan_upper_output_port.get_width());
+
   for (size_t pin_id = 0; pin_id < chan_lower_input_port.pins().size();
        ++pin_id) {
     ModuleNetId net = create_module_source_pin_net(
@@ -1074,6 +1111,11 @@ static void build_connection_block_module(
     input_port_to_module_nets[ModulePinInfo(opin_module_port_id, 0)] = net;
   }
 
+  /* Boolean to indicate if 3D CBs are used or not 
+     TODO: This should be a parameter in the function
+  */
+  bool is_3d_cb = true;
+
   /* Add sub modules of routing multiplexers or direct interconnect*/
   for (size_t iside = 0; iside < cb_ipin_sides.size(); ++iside) {
     enum e_side cb_ipin_side = cb_ipin_sides[iside];
@@ -1082,7 +1124,7 @@ static void build_connection_block_module(
       build_connection_block_interc_modules(
         module_manager, cb_module, device_annotation, grids, rr_graph, rr_gsb,
         cb_type, circuit_lib, cb_ipin_side, inode, input_port_to_module_nets,
-        group_config_block);
+        group_config_block, is_3d_cb);
     }
   }
 
@@ -1204,6 +1246,11 @@ void build_flatten_routing_modules(
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
   size_t layer_range = device_rr_gsb.get_gsb_layers();
 
+  /* Boolean to indicate if 3D CBs are used or not
+     TODO: Make this variable a function parameter
+  */
+  bool is_3d_cb = true;
+
   /* Build unique switch block modules */
   for (size_t ilayer = 0; ilayer < layer_range; ++ilayer) {
     for (size_t ix = 0; ix < sb_range.x(); ++ix) {
@@ -1212,7 +1259,7 @@ void build_flatten_routing_modules(
         if (false == rr_gsb.is_sb_exist(device_ctx.rr_graph)) {
           continue;
         }
-        if (layer_range == 1){
+        if (layer_range == 1 || is_3d_cb){
           build_switch_block_module(
             module_manager, decoder_lib, device_annotation, device_ctx.grid,
             device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
@@ -1258,14 +1305,23 @@ void build_unique_routing_modules(
   const bool& verbose) {
   vtr::ScopedStartFinishTimer timer("Build unique routing modules...");
 
+  size_t layer_range = device_rr_gsb.get_gsb_layers();
+
   /* Build unique switch block modules */
   for (size_t isb = 0; isb < device_rr_gsb.get_num_sb_unique_module(); ++isb) {
     const RRGSB& unique_mirror = device_rr_gsb.get_sb_unique_module(isb);
     size_t ilayer = device_rr_gsb.get_sb_unique_module_layer(isb);
-    build_switch_block_module(module_manager, decoder_lib, device_annotation,
-                              device_ctx.grid, device_ctx.rr_graph, circuit_lib,
-                              sram_orgz_type, sram_model, device_rr_gsb,
-                              unique_mirror, group_config_block, verbose, ilayer);
+    if (layer_range == 1){
+      build_switch_block_module(module_manager, decoder_lib, device_annotation,
+                                device_ctx.grid, device_ctx.rr_graph, circuit_lib,
+                                sram_orgz_type, sram_model, device_rr_gsb,
+                                unique_mirror, group_config_block, verbose, ilayer);
+    } else{
+      build_3d_switch_block_module(module_manager, decoder_lib, device_annotation,
+                                   device_ctx.grid, device_ctx.rr_graph, circuit_lib,
+                                   sram_orgz_type, sram_model, device_rr_gsb,
+                                   unique_mirror, group_config_block, verbose, ilayer);
+    }
   }
 
   /* Build unique X-direction connection block modules */

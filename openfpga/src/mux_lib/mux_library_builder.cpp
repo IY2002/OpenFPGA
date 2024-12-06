@@ -83,6 +83,17 @@ static void build_routing_arch_mux_library(
         mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
                         in_edges.size());
 
+        /* Boolean to indicate if 3D CBs are being used
+           TODO: make variable a function parameter
+         */
+        bool is_3d_cb = true;
+
+        if (is_3d_cb){
+          std::vector<RREdgeId> in_edges = rr_graph.node_in_edges(node);
+          mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
+                        in_edges.size());
+        }
+
         // 3D SBs have extra inputs to muxes, inlcude both the top and bottom layer
         // 2 MUXes are added to library since we could want to have a mix of 3D and 2D SBs,
         // also CBs aren't 3D so we need to account for that as well
