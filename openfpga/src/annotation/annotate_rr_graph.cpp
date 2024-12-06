@@ -165,7 +165,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
    * temporary variable to check if the CB is 3D
    * TODO: make this variable passed as an argument, receive it from the command line
    */
-  bool is_3d_cb = true;
+  bool is_3d_cb = false;
 
   VTR_ASSERT(gsb_coord.x() <= gsb_range.x());
   VTR_ASSERT(gsb_coord.y() <= gsb_range.y());

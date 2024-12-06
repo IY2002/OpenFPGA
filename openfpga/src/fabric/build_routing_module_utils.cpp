@@ -89,7 +89,7 @@ std::string generate_sb_module_grid_port_name(
     physical_tile, pin_id);
   VTR_ASSERT(OPEN != subtile_index && subtile_index < physical_tile->capacity);
 
-  prefix += std::string("_layer_") + std::to_string(rr_graph.node_layer(rr_node));
+  // prefix += std::string("_layer_") + std::to_string(rr_graph.node_layer(rr_node));
 
   return prefix + std::string("_") +
          generate_routing_module_grid_port_name(
@@ -127,7 +127,7 @@ std::string generate_cb_module_grid_port_name(
     physical_tile, pin_id);
   VTR_ASSERT(OPEN != subtile_index && subtile_index < physical_tile->capacity);
 
-  prefix += std::string("_layer_") + std::to_string(rr_graph.node_layer(rr_node));
+  // prefix += std::string("_layer_") + std::to_string(rr_graph.node_layer(rr_node));
 
   return prefix + std::string("_") +
          generate_routing_module_grid_port_name(

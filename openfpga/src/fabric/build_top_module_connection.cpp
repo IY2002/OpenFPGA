@@ -933,7 +933,7 @@ void add_top_module_nets_connect_grids_and_gsbs(
   /* Boolean to indicate to use 3D cbs or not 
      TODO: This should be a parameter
   */
-  bool is_3d_cb = true;
+  bool is_3d_cb = false;
 
   for (size_t ilayer = 0; ilayer < num_layers; ++ilayer){
     for (size_t ix = 0; ix < gsb_range.x(); ++ix) {
