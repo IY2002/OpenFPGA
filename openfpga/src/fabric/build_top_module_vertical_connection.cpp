@@ -119,7 +119,7 @@ namespace openfpga {
 
                 ModuleId below_sb_module_id = module_manager.find_module(below_sb_module_name);
 
-                size_t below_sb_instance_id = sb_instance_ids[layer - 1][below_sb.get_sb_x()][below_sb.get_sb_y()];
+                size_t below_sb_instance_id = sb_instance_ids[layer - 1][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()];
 
                 ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, below_port_name);
 
