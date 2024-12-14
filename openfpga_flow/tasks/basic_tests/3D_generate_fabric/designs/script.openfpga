@@ -42,10 +42,10 @@ write_fabric_verilog --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/SRC --explicit_port_m
 
 # Write the SDC files for PnR backend
 #  - Turn on every options here
-write_pnr_sdc --file ./SDC
+write_pnr_sdc --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/SDC
 
 # Write SDC to disable timing for configure ports
-write_sdc_disable_timing_configure_ports --file ./SDC/disable_configure_ports.sdc
+write_sdc_disable_timing_configure_ports --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/SDC/disable_configure_ports.sdc
 
 # Finish and exit OpenFPGA
 exit

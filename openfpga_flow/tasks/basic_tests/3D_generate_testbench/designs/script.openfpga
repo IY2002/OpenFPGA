@@ -10,7 +10,7 @@ read_openfpga_simulation_setting -f ${OPENFPGA_SIM_SETTING_FILE}
 
 # Annotate the OpenFPGA architecture to VPR data base
 # to debug use --verbose options
-link_openfpga_arch --activity_file ${ACTIVITY_FILE} --sort_gsb_chan_node_in_edges
+link_openfpga_arch --activity_file ${ACTIVITY_FILE} #--sort_gsb_chan_node_in_edges
 
 # Check and correct any naming conflicts in the BLIF netlist
 check_netlist_naming_conflict --fix --report ./netlist_renaming.xml
@@ -27,6 +27,8 @@ build_fabric #--compress_routing #--verbose
 # This is used by hierarchical PnR flows
 write_fabric_hierarchy --file ./fabric_hierarchy.txt
 
+write_fabric_verilog --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/SRC --explicit_port_mapping --include_timing --verbose
+
 # Repack the netlist to physical pbs
 # This must be done before bitstream generator and testbench generation
 # Strongly recommend it is done after all the fix-up have been applied
@@ -34,13 +36,13 @@ repack #--verbose
 
 # Build the bitstream
 #  - Output the fabric-independent bitstream to a file
-build_architecture_bitstream --verbose --write_file fabric_independent_bitstream.xml
+build_architecture_bitstream --verbose --write_file ${OPENFPGA_VERILOG_OUTPUT_DIR}/fabric_independent_bitstream.xml
 
 # Build fabric-dependent bitstream
 build_fabric_bitstream --verbose
 
 # Write fabric-dependent bitstream
-write_fabric_bitstream --file fabric_bitstream.bit --format plain_text
+write_fabric_bitstream --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/fabric_bitstream.bit --format plain_text
 
 # Write the Verilog testbench for FPGA fabric
 #  - We suggest the use of same output directory as fabric Verilog netlists
@@ -48,10 +50,10 @@ write_fabric_bitstream --file fabric_bitstream.bit --format plain_text
 #  - Enable top-level testbench which is a full verification including programming circuit and core logic of FPGA
 #  - Enable pre-configured top-level testbench which is a fast verification skipping programming phase
 #  - Simulation ini file is optional and is needed only when you need to interface different HDL simulators using openfpga flow-run scripts
-write_full_testbench --file ./SRC --reference_benchmark_file_path ${REFERENCE_VERILOG_TESTBENCH} --explicit_port_mapping --include_signal_init --fabric_netlist_file_path ${OPENFPGA_FABRIC_VERILOG_NETLIST} --bitstream fabric_bitstream.bit
+write_full_testbench --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/SRC --reference_benchmark_file_path ${REFERENCE_VERILOG_TESTBENCH} --explicit_port_mapping --include_signal_init --fabric_netlist_file_path ${OPENFPGA_FABRIC_VERILOG_NETLIST} --bitstream fabric_bitstream.bit
 
 # Write the SDC to run timing analysis for a mapped FPGA fabric
-write_analysis_sdc --file ./SDC_analysis
+write_analysis_sdc --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/SDC_analysis
 
 # Finish and exit OpenFPGA
 exit
