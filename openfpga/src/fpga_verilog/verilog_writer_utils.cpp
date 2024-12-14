@@ -32,6 +32,10 @@ void print_verilog_default_net_type_declaration(
   std::fstream& fp, const e_verilog_default_net_type& default_net_type) {
   VTR_ASSERT(true == valid_file_stream(fp));
 
+  if (VERILOG_DEFAULT_NET_TYPE_STRING[default_net_type] == "none") {
+    return;
+  }
+
   fp << "//----- Default net type -----" << std::endl;
   fp << "`default_nettype " << VERILOG_DEFAULT_NET_TYPE_STRING[default_net_type]
      << std::endl;

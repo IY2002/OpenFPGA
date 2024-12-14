@@ -170,12 +170,14 @@ static void build_switch_block_interc_bitstream(
   /* Get the node */
   const RRNodeId& cur_rr_node = rr_gsb.get_chan_node(chan_side, chan_node_id);
 
+  bool is_3d_cb = false;
+
   /* Determine if the interc lies inside a channel wire, that is interc between
    * segments */
   if (false ==
       rr_gsb.is_sb_node_passing_wire(rr_graph, chan_side, chan_node_id)) {
     driver_rr_nodes = get_rr_gsb_chan_node_configurable_driver_nodes(
-      rr_graph, rr_gsb, chan_side, chan_node_id);
+      rr_graph, rr_gsb, chan_side, chan_node_id, is_3d_cb); // true is for is_3d_cb
     /* Special: if there are zero-driver nodes. We skip here */
     if (0 == driver_rr_nodes.size()) {
       return;
@@ -681,6 +683,7 @@ void build_routing_bitstream(
         * creating the blocks, trace backward until reach the current top block.
         * If any block is missing during the back tracing, create it. */
         ConfigBlockId parent_block = top_configurable_block;
+
         PointWithLayer sb_coord_with_layer;
         sb_coord_with_layer.coordinates = sb_coord;
         sb_coord_with_layer.layer = ilayer;
