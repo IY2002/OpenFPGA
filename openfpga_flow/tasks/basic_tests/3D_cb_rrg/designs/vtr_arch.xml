@@ -43,7 +43,7 @@
         </equivalent_sites>
         <input name="outpad" num_pins="1"/>
         <output name="inpad" num_pins="1"/>
-        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <fc in_type="frac" in_val="1" out_type="frac" out_val="1"/>
         <!-- <fc in_type="frac" in_val="1" out_type="frac" out_val="1"/> -->
         <pinlocations pattern="custom">
           <loc side="left" layer_offset="1">io.outpad io.inpad</loc>
@@ -61,15 +61,15 @@
         <input name="I" num_pins="16" equivalent="full"/>
         <output name="O" num_pins="4" equivalent="none"/>
         <clock name="clk" num_pins="1"/>
-        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <fc in_type="frac" in_val="1" out_type="frac" out_val="1"/>
         <!-- <fc in_type="frac" in_val="1" out_type="frac" out_val="1"/> -->
         
         <pinlocations pattern="custom">
-            <!-- <loc side="left" layer_offset="1">clb.O[0] clb.I[0:3] clb.clk</loc>
+            <loc side="left" layer_offset="1">clb.O[0] clb.I[0:3] clb.clk</loc>
             <loc side="bottom" layer_offset="1">clb.O[1] clb.I[4:7]</loc>
             <loc side="right" layer_offset="1">clb.O[2] clb.I[8:11]</loc>
-            <loc side="top" layer_offset="1">clb.O[3] clb.I[12:15]</loc> -->
-            <loc side="left">clb.I[0:3] clb.clk</loc>
+            <loc side="top" layer_offset="1">clb.O[3] clb.I[12:15]</loc>
+            <!-- <loc side="left">clb.I[0:3] clb.clk</loc>
             <loc side="bottom">clb.I[4:7]</loc>
             <loc side="right">clb.I[8:11]</loc>
             <loc side="top">clb.I[12:15]</loc> 
@@ -77,7 +77,7 @@
             <loc side="bottom" layer_offset="1">clb.O[1]</loc>
             <loc side="right" layer_offset="1">clb.O[2]</loc>
             <loc side="top" layer_offset="1">clb.O[3]</loc>
-           
+            -->
         </pinlocations>
 
 	<!-- <pinlocations pattern="spread"/> -->

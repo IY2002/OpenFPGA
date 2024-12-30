@@ -285,7 +285,7 @@ static void build_switch_block_interc_modules(
 
   /* Boolean to indicate whether the CBs are 3D
      TODO: Make variable a function parameter*/
-  bool is_3d_cb = false;
+  bool is_3d_cb = true;
 
   /* Get the node */
   const RRNodeId& cur_rr_node = rr_gsb.get_chan_node(chan_side, chan_node_id);
@@ -469,13 +469,11 @@ static void build_switch_block_module(
                                    side_manager.get_side());
     }
 
+    // FOUND REPEATED SIGNAL ERROR, NEED TO ACCOUNT FOR LAYER
     /* Dump OPINs of adjacent CLBs */
     for (size_t inode = 0;
          inode < rr_gsb.get_num_opin_nodes(side_manager.get_side()); ++inode) {
-      vtr::Point<size_t> port_coord(rr_graph.node_xlow(rr_gsb.get_opin_node(
-                                      side_manager.get_side(), inode)),
-                                    rr_graph.node_ylow(rr_gsb.get_opin_node(
-                                      side_manager.get_side(), inode)));
+
       std::string port_name = generate_sb_module_grid_port_name(
         side_manager.get_side(),
         get_rr_graph_single_node_side(
@@ -1114,7 +1112,7 @@ static void build_connection_block_module(
   /* Boolean to indicate if 3D CBs are used or not 
      TODO: This should be a parameter in the function
   */
-  bool is_3d_cb = false;
+  bool is_3d_cb = true;
 
   /* Add sub modules of routing multiplexers or direct interconnect*/
   for (size_t iside = 0; iside < cb_ipin_sides.size(); ++iside) {
@@ -1249,7 +1247,7 @@ void build_flatten_routing_modules(
   /* Boolean to indicate if 3D CBs are used or not
      TODO: Make this variable a function parameter
   */
-  bool is_3d_cb = false;
+  bool is_3d_cb = true;
 
   /* Build unique switch block modules */
   for (size_t ilayer = 0; ilayer < layer_range; ++ilayer) {

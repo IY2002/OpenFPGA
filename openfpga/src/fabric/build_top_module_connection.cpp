@@ -101,7 +101,9 @@ static void add_top_module_nets_connect_grids_and_sb(
   std::string sink_sb_module_name =
     generate_switch_block_module_name(module_sb_coordinate, module_gsb_layer);
   ModuleId sink_sb_module = module_manager.find_module(sink_sb_module_name);
+
   VTR_ASSERT(true == module_manager.valid_module_id(sink_sb_module));
+
   size_t sink_sb_instance =
     sb_instance_ids[layer][instance_sb_coordinate.x()][instance_sb_coordinate.y()];
 
@@ -114,62 +116,71 @@ static void add_top_module_nets_connect_grids_and_sb(
       /* Collect source-related information */
       /* Generate the grid module name by considering if it locates on the
        * border */
+      RRNodeId gridNode = rr_gsb.get_opin_node(side_manager.get_side(), inode);
       vtr::Point<size_t> grid_coordinate(
-        rr_graph.node_xlow(
-          rr_gsb.get_opin_node(side_manager.get_side(), inode)),
-        rr_graph.node_ylow(
-          rr_gsb.get_opin_node(side_manager.get_side(), inode)));
+        rr_graph.node_xlow(gridNode),
+        rr_graph.node_ylow(gridNode));
+
+      size_t grid_layer = rr_graph.node_layer(gridNode);
+
       std::string src_grid_module_name =
         generate_grid_block_module_name_in_top_module(
-          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate, layer);
+          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate, grid_layer);
+
       ModuleId src_grid_module =
         module_manager.find_module(src_grid_module_name);
+
       VTR_ASSERT(true == module_manager.valid_module_id(src_grid_module));
+
+      // Got the sb module and the grid module
+
       size_t src_grid_instance =
-        grid_instance_ids[layer][grid_coordinate.x()][grid_coordinate.y()];
-      size_t src_grid_pin_index = rr_graph.node_pin_num(
-        rr_gsb.get_opin_node(side_manager.get_side(), inode));
+        grid_instance_ids[grid_layer][grid_coordinate.x()][grid_coordinate.y()];
+      size_t src_grid_pin_index = rr_graph.node_pin_num(gridNode);
 
       t_physical_tile_type_ptr grid_type_descriptor = grids.get_physical_type(
-        t_physical_tile_loc(grid_coordinate.x(), grid_coordinate.y(), layer));
+        t_physical_tile_loc(grid_coordinate.x(), grid_coordinate.y(), grid_layer));
+
       size_t src_grid_pin_width =
         grid_type_descriptor->pin_width_offset[src_grid_pin_index];
       size_t src_grid_pin_height =
         grid_type_descriptor->pin_height_offset[src_grid_pin_index];
+
       BasicPort src_grid_pin_info =
         vpr_device_annotation.physical_tile_pin_port_info(grid_type_descriptor,
                                                           src_grid_pin_index);
       VTR_ASSERT(true == src_grid_pin_info.is_valid());
+
       int subtile_index = vpr_device_annotation.physical_tile_pin_subtile_index(
         grid_type_descriptor, src_grid_pin_index);
+
       VTR_ASSERT(OPEN != subtile_index &&
                  subtile_index < grid_type_descriptor->capacity);
+
+      // add a layer to the port?
       std::string src_grid_port_name = generate_grid_port_name(
         src_grid_pin_width, src_grid_pin_height, subtile_index,
-        get_rr_graph_single_node_side(
-          rr_graph, rr_gsb.get_opin_node(side_manager.get_side(), inode)),
-        src_grid_pin_info);
+        get_rr_graph_single_node_side(rr_graph, gridNode), src_grid_pin_info);
+
       ModulePortId src_grid_port_id =
         module_manager.find_module_port(src_grid_module, src_grid_port_name);
+
       VTR_ASSERT(true == module_manager.valid_module_port_id(src_grid_module,
                                                              src_grid_port_id));
       BasicPort src_grid_port =
         module_manager.module_port(src_grid_module, src_grid_port_id);
 
-      /* Collect sink-related information */
-      vtr::Point<size_t> sink_sb_port_coord(
-        rr_graph.node_xlow(
-          module_sb.get_opin_node(side_manager.get_side(), inode)),
-        rr_graph.node_ylow(
-          module_sb.get_opin_node(side_manager.get_side(), inode)));
+
       std::string sink_sb_port_name = generate_sb_module_grid_port_name(
         side_manager.get_side(),
         get_rr_graph_single_node_side(
           rr_graph, module_sb.get_opin_node(side_manager.get_side(), inode)),
         grids, vpr_device_annotation, rr_graph,
         module_sb.get_opin_node(side_manager.get_side(), inode));
+
       ModulePortId sink_sb_port_id =
         module_manager.find_module_port(sink_sb_module, sink_sb_port_name);
+
       VTR_ASSERT(true == module_manager.valid_module_port_id(sink_sb_module,
                                                              sink_sb_port_id));
       BasicPort sink_sb_port =
@@ -183,6 +194,7 @@ static void add_top_module_nets_connect_grids_and_sb(
         ModuleNetId net = create_module_source_pin_net(
           module_manager, top_module, src_grid_module, src_grid_instance,
           src_grid_port_id, src_grid_port.pins()[pin_id]);
+
         /* Configure the net sink */
         module_manager.add_module_net_sink(top_module, net, sink_sb_module,
                                            sink_sb_instance, sink_sb_port_id,
@@ -352,12 +364,7 @@ static void add_top_module_nets_connect_grids_and_sb_with_duplicated_pins(
       BasicPort src_grid_port =
         module_manager.module_port(src_grid_module, src_grid_port_id);
 
-      /* Collect sink-related information */
-      vtr::Point<size_t> sink_sb_port_coord(
-        rr_graph.node_xlow(
-          module_sb.get_opin_node(side_manager.get_side(), inode)),
-        rr_graph.node_ylow(
-          module_sb.get_opin_node(side_manager.get_side(), inode)));
+
       std::string sink_sb_port_name = generate_sb_module_grid_port_name(
         side_manager.get_side(),
         get_rr_graph_single_node_side(
@@ -503,15 +510,16 @@ static void add_top_module_nets_connect_grids_and_cb(
          ++inode) {
       /* Collect source-related information */
       RRNodeId module_ipin_node = module_cb.get_ipin_node(cb_ipin_side, inode);
-      vtr::Point<size_t> cb_src_port_coord(
-        rr_graph.node_xlow(module_ipin_node),
-        rr_graph.node_ylow(module_ipin_node));
+      
       std::string src_cb_port_name = generate_cb_module_grid_port_name(
         cb_ipin_side, grids, vpr_device_annotation, rr_graph, module_ipin_node);
+
       ModulePortId src_cb_port_id =
         module_manager.find_module_port(src_cb_module, src_cb_port_name);
+
       VTR_ASSERT(true == module_manager.valid_module_port_id(src_cb_module,
                                                              src_cb_port_id));
+
       BasicPort src_cb_port =
         module_manager.module_port(src_cb_module, src_cb_port_id);
 
@@ -523,18 +531,24 @@ static void add_top_module_nets_connect_grids_and_cb(
       vtr::Point<size_t> grid_coordinate(
         rr_graph.node_xlow(instance_ipin_node),
         rr_graph.node_ylow(instance_ipin_node));
+
+      size_t grid_layer = rr_graph.node_layer(instance_ipin_node);
+
       std::string sink_grid_module_name =
         generate_grid_block_module_name_in_top_module(
-          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate, layer);
+          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate, grid_layer);
+
       ModuleId sink_grid_module =
         module_manager.find_module(sink_grid_module_name);
+
       VTR_ASSERT(true == module_manager.valid_module_id(sink_grid_module));
+
       size_t sink_grid_instance =
-        grid_instance_ids[layer][grid_coordinate.x()][grid_coordinate.y()];
+        grid_instance_ids[grid_layer][grid_coordinate.x()][grid_coordinate.y()];
       size_t sink_grid_pin_index = rr_graph.node_pin_num(instance_ipin_node);
 
       t_physical_tile_type_ptr grid_type_descriptor = grids.get_physical_type(
-        t_physical_tile_loc(grid_coordinate.x(), grid_coordinate.y(), layer));
+        t_physical_tile_loc(grid_coordinate.x(), grid_coordinate.y(), grid_layer));
       size_t sink_grid_pin_width =
         grid_type_descriptor->pin_width_offset[sink_grid_pin_index];
       size_t sink_grid_pin_height =
@@ -585,15 +599,20 @@ static void add_top_module_nets_connect_grids_and_cb(
       /* Collect source-related information */
       RRNodeId module_opin_node =
         module_cb.get_cb_opin_node(cb_type, cb_opin_side, inode);
+
       vtr::Point<size_t> cb_src_port_coord(
         rr_graph.node_xlow(module_opin_node),
         rr_graph.node_ylow(module_opin_node));
+
       std::string src_cb_port_name = generate_cb_module_grid_port_name(
         cb_opin_side, grids, vpr_device_annotation, rr_graph, module_opin_node);
+
       ModulePortId src_cb_port_id =
         module_manager.find_module_port(src_cb_module, src_cb_port_name);
+
       VTR_ASSERT(true == module_manager.valid_module_port_id(src_cb_module,
                                                              src_cb_port_id));
+
       BasicPort src_cb_port =
         module_manager.module_port(src_cb_module, src_cb_port_id);
 
@@ -603,21 +622,29 @@ static void add_top_module_nets_connect_grids_and_cb(
        */
       RRNodeId instance_opin_node =
         rr_gsb.get_cb_opin_node(cb_type, cb_opin_side, inode);
+
       vtr::Point<size_t> grid_coordinate(
         rr_graph.node_xlow(instance_opin_node),
         rr_graph.node_ylow(instance_opin_node));
+
+      size_t grid_layer = rr_graph.node_layer(instance_opin_node);
+
       std::string sink_grid_module_name =
         generate_grid_block_module_name_in_top_module(
-          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate, layer);
+          std::string(GRID_MODULE_NAME_PREFIX), grids, grid_coordinate, grid_layer);
+
       ModuleId sink_grid_module =
         module_manager.find_module(sink_grid_module_name);
+
       VTR_ASSERT(true == module_manager.valid_module_id(sink_grid_module));
+
       size_t sink_grid_instance =
-        grid_instance_ids[layer][grid_coordinate.x()][grid_coordinate.y()];
+        grid_instance_ids[grid_layer][grid_coordinate.x()][grid_coordinate.y()];
+
       size_t sink_grid_pin_index = rr_graph.node_pin_num(instance_opin_node);
 
       t_physical_tile_type_ptr grid_type_descriptor = grids.get_physical_type(
-        t_physical_tile_loc(grid_coordinate.x(), grid_coordinate.y(), layer));
+        t_physical_tile_loc(grid_coordinate.x(), grid_coordinate.y(), grid_layer));
       size_t sink_grid_pin_width =
         grid_type_descriptor->pin_width_offset[sink_grid_pin_index];
       size_t sink_grid_pin_height =
@@ -630,15 +657,19 @@ static void add_top_module_nets_connect_grids_and_cb(
         grid_type_descriptor, sink_grid_pin_index);
       VTR_ASSERT(OPEN != subtile_index &&
                  subtile_index < grid_type_descriptor->capacity);
+
       std::string sink_grid_port_name = generate_grid_port_name(
         sink_grid_pin_width, sink_grid_pin_height, subtile_index,
         get_rr_graph_single_node_side(
           rr_graph, rr_gsb.get_cb_opin_node(cb_type, cb_opin_side, inode)),
         sink_grid_pin_info);
+
       ModulePortId sink_grid_port_id =
         module_manager.find_module_port(sink_grid_module, sink_grid_port_name);
+
       VTR_ASSERT(true == module_manager.valid_module_port_id(
                            sink_grid_module, sink_grid_port_id));
+
       BasicPort sink_grid_port =
         module_manager.module_port(sink_grid_module, sink_grid_port_id);
 
@@ -808,16 +839,23 @@ static void add_top_module_nets_connect_sb_and_cb(
     }
 
     const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_cb_coordinate, module_gsb_cb_layer);
+
     vtr::Point<size_t> module_cb_coordinate(module_cb.get_cb_x(cb_type),
                                             module_cb.get_cb_y(cb_type));
+
     std::string cb_module_name =
       generate_connection_block_module_name(cb_type, module_cb_coordinate, module_gsb_cb_layer);
+
     ModuleId cb_module_id = module_manager.find_module(cb_module_name);
+
     VTR_ASSERT(true == module_manager.valid_module_id(cb_module_id));
+
     const RRGSB& instance_cb =
       device_rr_gsb.get_gsb(instance_gsb_cb_coordinate, layer);
+
     vtr::Point<size_t> instance_cb_coordinate(instance_cb.get_cb_x(cb_type),
                                               instance_cb.get_cb_y(cb_type));
+                                              
     size_t cb_instance = cb_instance_ids.at(
       cb_type)[layer][instance_cb_coordinate.x()][instance_cb_coordinate.y()];
 
@@ -933,7 +971,7 @@ void add_top_module_nets_connect_grids_and_gsbs(
   /* Boolean to indicate to use 3D cbs or not 
      TODO: This should be a parameter
   */
-  bool is_3d_cb = false;
+  bool is_3d_cb = true;
 
   for (size_t ilayer = 0; ilayer < num_layers; ++ilayer){
     for (size_t ix = 0; ix < gsb_range.x(); ++ix) {

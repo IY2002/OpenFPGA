@@ -170,7 +170,7 @@ static void build_switch_block_interc_bitstream(
   /* Get the node */
   const RRNodeId& cur_rr_node = rr_gsb.get_chan_node(chan_side, chan_node_id);
 
-  bool is_3d_cb = false;
+  bool is_3d_cb = true;
 
   /* Determine if the interc lies inside a channel wire, that is interc between
    * segments */

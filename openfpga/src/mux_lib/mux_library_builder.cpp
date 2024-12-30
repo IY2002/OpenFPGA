@@ -86,7 +86,7 @@ static void build_routing_arch_mux_library(
         /* Boolean to indicate if 3D CBs are being used
            TODO: make variable a function parameter
          */
-        bool is_3d_cb = false;
+        bool is_3d_cb = true;
 
         if (is_3d_cb){
           std::vector<RREdgeId> in_edges = rr_graph.node_in_edges(node);
