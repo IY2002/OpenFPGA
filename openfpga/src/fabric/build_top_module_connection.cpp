@@ -962,16 +962,11 @@ void add_top_module_nets_connect_grids_and_gsbs(
   const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
   const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
   const std::map<t_rr_type, vtr::NdMatrix<size_t, 3>>& cb_instance_ids,
-  const bool& compact_routing_hierarchy, const bool& duplicate_grid_pin) {
+  const bool& compact_routing_hierarchy, const bool& duplicate_grid_pin, const bool is_3d_cb) {
   vtr::ScopedStartFinishTimer timer("Add module nets between grids and GSBs");
 
   vtr::Point<size_t> gsb_range = device_rr_gsb.get_gsb_range();
   size_t num_layers = device_rr_gsb.get_gsb_layers();
-
-  /* Boolean to indicate to use 3D cbs or not 
-     TODO: This should be a parameter
-  */
-  bool is_3d_cb = true;
 
   for (size_t ilayer = 0; ilayer < num_layers; ++ilayer){
     for (size_t ix = 0; ix < gsb_range.x(); ++ix) {

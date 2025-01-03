@@ -43,12 +43,16 @@
         </equivalent_sites>
         <input name="outpad" num_pins="1"/>
         <output name="inpad" num_pins="1"/>
-        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <fc in_type="frac" in_val="1" out_type="frac" out_val="1"/>
         <pinlocations pattern="custom">
-          <loc side="left" layer_offset="1">io.outpad io.inpad</loc>
+          <!-- <loc side="left" layer_offset="1">io.outpad io.inpad</loc>
           <loc side="top" layer_offset="1">io.outpad io.inpad</loc>
           <loc side="right" layer_offset="1">io.outpad io.inpad</loc>
-          <loc side="bottom" layer_offset="1">io.outpad io.inpad</loc>
+          <loc side="bottom" layer_offset="1">io.outpad io.inpad</loc> -->
+          <loc side="left">io.outpad io.inpad</loc>
+          <loc side="top">io.outpad io.inpad</loc>
+          <loc side="right">io.outpad io.inpad</loc>
+          <loc side="bottom">io.outpad io.inpad</loc>
         </pinlocations>
       </sub_tile>
     </tile>
@@ -60,13 +64,17 @@
         <input name="I" num_pins="16" equivalent="full"/>
         <output name="O" num_pins="4" equivalent="none"/>
         <clock name="clk" num_pins="1"/>
-        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <fc in_type="frac" in_val="1" out_type="frac" out_val="1"/>
         
         <pinlocations pattern="custom">
-            <loc side="left" layer_offset="1">clb.I clb.clk clb.O[0]</loc>
+            <!-- <loc side="left" layer_offset="1">clb.I clb.clk clb.O[0]</loc>
             <loc side="bottom" layer_offset="1">clb.O[1]</loc>
             <loc side="right" layer_offset="1">clb.O[2]</loc>
-            <loc side="top" layer_offset="1">clb.O[3]</loc>
+            <loc side="top" layer_offset="1">clb.O[3]</loc> -->
+            <loc side="left">clb.I clb.clk clb.O[0]</loc>
+            <loc side="bottom">clb.O[1]</loc>
+            <loc side="right">clb.O[2]</loc>
+            <loc side="top">clb.O[3]</loc>
         </pinlocations>
 
 	<!-- <pinlocations pattern="spread"/> -->
@@ -319,8 +327,8 @@
     <!-- Define general purpose logic block (CLB) ends -->
   </complexblocklist>
   <switchblocklist>
-    <switchblock name="3d_wilton_straight" type="unidir">
-            <switchblock_location type="EVERYWHERE"/>
+      <switchblock name="3d_wilton_straight" type="unidir">
+        <switchblock_location type="EVERYWHERE"/>
             <switchfuncs>
                 <!-- Straight -->
                 <func type="la" formula="t"/>
@@ -338,7 +346,30 @@
                 <func type="ba" formula="t"/>
                 <!-- bottom to above -->
                 <func type="lu" formula="t"/>
+
                 <!-- bottom to under -->
+                <func type="lt" formula="t"/>
+                <!-- left to top -->
+                <func type="tr" formula="t"/>
+                <!-- top to right -->
+                <func type="rb" formula="t"/>
+                <!-- right to bottom -->
+                <func type="bl" formula="t"/>
+                <!-- bottom to left -->
+
+                <!-- Clock-wise turns -->
+                <func type="tl" formula="t"/>
+                <!-- top to left -->
+                <func type="rt" formula="t"/>
+                <!-- right to top -->
+                <func type="br" formula="t"/>
+                <!-- bottom to right -->
+                <func type="lb" formula="t"/>
+
+                <func type="lr" formula="t"/>
+                <func type="rl" formula="t"/>
+                <func type="tb" formula="t"/>
+                <func type="bt" formula="t"/>
             </switchfuncs>
             <!-- L4 Drivers
                 Note that we order the switchpoints in order of preference, since VPR currently
@@ -366,69 +397,7 @@
             </wireconn> -->
             <!--<wireconn num_conns="1*to" from_type="L4" from_switchpoint="0" to_type="L4" to_switchpoint="0"/>-->
             <!--<wireconn num_conns="1*to" from_type="L4" from_switchpoint="0,12,8,4" to_type="L4" to_switchpoint="0"/>-->
-        </switchblock>
-        <switchblock name="wilton_straight_corner" type="unidir">
-            <!-- Same as wilton straight, but turning around a corner -->
-            <switchblock_location type="CORNER"/>
-            <switchfuncs>
-                <!-- Counter-clock-wise turns -->
-                <func type="lt" formula="t"/>
-                <!-- left to top -->
-                <func type="tr" formula="t"/>
-                <!-- top to right -->
-                <func type="rb" formula="t"/>
-                <!-- right to bottom -->
-                <func type="bl" formula="t"/>
-                <!-- bottom to left -->
-                <!-- Clock-wise turns -->
-                <func type="tl" formula="t"/>
-                <!-- top to left -->
-                <func type="rt" formula="t"/>
-                <!-- right to top -->
-                <func type="br" formula="t"/>
-                <!-- bottom to right -->
-                <func type="lb" formula="t"/>
-                <!-- left to bottom -->
-            </switchfuncs>
-            <!-- L4 Drivers -->
-            <!-- <wireconn num_conns="3*to" from_type="L4" from_switchpoint="0,12,8,4" to_type="L4" to_switchpoint="0"/>
-            <wireconn num_conns="11*to" from_type="L4" from_switchpoint="0,3,2,1" to_type="L4" to_switchpoint="0"/> -->
-            <!-- L4 Drivers -->
-            <!-- <wireconn num_conns="2*to" from_order="shuffled">
-                <from type="L4" switchpoint="0,12,8,4"/>
-                <from type="L4" switchpoint="0"/>
-                <to type="L4" switchpoint="0"/>
-            </wireconn> -->
-            <!--<wireconn num_conns="1*to" from_type="L4" from_switchpoint="0" to_type="L4" to_switchpoint="0"/>-->
-            <!--<wireconn num_conns="1*to" from_type="L4" from_switchpoint="0,12,8,4" to_type="L4" to_switchpoint="0"/>-->
-        </switchblock>
-        <switchblock name="wilton_turn_fringe" type="unidir">
-            <!-- Non-corner perimeter SBs -->
-            <switchblock_location type="FRINGE"/>
-            <switchfuncs>
-                <!-- Counter-clock-wise turns -->
-                <func type="lt" formula="W-t"/>
-                <!-- left to top -->
-                <func type="tr" formula="t+1"/>
-                <!-- top to right -->
-                <func type="rb" formula="2*W-2-t"/>
-                <!-- right to bottom -->
-                <func type="bl" formula="t+1"/>
-                <!-- bottom to left -->
-                <!-- Clock-wise turns -->
-                <func type="tl" formula="W-t"/>
-                <!-- top to left -->
-                <func type="rt" formula="t+1"/>
-                <!-- right to top -->
-                <func type="br" formula="2*W-2-t"/>
-                <!-- bottom to right -->
-                <func type="lb" formula="t+1"/>
-                <!-- left to bottom -->
-            </switchfuncs>
-
-            <!-- L4 drivers -->
-            <!-- <wireconn num_conns="1*max(from,to)" from_type="L4" from_switchpoint="0,12,8,4" from_order="fixed" to_type="L4" to_switchpoint="0"/>
-            <wireconn num_conns="1*max(from,to)" from_type="L4" from_switchpoint="0,1,2,3" from_order="shuffled" to_type="L4" to_switchpoint="0"/> -->
+            <wireconn num_conns="to" from_type="L4" from_switchpoint="0" to_type="L4" to_switchpoint="0"/>
         </switchblock>
   </switchblocklist>
 </architecture>

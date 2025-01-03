@@ -280,12 +280,8 @@ static void build_switch_block_interc_modules(
   const CircuitLibrary& circuit_lib, const e_side& chan_side,
   const size_t& chan_node_id,
   const std::map<ModulePinInfo, ModuleNetId>& input_port_to_module_nets,
-  const bool& group_config_block) {
+  const bool& group_config_block, const bool is_3d_cb) {
   std::vector<RRNodeId> driver_rr_nodes;
-
-  /* Boolean to indicate whether the CBs are 3D
-     TODO: Make variable a function parameter*/
-  bool is_3d_cb = true;
 
   /* Get the node */
   const RRNodeId& cur_rr_node = rr_gsb.get_chan_node(chan_side, chan_node_id);
@@ -398,7 +394,7 @@ static void build_switch_block_module(
   const RRGraphView& rr_graph, const CircuitLibrary& circuit_lib,
   const e_config_protocol_type& sram_orgz_type,
   const CircuitModelId& sram_model, const DeviceRRGSB& device_rr_gsb,
-  const RRGSB& rr_gsb, const bool& group_config_block, const bool& verbose, size_t layer) {
+  const RRGSB& rr_gsb, const bool& group_config_block, const bool& verbose, size_t layer, const bool is_3d_cb) {
   /* Create a Module of Switch Block and add to module manager */
   vtr::Point<size_t> gsb_coordinate(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
   ModuleId sb_module = module_manager.add_module(
@@ -507,7 +503,7 @@ static void build_switch_block_module(
         build_switch_block_interc_modules(
           module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
           circuit_lib, side_manager.get_side(), itrack,
-          input_port_to_module_nets, group_config_block);
+          input_port_to_module_nets, group_config_block, is_3d_cb);
       }
     }
   }
@@ -935,7 +931,7 @@ static void build_connection_block_module(
   const e_config_protocol_type& sram_orgz_type,
   const CircuitModelId& sram_model, const DeviceRRGSB& device_rr_gsb,
   const RRGSB& rr_gsb, const t_rr_type& cb_type, const bool& group_config_block,
-  const bool& verbose, const size_t& layer) {
+  const bool& verbose, const size_t& layer, const bool is_3d_cb) {
   /* Create the netlist */
   vtr::Point<size_t> gsb_coordinate(rr_gsb.get_cb_x(cb_type),
                                     rr_gsb.get_cb_y(cb_type));
@@ -1109,11 +1105,6 @@ static void build_connection_block_module(
     input_port_to_module_nets[ModulePinInfo(opin_module_port_id, 0)] = net;
   }
 
-  /* Boolean to indicate if 3D CBs are used or not 
-     TODO: This should be a parameter in the function
-  */
-  bool is_3d_cb = true;
-
   /* Add sub modules of routing multiplexers or direct interconnect*/
   for (size_t iside = 0; iside < cb_ipin_sides.size(); ++iside) {
     enum e_side cb_ipin_side = cb_ipin_sides[iside];
@@ -1199,7 +1190,7 @@ static void build_flatten_connection_block_modules(
   const DeviceRRGSB& device_rr_gsb, const CircuitLibrary& circuit_lib,
   const e_config_protocol_type& sram_orgz_type,
   const CircuitModelId& sram_model, const t_rr_type& cb_type,
-  const bool& group_config_block, const bool& verbose) {
+  const bool& group_config_block, const bool& verbose, const bool is_3d_cb) {
   /* Build unique X-direction connection block modules */
   vtr::Point<size_t> cb_range = device_rr_gsb.get_gsb_range();
   size_t num_layers = device_rr_gsb.get_gsb_layers();
@@ -1217,7 +1208,7 @@ static void build_flatten_connection_block_modules(
         build_connection_block_module(
           module_manager, decoder_lib, device_annotation, device_ctx.grid,
           device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
-          device_rr_gsb, rr_gsb, cb_type, group_config_block, verbose, ilayer);
+          device_rr_gsb, rr_gsb, cb_type, group_config_block, verbose, ilayer, is_3d_cb);
       }
     }
   }
@@ -1238,16 +1229,11 @@ void build_flatten_routing_modules(
   const DeviceRRGSB& device_rr_gsb, const CircuitLibrary& circuit_lib,
   const e_config_protocol_type& sram_orgz_type,
   const CircuitModelId& sram_model, const bool& group_config_block,
-  const bool& verbose) {
+  const bool& verbose, const bool is_3d_cb) {
   vtr::ScopedStartFinishTimer timer("Build routing modules...");
 
   vtr::Point<size_t> sb_range = device_rr_gsb.get_gsb_range();
   size_t layer_range = device_rr_gsb.get_gsb_layers();
-
-  /* Boolean to indicate if 3D CBs are used or not
-     TODO: Make this variable a function parameter
-  */
-  bool is_3d_cb = true;
 
   /* Build unique switch block modules */
   for (size_t ilayer = 0; ilayer < layer_range; ++ilayer) {
@@ -1261,7 +1247,7 @@ void build_flatten_routing_modules(
           build_switch_block_module(
             module_manager, decoder_lib, device_annotation, device_ctx.grid,
             device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
-            device_rr_gsb, rr_gsb, group_config_block, verbose, ilayer);
+            device_rr_gsb, rr_gsb, group_config_block, verbose, ilayer, is_3d_cb);
         } else{
            build_3d_switch_block_module(
             module_manager, decoder_lib, device_annotation, device_ctx.grid,
@@ -1275,12 +1261,12 @@ void build_flatten_routing_modules(
   build_flatten_connection_block_modules(
     module_manager, decoder_lib, device_ctx, device_annotation, device_rr_gsb,
     circuit_lib, sram_orgz_type, sram_model, CHANX, group_config_block,
-    verbose);
+    verbose, is_3d_cb);
 
   build_flatten_connection_block_modules(
     module_manager, decoder_lib, device_ctx, device_annotation, device_rr_gsb,
     circuit_lib, sram_orgz_type, sram_model, CHANY, group_config_block,
-    verbose);
+    verbose, is_3d_cb);
 }
 
 /********************************************************************
@@ -1300,7 +1286,7 @@ void build_unique_routing_modules(
   const DeviceRRGSB& device_rr_gsb, const CircuitLibrary& circuit_lib,
   const e_config_protocol_type& sram_orgz_type,
   const CircuitModelId& sram_model, const bool& group_config_block,
-  const bool& verbose) {
+  const bool& verbose, const bool is_3d_cb) {
   vtr::ScopedStartFinishTimer timer("Build unique routing modules...");
 
   size_t layer_range = device_rr_gsb.get_gsb_layers();
@@ -1313,7 +1299,7 @@ void build_unique_routing_modules(
       build_switch_block_module(module_manager, decoder_lib, device_annotation,
                                 device_ctx.grid, device_ctx.rr_graph, circuit_lib,
                                 sram_orgz_type, sram_model, device_rr_gsb,
-                                unique_mirror, group_config_block, verbose, ilayer);
+                                unique_mirror, group_config_block, verbose, ilayer, is_3d_cb);
     } else{
       build_3d_switch_block_module(module_manager, decoder_lib, device_annotation,
                                    device_ctx.grid, device_ctx.rr_graph, circuit_lib,
@@ -1330,7 +1316,7 @@ void build_unique_routing_modules(
     build_connection_block_module(
       module_manager, decoder_lib, device_annotation, device_ctx.grid,
       device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
-      device_rr_gsb, unique_mirror, CHANX, group_config_block, verbose, unique_layer);
+      device_rr_gsb, unique_mirror, CHANX, group_config_block, verbose, unique_layer, is_3d_cb);
   }
 
   /* Build unique X-direction connection block modules */
@@ -1341,7 +1327,7 @@ void build_unique_routing_modules(
     build_connection_block_module(
       module_manager, decoder_lib, device_annotation, device_ctx.grid,
       device_ctx.rr_graph, circuit_lib, sram_orgz_type, sram_model,
-      device_rr_gsb, unique_mirror, CHANY, group_config_block, verbose, unique_layer);
+      device_rr_gsb, unique_mirror, CHANY, group_config_block, verbose, unique_layer, is_3d_cb);
   }
 }
 

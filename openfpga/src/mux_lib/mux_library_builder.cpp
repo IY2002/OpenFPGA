@@ -28,7 +28,7 @@ namespace openfpga {
  *******************************************************************/
 static void build_routing_arch_mux_library(
   const RRGraphView& rr_graph, const CircuitLibrary& circuit_lib,
-  const VprDeviceAnnotation& vpr_device_annotation, MuxLibrary& mux_lib, const DeviceGrid& grids) {
+  const VprDeviceAnnotation& vpr_device_annotation, MuxLibrary& mux_lib, const DeviceGrid& grids, const bool is_3d_cb) {
   /* The routing path is.
    * OPIN ----> CHAN ----> ... ----> CHAN ----> IPIN
    * Each edge is a switch, for IPIN, the switch is a connection block,
@@ -82,11 +82,6 @@ static void build_routing_arch_mux_library(
         if (in_edges.size() < 2 ) break;
         mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
                         in_edges.size());
-
-        /* Boolean to indicate if 3D CBs are being used
-           TODO: make variable a function parameter
-         */
-        bool is_3d_cb = true;
 
         if (is_3d_cb){
           std::vector<RREdgeId> in_edges = rr_graph.node_in_edges(node);
@@ -243,7 +238,8 @@ static void build_lut_mux_library(MuxLibrary& mux_lib,
  * list, as a return value
  */
 MuxLibrary build_device_mux_library(const DeviceContext& vpr_device_ctx,
-                                    const OpenfpgaContext& openfpga_ctx) {
+                                    const OpenfpgaContext& openfpga_ctx,
+                                    const bool is_3d_cb) {
   vtr::ScopedStartFinishTimer timer("Build a library of physical multiplexers");
 
   /* MuxLibrary to store the information of Multiplexers*/
@@ -253,7 +249,7 @@ MuxLibrary build_device_mux_library(const DeviceContext& vpr_device_ctx,
    * architecture.*/
   build_routing_arch_mux_library(vpr_device_ctx.rr_graph,
                                  openfpga_ctx.arch().circuit_lib,
-                                 openfpga_ctx.vpr_device_annotation(), mux_lib, vpr_device_ctx.grid);
+                                 openfpga_ctx.vpr_device_annotation(), mux_lib, vpr_device_ctx.grid, is_3d_cb);
 
   /* Step 2: Count the sizes of multiplexers in complex logic blocks */
   for (const t_logical_block_type& lb_type :

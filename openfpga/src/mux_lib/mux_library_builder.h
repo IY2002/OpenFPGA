@@ -16,7 +16,8 @@
 namespace openfpga {
 
 MuxLibrary build_device_mux_library(const DeviceContext& vpr_device_ctx,
-                                    const OpenfpgaContext& openfpga_ctx);
+                                    const OpenfpgaContext& openfpga_ctx,
+                                    const bool is_3d_cb);
 
 } /* end namespace openfpga */
 

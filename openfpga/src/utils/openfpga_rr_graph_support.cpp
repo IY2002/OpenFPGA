@@ -23,13 +23,13 @@ bool is_vpr_rr_graph_supported(const RRGraphView& rr_graph) {
         "uni-directional routing architecture only.\n");
       return false;
     }
-    if (Direction::NONE == rr_graph.node_direction(node)) {
-      VTR_LOG_ERROR(
-        "Routing resource graph contains routing tracks which has not specific "
-        "direction. OpenFPGA currently supports uni-directional routing "
-        "architecture only.\n");
-      return false;
-    }
+    // if (Direction::NONE == rr_graph.node_direction(node)) {
+    //   VTR_LOG_ERROR(
+    //     "Routing resource graph contains routing tracks which has not specific "
+    //     "direction. OpenFPGA currently supports uni-directional routing "
+    //     "architecture only.\n");
+    //   return false;
+    // }
   }
 
   return true;

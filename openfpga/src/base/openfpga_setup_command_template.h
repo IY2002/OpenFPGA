@@ -210,6 +210,11 @@ ShellCommandId add_link_arch_command_template(
   /* Add an option '--verbose' */
   shell_cmd.add_option("verbose", false, "Show verbose outputs");
 
+  /* Add command for 3D SB and CB Booleans*/
+  shell_cmd.add_option("3d_sb", false, "Indicate if the Architecture being used has 3D SBs using VTR's cusotm 3D Switch Blocks");
+
+  shell_cmd.add_option("3d_cb", false, "Indicate if the Architecture being used has 3D CBs using VTR's default 3D FPGA");
+
   /* Add command 'link_openfpga_arch' to the Shell */
   ShellCommandId shell_cmd_id =
     shell.add_command(shell_cmd, "Bind OpenFPGA architecture to VPR", hidden);

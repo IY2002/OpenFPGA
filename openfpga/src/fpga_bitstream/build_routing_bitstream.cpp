@@ -164,13 +164,11 @@ static void build_switch_block_interc_bitstream(
   const RRGraphView& rr_graph, const AtomContext& atom_ctx,
   const VprDeviceAnnotation& device_annotation,
   const VprRoutingAnnotation& routing_annotation, const RRGSB& rr_gsb,
-  const e_side& chan_side, const size_t& chan_node_id, const bool& verbose) {
+  const e_side& chan_side, const size_t& chan_node_id, const bool& verbose, const bool is_3d_cb) {
   std::vector<RRNodeId> driver_rr_nodes;
 
   /* Get the node */
   const RRNodeId& cur_rr_node = rr_gsb.get_chan_node(chan_side, chan_node_id);
-
-  bool is_3d_cb = true;
 
   /* Determine if the interc lies inside a channel wire, that is interc between
    * segments */
@@ -223,7 +221,7 @@ static void build_switch_block_bitstream(
   const CircuitLibrary& circuit_lib, const MuxLibrary& mux_lib,
   const AtomContext& atom_ctx, const VprDeviceAnnotation& device_annotation,
   const VprRoutingAnnotation& routing_annotation, const RRGraphView& rr_graph,
-  const RRGSB& rr_gsb, const bool& verbose) {
+  const RRGSB& rr_gsb, const bool& verbose, const bool is_3d_cb) {
   /* Iterate over all the multiplexers */
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
     SideManager side_manager(side);
@@ -241,7 +239,7 @@ static void build_switch_block_bitstream(
       build_switch_block_interc_bitstream(
         bitstream_manager, sb_config_block, module_manager, module_name_map,
         circuit_lib, mux_lib, rr_graph, atom_ctx, device_annotation,
-        routing_annotation, rr_gsb, side_manager.get_side(), itrack, verbose);
+        routing_annotation, rr_gsb, side_manager.get_side(), itrack, verbose, is_3d_cb);
     }
   }
 }
@@ -625,7 +623,7 @@ void build_routing_bitstream(
   const VprDeviceAnnotation& device_annotation,
   const VprRoutingAnnotation& routing_annotation, const RRGraphView& rr_graph,
   const DeviceRRGSB& device_rr_gsb, const bool& compact_routing_hierarchy,
-  const bool& verbose) {
+  const bool& verbose, const bool is_3d_cb) {
   /* Generate bitstream for each switch blocks
    * To organize the bitstream in blocks, we create a block for each switch
    * block and give names which are same as they are in top-level module
@@ -743,7 +741,7 @@ void build_routing_bitstream(
         build_switch_block_bitstream(
           bitstream_manager, sb_configurable_block, module_manager,
           module_name_map, circuit_lib, mux_lib, atom_ctx, device_annotation,
-          routing_annotation, rr_graph, rr_gsb, verbose);
+          routing_annotation, rr_graph, rr_gsb, verbose, is_3d_cb);
 
         VTR_LOGV(verbose, "\tDone\n");
       }

@@ -466,7 +466,7 @@ int build_top_module_fine_grained_child_instances(
   const bool& frame_view, const bool& compact_routing_hierarchy,
   const bool& duplicate_grid_pin, const FabricKey& fabric_key,
   const bool& group_config_block, const bool& perimeter_cb,
-  const bool& verbose) {
+  const bool& verbose, const bool is_3d_cb) {
   int status = CMD_EXEC_SUCCESS;
   std::map<t_rr_type, vtr::NdMatrix<size_t, 3>> cb_instance_ids;
 
@@ -501,7 +501,7 @@ int build_top_module_fine_grained_child_instances(
     add_top_module_nets_connect_grids_and_gsbs(
       module_manager, top_module, vpr_device_annotation, grids,
       grid_instance_ids, rr_graph, device_rr_gsb, sb_instance_ids,
-      cb_instance_ids, compact_routing_hierarchy, duplicate_grid_pin);
+      cb_instance_ids, compact_routing_hierarchy, duplicate_grid_pin, is_3d_cb);
     /* Add inter-CLB direct connections */
     add_top_module_nets_tile_direct_connections(
       module_manager, top_module, circuit_lib, vpr_device_annotation, grids,

@@ -157,15 +157,10 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
                           const vtr::Point<size_t>& gsb_range,
                           const size_t& layer,
                           const vtr::Point<size_t>& gsb_coord,
-                          const bool& perimeter_cb, const bool& include_clock) {
+                          const bool& perimeter_cb, const bool& include_clock,
+                          const bool is_3d_cb) {
   /* Create an object to return */
   RRGSB rr_gsb;
-
-  /**
-   * temporary variable to check if the CB is 3D
-   * TODO: make this variable passed as an argument, receive it from the command line
-   */
-  bool is_3d_cb = true;
 
   VTR_ASSERT(gsb_coord.x() <= gsb_range.x());
   VTR_ASSERT(gsb_coord.y() <= gsb_range.y());
@@ -526,7 +521,8 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
 void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
                             DeviceRRGSB& device_rr_gsb,
                             const bool& include_clock,
-                            const bool& verbose_output) {
+                            const bool& verbose_output,
+                            const bool is_3d_cb) {
   vtr::ScopedStartFinishTimer timer(
     "Build General Switch Block(GSB) annotation on top of routing resource "
     "graph");
@@ -557,7 +553,7 @@ void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
                                         vpr_device_ctx.grid.height() - 1);
         const RRGSB& rr_gsb = build_rr_gsb(
           vpr_device_ctx, sub_gsb_range, ilayer, vtr::Point<size_t>(ix, iy),
-          vpr_device_ctx.arch->perimeter_cb, include_clock);
+          vpr_device_ctx.arch->perimeter_cb, include_clock, is_3d_cb);
         /* Add to device_rr_gsb */
         vtr::Point<size_t> gsb_coordinate = rr_gsb.get_sb_coordinate();
         device_rr_gsb.add_rr_gsb(gsb_coordinate, rr_gsb, ilayer);
@@ -579,7 +575,8 @@ void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
  *******************************************************************/
 void sort_device_rr_gsb_chan_node_in_edges(const RRGraphView& rr_graph,
                                            DeviceRRGSB& device_rr_gsb,
-                                           const bool& verbose_output) {
+                                           const bool& verbose_output,
+                                           const bool is_3d_cb) {
   vtr::ScopedStartFinishTimer timer(
     "Sort incoming edges for each routing track output node of General Switch "
     "Block(GSB)");
@@ -600,7 +597,7 @@ void sort_device_rr_gsb_chan_node_in_edges(const RRGraphView& rr_graph,
       for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
         vtr::Point<size_t> gsb_coordinate(ix, iy);
         RRGSB& rr_gsb = device_rr_gsb.get_mutable_gsb(gsb_coordinate, ilayer);
-        rr_gsb.sort_chan_node_in_edges(rr_graph);
+        rr_gsb.sort_chan_node_in_edges(rr_graph, is_3d_cb);
 
         gsb_cnt++; /* Update counter */
 
