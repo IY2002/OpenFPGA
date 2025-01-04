@@ -330,46 +330,31 @@
       <switchblock name="3d_wilton_straight" type="unidir">
         <switchblock_location type="EVERYWHERE"/>
             <switchfuncs>
-                <!-- Straight -->
+        
                 <func type="la" formula="t"/>
-                <!-- left to above -->
                 <func type="lu" formula="t"/>
-                <!-- top to under -->
-                <func type="ra" formula="t"/>
-                <!-- right to above -->
-                <func type="ru" formula="t"/>
-                <!-- right to under -->
-                <func type="ta" formula="t"/>
-                <!-- top to above -->
-                <func type="tu" formula="t"/>
-                <!-- top to under -->
-                <func type="ba" formula="t"/>
-                <!-- bottom to above -->
-                <func type="lu" formula="t"/>
-
-                <!-- bottom to under -->
                 <func type="lt" formula="t"/>
-                <!-- left to top -->
-                <func type="tr" formula="t"/>
-                <!-- top to right -->
-                <func type="rb" formula="t"/>
-                <!-- right to bottom -->
-                <func type="bl" formula="t"/>
-                <!-- bottom to left -->
-
-                <!-- Clock-wise turns -->
-                <func type="tl" formula="t"/>
-                <!-- top to left -->
-                <func type="rt" formula="t"/>
-                <!-- right to top -->
-                <func type="br" formula="t"/>
-                <!-- bottom to right -->
                 <func type="lb" formula="t"/>
-
                 <func type="lr" formula="t"/>
+
+                <func type="ra" formula="t"/>
+                <func type="ru" formula="t"/>
+                <func type="rb" formula="t"/>
+                <func type="rt" formula="t"/>
                 <func type="rl" formula="t"/>
+
+                <func type="ta" formula="t"/>
+                <func type="tu" formula="t"/>
+                <func type="tr" formula="t"/>
+                <func type="tl" formula="t"/>
                 <func type="tb" formula="t"/>
+
+                <func type="ba" formula="t"/>   
+                <func type="bu" formula="t"/>
+                <func type="bl" formula="t"/>
+                <func type="br" formula="t"/>
                 <func type="bt" formula="t"/>
+
             </switchfuncs>
             <!-- L4 Drivers
                 Note that we order the switchpoints in order of preference, since VPR currently
