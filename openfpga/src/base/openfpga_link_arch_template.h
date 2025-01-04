@@ -56,10 +56,10 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
   const bool is_3d_sb = cmd_context.option_enable(cmd, opt_3d_sb);
   const bool is_3d_cb = cmd_context.option_enable(cmd, opt_3d_cb);
 
-  bool is_3d_sb_ctx = openfpga_ctx.mutable_is_3d_sb();
+  bool& is_3d_sb_ctx = openfpga_ctx.mutable_is_3d_sb();
   is_3d_sb_ctx = is_3d_sb;
 
-  bool is_3d_cb_ctx = openfpga_ctx.mutable_is_3d_cb();
+  bool& is_3d_cb_ctx = openfpga_ctx.mutable_is_3d_cb();
   is_3d_cb_ctx = is_3d_cb;
 
   /* Build fast look-up between physical tile pin index and port information */
