@@ -125,7 +125,7 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
   annotate_device_rr_gsb(
     g_vpr_ctx.device(), openfpga_ctx.mutable_device_rr_gsb(),
     !openfpga_ctx.clock_arch().empty(), /* FIXME: consider to be more robust! */
-    cmd_context.option_enable(cmd, opt_verbose), openfpga_ctx.is_3d_cb());
+    cmd_context.option_enable(cmd, opt_verbose), openfpga_ctx.is_3d_cb(), openfpga_ctx.is_3d_sb());
 
   if (true == cmd_context.option_enable(cmd, opt_sort_edge)) {
     sort_device_rr_gsb_chan_node_in_edges(
