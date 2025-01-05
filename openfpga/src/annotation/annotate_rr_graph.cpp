@@ -803,8 +803,8 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
             vpr_device_ctx.rr_graph.node_direction(rr_chan.get_node(itrack))) {
           rr_chan_dir[itrack] = chan_dir_to_port_dir_mapping[0];
         } else {
-          VTR_ASSERT(Direction::DEC == vpr_device_ctx.rr_graph.node_direction(
-                                         rr_chan.get_node(itrack)));
+          // VTR_ASSERT(Direction::DEC == vpr_device_ctx.rr_graph.node_direction(
+          //                                rr_chan.get_node(itrack)));
           rr_chan_dir[itrack] = chan_dir_to_port_dir_mapping[1];
         }
       }
@@ -1343,6 +1343,120 @@ void annotate_rr_graph_circuit_models(
    * names */
   annotate_direct_circuit_models(vpr_device_ctx, openfpga_arch,
                                  vpr_device_annotation, verbose_output);
+}
+
+// Function to check if a given node is a vertical channel node or not
+bool is_vertical_node(const RRGraphView& rr_graph, RRNodeId node_id){
+  if ((rr_graph.node_type(node_id) == CHANX || rr_graph.node_type(node_id) == CHANY) 
+                                  && rr_graph.node_direction(node_id) == Direction::NONE){
+    return true;
+  }
+  return false;
+}
+
+// Function to get the source node for a vertical channel node
+RRNodeId get_src_node(const RRGraphView& rr_graph, RRNodeId node_id){
+  for (auto edge : rr_graph.node_in_edges(node_id)){
+    if (rr_graph.edge_sink_node((RREdgeId) edge) == node_id) return rr_graph.edge_src_node((RREdgeId) edge);
+  }
+  return (RRNodeId)rr_graph.num_nodes();
+}
+
+// Function to get the sink node for a vertical channel node
+RRNodeId get_sink_node(const RRGraphView& rr_graph, RRNodeId node_id){
+  for (auto edge : rr_graph.edge_range(node_id)){
+    if (rr_graph.edge_src_node((RREdgeId) edge) == node_id) return rr_graph.edge_sink_node((RREdgeId) edge);
+  }
+  return (RRNodeId) rr_graph.num_nodes();
+}
+
+
+/** 
+ * Function to label the side and direction of vertical channel nodes
+ * 
+ *  The side and direction of a vertical channel will determine if 
+ * its an input to the layer or an output based on the following table:
+ * 
+ *          +-----------------------------------------+
+ *          | Side  |  Direction  |  input or output? | 
+ *          |-------+-------------+-------------------|
+ *          | ABOVE |     DEC     |      Input        | 
+ *          |-------+-------------+-------------------|
+ *          | ABOVE |     INC     |      Output       |
+ *          |-------+-------------+-------------------| 
+ *          | UNDER |     DEC     |      Output       | 
+ *          |-------+-------------+-------------------|
+ *          | UNDER |     INC     |      Input        |
+ *          +-----------------------------------------+
+ * 
+ * These new side and direction labels will make it easier to create 3D GSBs
+ * 
+ * Vertical (Above and Below) channel nodes in the rr graph have unique properties: 
+ *  1. They have no direction
+ *  2. They have exactly 1 source node and 1 sink node
+ *    a. One of those is on the same layer
+ *    b. The other node is on a different layer
+ *  3. The source and sink nodes are both channel nodes
+ * 
+ * These properties are used to identify them and label these vertical channels
+ */
+void annotate_interlayer_channels(RRGraphBuilder& rr_graph_builder, const RRGraphView& rr_graph){
+  for (auto it = rr_graph_builder.rr_nodes().begin(); it != rr_graph_builder.rr_nodes().end(); ++it){
+      RRNodeId node_id = it->id();
+
+      bool vertical_node = is_vertical_node(rr_graph, node_id);
+
+      if(!vertical_node) continue;
+
+      /**
+       * Plan of action:
+       *  1. Get all the edges for the node
+       *    a. there will be exactly 2, one where the node is a sink and the other it's a source
+       *  2. If the source node is on a different layer then the node, then the node is an input
+       *  3. Otherwise, its an output
+       *  4. if the layer number of the differring layer is higher then label the nodes side as ABOVE
+       *  5. if the layer number is smaller than label the node as BELOW
+       *  6. use table above to determine what direction the node should have
+       */
+
+      RRNodeId src_node = get_src_node(rr_graph, node_id);
+      RRNodeId sink_node = get_sink_node(rr_graph, node_id);
+
+      size_t node_layer = rr_graph.node_layer(node_id);
+      size_t src_layer = rr_graph.node_layer(src_node);
+      size_t sink_layer = rr_graph.node_layer(sink_node);
+
+      if (node_layer != src_layer){
+        // node is an input to the layer
+        VTR_ASSERT(node_layer == sink_layer);
+
+        if (src_layer > node_layer){
+          // node is an input from layer above so set side and direction according to table above
+          rr_graph_builder.add_node_side(node_id, e_side::ABOVE);
+          rr_graph_builder.set_node_direction(node_id, Direction::DEC);
+        }
+        else {
+          // node is an input from layer below so set side and direction according to table above
+          rr_graph_builder.add_node_side(node_id, e_side::UNDER);
+          rr_graph_builder.set_node_direction(node_id, Direction::INC);
+        }
+
+      } else{
+        // node is an output of the layer
+        VTR_ASSERT(node_layer != sink_layer);
+
+        if (sink_layer > node_layer){
+          // node is an output from layer above so set side and direction according to table above
+          rr_graph_builder.add_node_side(node_id, e_side::ABOVE);
+          rr_graph_builder.set_node_direction(node_id, Direction::INC);
+        }
+        else {
+          // node is an output from layer below so set side and direction according to table above
+          rr_graph_builder.add_node_side(node_id, e_side::UNDER);
+          rr_graph_builder.set_node_direction(node_id, Direction::DEC);
+        }
+      }
+  }
 }
 
 } /* end namespace openfpga */

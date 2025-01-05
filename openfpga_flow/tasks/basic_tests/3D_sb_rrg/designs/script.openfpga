@@ -14,7 +14,7 @@ write_openfpga_arch -f openfpga_arch.xml
 # Annotate the OpenFPGA architecture to VPR data base
 # to debug use --verbose options
 # --sort_gsb_chan_node_in_edges
-link_openfpga_arch --activity_file ${ACTIVITY_FILE} --verbose
+link_openfpga_arch --activity_file ${ACTIVITY_FILE} --verbose --3d_sb
 
 # Write the GSB files
 #write_gsb_to_xml -f gsb.xml

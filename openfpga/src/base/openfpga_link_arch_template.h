@@ -118,6 +118,33 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
     return CMD_EXEC_FATAL_ERROR;
   }
 
+  /** 
+   * Add a function to annotate the RRG for 3D SBs adding a side and direction to them
+   *  
+   * The side and direction of a vertical channel will determine if 
+   * its an input to the layer or an output based on the following table:
+   * 
+   *          +-----------------------------------------+
+   *          | Side  |  Direction  |  input or output? | 
+   *          |-------+-------------+-------------------|
+   *          | ABOVE |     DEC     |      Input        | 
+   *          |-------+-------------+-------------------|
+   *          | ABOVE |     INC     |      Output       |
+   *          |-------+-------------+-------------------| 
+   *          | UNDER |     DEC     |      Output       | 
+   *          |-------+-------------+-------------------|
+   *          | UNDER |     INC     |      Input        |
+   *          +-----------------------------------------+
+   *    
+   * 
+   * These new sides and directions will make it easier to create 3D GSBs
+   */
+
+  if (openfpga_ctx.is_3d_sb()){
+    // Function to do the interlayer channels annotation
+    annotate_interlayer_channels(g_vpr_ctx.mutable_device().rr_graph_builder, g_vpr_ctx.device().rr_graph);
+  }
+
   /* Build incoming edges as VPR only builds fan-out edges for each node */
   VTR_LOG("Built %ld incoming edges for routing resource graph\n",
           g_vpr_ctx.device().rr_graph.in_edges_count());

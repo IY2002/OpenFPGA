@@ -35,6 +35,9 @@ void annotate_rr_graph_circuit_models(
   const DeviceContext& vpr_device_ctx, const Arch& openfpga_arch,
   VprDeviceAnnotation& vpr_device_annotation, const bool& verbose_output);
 
+void annotate_interlayer_channels(
+  RRGraphBuilder& rr_graph_builder, const RRGraphView& rr_graph);
+
 } /* end namespace openfpga */
 
 #endif
