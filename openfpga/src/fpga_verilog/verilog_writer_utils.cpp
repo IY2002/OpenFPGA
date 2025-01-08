@@ -32,6 +32,9 @@ void print_verilog_default_net_type_declaration(
   std::fstream& fp, const e_verilog_default_net_type& default_net_type) {
   VTR_ASSERT(true == valid_file_stream(fp));
 
+  // Bug fix for the case that the default_net_type is none
+  // In this case, we should not print the default_net_type, if it's printed the netlist does not synthesize
+  // not sure why that is the case, but it is
   if (VERILOG_DEFAULT_NET_TYPE_STRING[default_net_type] == "none") {
     return;
   }
