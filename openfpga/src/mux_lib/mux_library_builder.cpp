@@ -66,6 +66,12 @@ static void build_routing_arch_mux_library(
         VTR_ASSERT(CircuitModelId::INVALID() != rr_switch_circuit_model);
         /* Add the mux to mux_library */
         std::vector<RREdgeId> in_edges = rr_graph.node_in_edges(node);
+
+        if (is_3d_cb){
+          mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
+                        in_edges.size());
+        }
+
         // use an iterator to remove edges since the vector is modified during the loop
         for(auto it = in_edges.begin(); it != in_edges.end();) {
           RRNodeId src_node = rr_graph.edge_src_node(*it);
@@ -82,12 +88,6 @@ static void build_routing_arch_mux_library(
         if (in_edges.size() < 2 ) break;
         mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
                         in_edges.size());
-
-        if (is_3d_cb){
-          std::vector<RREdgeId> in_edges = rr_graph.node_in_edges(node);
-          mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
-                        in_edges.size());
-        }
 
         // 3D SBs have extra inputs to muxes, inlcude both the top and bottom layer
         // 2 MUXes are added to library since we could want to have a mix of 3D and 2D SBs,

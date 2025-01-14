@@ -208,34 +208,34 @@ namespace openfpga{
                 input_pin_side, input_rr_node));
             }
 
-            // Include the vertical channel input ports as well
-            if (layer == 0){
-                ModulePortId above_chan_port_id =
-                    module_manager.find_module_port(sb_module, "above_in_TSV");
-                VTR_ASSERT(true == module_manager.valid_module_port_id(sb_module, above_chan_port_id));
+            // // Include the vertical channel input ports as well
+            // if (layer == 0){
+            //     ModulePortId above_chan_port_id =
+            //         module_manager.find_module_port(sb_module, "above_in_TSV");
+            //     VTR_ASSERT(true == module_manager.valid_module_port_id(sb_module, above_chan_port_id));
 
-                input_ports.push_back(ModulePinInfo(above_chan_port_id, node_id)); // NOT SURE ABOUT THE INDEX, 
-                                                                             // THE RELEVANT INDDEX TO THE OUTPUT PORT IF JUST SUBSET MAPPING
-                                                                             // ex: above_in_TSV[0] -> left_out[0], so index has to match the output node index
-            } else if (layer == grids.get_num_layers() - 1){
-                ModulePortId below_chan_port_id =
-                    module_manager.find_module_port(sb_module, "below_in_TSV");
-                VTR_ASSERT(true == module_manager.valid_module_port_id(sb_module, below_chan_port_id));
+            //     input_ports.push_back(ModulePinInfo(above_chan_port_id, node_id)); // NOT SURE ABOUT THE INDEX, 
+            //                                                                  // THE RELEVANT INDDEX TO THE OUTPUT PORT IF JUST SUBSET MAPPING
+            //                                                                  // ex: above_in_TSV[0] -> left_out[0], so index has to match the output node index
+            // } else if (layer == grids.get_num_layers() - 1){
+            //     ModulePortId below_chan_port_id =
+            //         module_manager.find_module_port(sb_module, "below_in_TSV");
+            //     VTR_ASSERT(true == module_manager.valid_module_port_id(sb_module, below_chan_port_id));
 
-                input_ports.push_back(ModulePinInfo(below_chan_port_id, node_id)); // NOT SURE ABOUT THE INDEX
-            } else{
-                ModulePortId above_chan_port_id =
-                    module_manager.find_module_port(sb_module, "above_in_TSV");
-                VTR_ASSERT(true == module_manager.valid_module_port_id(sb_module, above_chan_port_id));
+            //     input_ports.push_back(ModulePinInfo(below_chan_port_id, node_id)); // NOT SURE ABOUT THE INDEX
+            // } else{
+            //     ModulePortId above_chan_port_id =
+            //         module_manager.find_module_port(sb_module, "above_in_TSV");
+            //     VTR_ASSERT(true == module_manager.valid_module_port_id(sb_module, above_chan_port_id));
 
-                input_ports.push_back(ModulePinInfo(above_chan_port_id, node_id)); // NOT SURE ABOUT THE INDEX
+            //     input_ports.push_back(ModulePinInfo(above_chan_port_id, node_id)); // NOT SURE ABOUT THE INDEX
 
-                ModulePortId below_chan_port_id =
-                    module_manager.find_module_port(sb_module, "below_in_TSV");
-                VTR_ASSERT(true == module_manager.valid_module_port_id(sb_module, below_chan_port_id));
+            //     ModulePortId below_chan_port_id =
+            //         module_manager.find_module_port(sb_module, "below_in_TSV");
+            //     VTR_ASSERT(true == module_manager.valid_module_port_id(sb_module, below_chan_port_id));
 
-                input_ports.push_back(ModulePinInfo(below_chan_port_id, node_id)); // NOT SURE ABOUT THE INDEX
-            }
+            //     input_ports.push_back(ModulePinInfo(below_chan_port_id, node_id)); // NOT SURE ABOUT THE INDEX
+            // }
 
             return input_ports;
     }

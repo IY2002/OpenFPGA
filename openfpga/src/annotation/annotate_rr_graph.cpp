@@ -35,8 +35,41 @@ static RRChan build_one_rr_chan(const DeviceContext& vpr_device_ctx,
     vpr_device_ctx.rr_graph, layer, chan_coord.x(), chan_coord.y(), chan_type);
   /* Fill the rr_chan */
   for (const RRNodeId& chan_rr_node : chan_rr_nodes) {
+
+    // only add non vertical rr_nodes
+    if (vpr_device_ctx.rr_graph.is_node_on_specific_side(chan_rr_node, e_side::TOP) || vpr_device_ctx.rr_graph.is_node_on_specific_side(chan_rr_node, e_side::BOTTOM)) {
+      continue;
+    }
     rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
                      vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+  }
+
+  return rr_chan;
+}
+
+/* Build a RRChan Object with the given channel type and coorindators */
+static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
+                                const t_rr_type& chan_type, const size_t& layer,
+                                vtr::Point<size_t>& chan_coord, e_side side) {
+  std::vector<RRNodeId> chan_rr_nodes;
+
+  /* Create a rr_chan object and check if it is unique in the graph */
+  RRChan rr_chan;
+  /* Fill the information */
+  rr_chan.set_type(chan_type);
+
+  /* Collect rr_nodes for this channel */
+  chan_rr_nodes = find_rr_graph_chan_nodes(
+    vpr_device_ctx.rr_graph, layer, chan_coord.x(), chan_coord.y(), chan_type);
+  /* Fill the rr_chan */
+  for (const RRNodeId& chan_rr_node : chan_rr_nodes) {
+
+    // only add interlayer rr_nodes
+    if ((vpr_device_ctx.rr_graph.is_node_on_specific_side(chan_rr_node, e_side::TOP) && side == e_side::ABOVE) || 
+          (vpr_device_ctx.rr_graph.is_node_on_specific_side(chan_rr_node, e_side::BOTTOM) && side == e_side::UNDER)) {
+      rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                     vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+    }
   }
 
   return rr_chan;
@@ -603,24 +636,57 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
   /* Coordinator initialization */
   rr_gsb.set_coordinate(gsb_coord.x(), gsb_coord.y());
 
-  /* Basic information*/
-  rr_gsb.init_num_sides(4); /* Fixed number of sides */
+  size_t num_sides = 6;
 
-  /* Find all rr_nodes of channels */
-  /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
+  // // Check if there are layers above
+  // if (vpr_device_ctx.grid.get_num_layers() - 1 > layer){
+  //   num_sides += 1;
+  // }
+
+  // // Check if there are layers below
+  // if (0 < layer){
+  //   num_sides += 1;
+  // }
+
+  /* Set the number of sides of the GSB */
+  rr_gsb.init_num_sides(num_sides);
+
+  /* Find all rr_nodes of horizontal channels */
+  /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3*/
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
     /* Local variables inside this for loop */
     SideManager side_manager(side);
-    vtr::Point<size_t> coordinate =
-      rr_gsb.get_side_block_coordinate(side_manager.get_side());
+
+    if (side == 4 && num_sides == 6){
+      side_manager.set_side(ABOVE);
+    } 
+    // else if (side == 4 && num_sides == 5){ // there are only 2 scenarios where num_sides = 5, the first layer and the last layer
+    //   if (layer == 0){ // first layer, only has above side
+    //     side_manager.set_side(ABOVE);
+    //   }
+    //   if (layer == vpr_device_ctx.grid.get_num_layers() - 1){ // last layer, only has below side
+    //     side_manager.set_side(UNDER);
+    //   }
+    // }
+
+    if (side == 5 && num_sides == 6){
+      side_manager.set_side(UNDER);
+    }
+
+    vtr::Point<size_t> coordinate = gsb_coord;
     RRChan rr_chan;
     std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes(2);
-    enum e_side opin_grid_side[2] = {NUM_2D_SIDES, NUM_2D_SIDES};
+      enum e_side opin_grid_side[2] = {NUM_2D_SIDES, NUM_2D_SIDES};
+
+    // set SB coordinate for horizontal (non-interlayer) channels
+    if (side < 4){
+      coordinate = rr_gsb.get_side_block_coordinate(side_manager.get_side());
+    }
     enum PORTS chan_dir_to_port_dir_mapping[2] = {
       OUT_PORT, IN_PORT}; /* 0: INC_DIRECTION => ?; 1: DEC_DIRECTION => ? */
 
-    switch (side) {
-      case TOP: /* TOP = 0 */
+    switch (side_manager.get_side()) {
+      case e_side::TOP: /* TOP = 0 */
         if (gsb_coord.y() == gsb_range.y()) {
           rr_gsb.clear_one_side(side_manager.get_side());
           break;
@@ -649,20 +715,9 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer,
           gsb_coord.x() + 1, gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
 
-        if (true == is_3d_cb){
-          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
-          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
-            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
-          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
-            gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
-          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
-          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
-        }
-
         break;
-      case RIGHT: /* RIGHT = 1 */
+
+      case e_side::RIGHT: /* RIGHT = 1 */
         if (gsb_coord.x() == gsb_range.x()) {
           rr_gsb.clear_one_side(side_manager.get_side());
           break;
@@ -693,19 +748,9 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer,
           gsb_coord.x() + 1, gsb_coord.y(), OPIN, opin_grid_side[1]);
 
-        if (true == is_3d_cb){
-          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
-          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
-            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
-          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
-            gsb_coord.y(), OPIN, opin_grid_side[1]);
-          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
-          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
-        }
         break;
-      case BOTTOM: /* BOTTOM = 2*/
+
+      case e_side::BOTTOM: /* BOTTOM = 2*/
         if (!perimeter_cb && gsb_coord.y() == 0) {
           rr_gsb.clear_one_side(side_manager.get_side());
           break;
@@ -735,19 +780,9 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
 
-        if (true == is_3d_cb){
-          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
-          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
-            gsb_coord.y(), OPIN, opin_grid_side[0]);
-          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
-            gsb_coord.y(), OPIN, opin_grid_side[1]);
-          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
-          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
-        }
         break;
-      case LEFT: /* LEFT = 3 */
+
+      case e_side::LEFT: /* LEFT = 3 */
         if (!perimeter_cb && gsb_coord.x() == 0) {
           rr_gsb.clear_one_side(side_manager.get_side());
           break;
@@ -775,18 +810,40 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
         temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
-        
-        if (true == is_3d_cb){
-          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
-          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
-            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
-          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
-            gsb_coord.y(), OPIN, opin_grid_side[1]);
-          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
-          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
-        }
+        break;
+
+      case e_side::ABOVE: /* ABOVE = 5 */
+        // if (gsb_coord.y() == gsb_range.y() || gsb_coord.x() == gsb_range.x()) {
+        //   rr_gsb.clear_one_side(side_manager.get_side());
+        //   break;
+        // }
+        /* Routing channels*/
+        /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
+        /* Collect rr_nodes for Tracks for left: chanx[x][y] */
+        /* Create a rr_chan object and check if it is unique in the graph */
+        rr_chan = build_one_interlayer_rr_chan(vpr_device_ctx, CHANX, layer, coordinate, (e_side)side);
+        chan_dir_to_port_dir_mapping[0] =
+          OUT_PORT; /* INC_DIRECTION => OUT_PORT */
+        chan_dir_to_port_dir_mapping[1] =
+          IN_PORT; /* DEC_DIRECTION => IN_PORT */
+
+        break;
+
+      case e_side::UNDER: /* UNDER = 7 */
+        // if (gsb_coord.y() == gsb_range.y() || gsb_coord.x() == gsb_range.x()) {
+        //   rr_gsb.clear_one_side(side);
+        //   break;
+        // }
+        /* Routing channels*/
+        /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
+        /* Collect rr_nodes for Tracks for left: chanx[x][y] */
+        /* Create a rr_chan object and check if it is unique in the graph */
+        rr_chan = build_one_interlayer_rr_chan(vpr_device_ctx, CHANX, layer, coordinate, (e_side) side);
+        chan_dir_to_port_dir_mapping[0] =
+          IN_PORT; /* INC_DIRECTION => IN_PORT */
+        chan_dir_to_port_dir_mapping[1] =
+          OUT_PORT; /* DEC_DIRECTION => OUT_PORT */
+
         break;
       default:
         VTR_LOG_ERROR("Invalid side index!\n");
@@ -797,19 +854,20 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     if (0 < rr_chan.get_chan_width()) {
       std::vector<enum PORTS> rr_chan_dir;
       rr_chan_dir.resize(rr_chan.get_chan_width());
+
       for (size_t itrack = 0; itrack < rr_chan.get_chan_width(); ++itrack) {
         /* Identify the directionality, record it in rr_node_direction */
         if (Direction::INC ==
             vpr_device_ctx.rr_graph.node_direction(rr_chan.get_node(itrack))) {
           rr_chan_dir[itrack] = chan_dir_to_port_dir_mapping[0];
         } else {
-          // VTR_ASSERT(Direction::DEC == vpr_device_ctx.rr_graph.node_direction(
-          //                                rr_chan.get_node(itrack)));
+          VTR_ASSERT(Direction::DEC == vpr_device_ctx.rr_graph.node_direction(
+                                         rr_chan.get_node(itrack)));
           rr_chan_dir[itrack] = chan_dir_to_port_dir_mapping[1];
         }
       }
       /* Fill chan_rr_nodes */
-      rr_gsb.add_chan_node(side_manager.get_side(), rr_chan, rr_chan_dir);
+      rr_gsb.add_chan_node((e_side) side, rr_chan, rr_chan_dir);
     }
 
     /* Fill opin_rr_nodes */
@@ -837,9 +895,10 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     }
 
     /* Clean ipin_rr_nodes */
+
     /* We do not have any IPIN for a Switch Block */
     rr_gsb.clear_ipin_nodes(side_manager.get_side());
-
+    
     /* Clear the temp data */
     temp_opin_rr_nodes[0].clear();
     temp_opin_rr_nodes[1].clear();
@@ -849,15 +908,25 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
 
   /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
+    // only consider the 4 sides of the GSB that are not interlayer
+    // if (side > 3){
+    //   break;
+    // }
+
     /* Local variables inside this for loop */
     SideManager side_manager(side);
+    if (side == 4){
+      side_manager.set_side(ABOVE);
+    } else if (side == 5){
+      side_manager.set_side(UNDER);
+    }
     size_t ix;
     size_t iy;
     enum e_side chan_side;
     std::vector<RRNodeId> temp_ipin_rr_nodes;
     enum e_side ipin_rr_node_grid_side;
 
-    switch (side) {
+    switch (side_manager.get_side()) {
       case TOP: /* TOP = 0 */
         /* For the bording, we should take special care */
         /* Check if left side chan width is 0 or not */
@@ -898,6 +967,22 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
         iy = rr_gsb.get_sb_y();
         ipin_rr_node_grid_side = RIGHT;
         break;
+      case ABOVE: /* ABOVE = 4 */
+        chan_side = ABOVE;
+        /* Build the connection block: ipin and ipin_grid_side */
+        /* RIGHT side INPUT Pins of Grid[x][y] */
+        ix = rr_gsb.get_sb_x();
+        iy = rr_gsb.get_sb_y();
+        ipin_rr_node_grid_side = UNDER;
+        break;
+      case UNDER: /* UNDER = 5 */
+        chan_side = UNDER;
+        /* Build the connection block: ipin and ipin_grid_side */
+        /* RIGHT side INPUT Pins of Grid[x][y] */
+        ix = rr_gsb.get_sb_x();
+        iy = rr_gsb.get_sb_y();
+        ipin_rr_node_grid_side = ABOVE;
+        break;
       default:
         VTR_LOG_ERROR("Invalid side index!\n");
         exit(1);
@@ -912,11 +997,7 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
       vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN,
       ipin_rr_node_grid_side, include_clock);
 
-    if (is_3d_cb){
-      std::vector<RRNodeId> temp_ipin_rr_nodes_3d = find_interlayer_rr_graph_grid_nodes(
-        vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN, ipin_rr_node_grid_side, include_clock);
-      temp_ipin_rr_nodes.insert(temp_ipin_rr_nodes.end(), temp_ipin_rr_nodes_3d.begin(), temp_ipin_rr_nodes_3d.end());
-    }
+
     /* Fill the ipin nodes of RRGSB */
     for (const RRNodeId& inode : temp_ipin_rr_nodes) {
       /* Skip those has no configurable outgoing, they should NOT appear in the
@@ -1401,12 +1482,17 @@ RRNodeId get_sink_node(const RRGraphView& rr_graph, RRNodeId node_id){
  * These properties are used to identify them and label these vertical channels
  */
 void annotate_interlayer_channels(RRGraphBuilder& rr_graph_builder, const RRGraphView& rr_graph){
+  RRNodeId starting_node = (RRNodeId) 0;
+
   for (auto it = rr_graph_builder.rr_nodes().begin(); it != rr_graph_builder.rr_nodes().end(); ++it){
       RRNodeId node_id = it->id();
 
       bool vertical_node = is_vertical_node(rr_graph, node_id);
 
-      if(!vertical_node) continue;
+      if(!vertical_node) {
+        rr_graph_builder.add_node_side(node_id, e_side::NUM_2D_SIDES);
+        continue;
+      }
 
       /**
        * Plan of action:
@@ -1432,12 +1518,14 @@ void annotate_interlayer_channels(RRGraphBuilder& rr_graph_builder, const RRGrap
 
         if (src_layer > node_layer){
           // node is an input from layer above so set side and direction according to table above
-          rr_graph_builder.add_node_side(node_id, e_side::ABOVE);
+          // rr_graph_builder.add_node_side(node_id, e_side::ABOVE);
+          rr_graph_builder.add_node_side(node_id, e_side::TOP); // Adding Top instead of Above since the node storage only uses the 2D sides not the 3D sides
           rr_graph_builder.set_node_direction(node_id, Direction::DEC);
         }
         else {
           // node is an input from layer below so set side and direction according to table above
-          rr_graph_builder.add_node_side(node_id, e_side::UNDER);
+          // rr_graph_builder.add_node_side(node_id, e_side::UNDER);
+          rr_graph_builder.add_node_side(node_id, e_side::BOTTOM); // Adding Bottom instead of Under since the node storage only uses the 2D sides not the 3D sides
           rr_graph_builder.set_node_direction(node_id, Direction::INC);
         }
 
@@ -1447,12 +1535,14 @@ void annotate_interlayer_channels(RRGraphBuilder& rr_graph_builder, const RRGrap
 
         if (sink_layer > node_layer){
           // node is an output from layer above so set side and direction according to table above
-          rr_graph_builder.add_node_side(node_id, e_side::ABOVE);
+          // rr_graph_builder.add_node_side(node_id, e_side::ABOVE);
+          rr_graph_builder.add_node_side(node_id, e_side::TOP); // Adding Top instead of Above since the node storage only uses the 2D sides not the 3D sides
           rr_graph_builder.set_node_direction(node_id, Direction::INC);
         }
         else {
           // node is an output from layer below so set side and direction according to table above
-          rr_graph_builder.add_node_side(node_id, e_side::UNDER);
+          // rr_graph_builder.add_node_side(node_id, e_side::UNDER);
+          rr_graph_builder.add_node_side(node_id, e_side::BOTTOM); // Adding Bottom instead of Under since the node storage only uses the 2D sides not the 3D sides
           rr_graph_builder.set_node_direction(node_id, Direction::DEC);
         }
       }

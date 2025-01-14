@@ -125,11 +125,11 @@ static void build_3d_switch_block_mux_module(
 
   // Add number of vertical connections to the mux size
   
-  if (layer == 0 || layer == grids.get_num_layers() - 1){ // if layer is top or bottom then there is only 1 extra input to mux (above or below)
-    datapath_mux_size += 1;
-  } else { // else there are 2 extra inputs to mux (above and below)
-    datapath_mux_size += 2;
-  }
+  // if (layer == 0 || layer == grids.get_num_layers() - 1){ // if layer is top or bottom then there is only 1 extra input to mux (above or below)
+  //   datapath_mux_size += 1;
+  // } else { // else there are 2 extra inputs to mux (above and below)
+  //   datapath_mux_size += 2;
+  // }
 
   /* Find the module name of the multiplexer and try to find it in the module
    * manager */
@@ -315,14 +315,14 @@ static void build_3d_switch_block_interc_modules(
 
   size_t num_driver_nodes = driver_rr_nodes.size();
 
-  // Add extra driver nodes for the vertical connections
-  if (driver_rr_nodes.size() > 1){ // NOT SURE IF NEEDED OR NOT, LOOK DEEPER INTO IT
-    if(layer == 0 || layer == grids.get_num_layers() - 1){ // if top or bottom layer there is only 1 extra driver
-      num_driver_nodes += 1;
-    } else { // else there is 2 extra drivers for each SB
-      num_driver_nodes += 2;
-    }
-  }
+  // // Add extra driver nodes for the vertical connections
+  // if (driver_rr_nodes.size() > 1){ // NOT SURE IF NEEDED OR NOT, LOOK DEEPER INTO IT
+  //   if(layer == 0 || layer == grids.get_num_layers() - 1){ // if top or bottom layer there is only 1 extra driver
+  //     num_driver_nodes += 1;
+  //   } else { // else there is 2 extra drivers for each SB
+  //     num_driver_nodes += 2;
+  //   }
+  // }
 
   if (0 == num_driver_nodes) {
     /* Print a special direct connection*/
@@ -658,7 +658,15 @@ void build_3d_switch_block_module(
 
   /* Add routing channel ports at each side of the GSB */
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
+    
     SideManager side_manager(side);
+
+    if (side == 4){
+      side_manager.set_side(e_side::ABOVE);
+    }
+    else if (side == 5){
+      side_manager.set_side(e_side::UNDER);
+    }
 
     /* Count input and output port sizes */
     size_t chan_input_port_size = 0;
@@ -746,110 +754,117 @@ void build_3d_switch_block_module(
 
   // Assuming equal channel width for all sides, the vertical channels will have the same width
   // Add vertical channels to module
-  if (layer == 0){ // only above vertical channels
-    std::string above_chan_input_port_name = "above_in_TSV";
-    BasicPort above_chan_input_port(above_chan_input_port_name, input_chan_width);
-    ModulePortId above_chan_input_port_id = module_manager.add_port(
-      sb_module, above_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
-    /* Add side to the port */
-    module_manager.set_port_side(sb_module, above_chan_input_port_id,
-                                 NUM_2D_SIDES);
+  
+  // if (layer == 0){ // only above vertical channels
+  //   std::string above_chan_input_port_name = "above_in_TSV";
+  //   BasicPort above_chan_input_port(above_chan_input_port_name, input_chan_width);
+  //   ModulePortId above_chan_input_port_id = module_manager.add_port(
+  //     sb_module, above_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
+  //   /* Add side to the port */
+  //   module_manager.set_port_side(sb_module, above_chan_input_port_id,
+  //                                NUM_2D_SIDES);
                           
-    /* Cache the input net */
-    for (const size_t& pin : above_chan_input_port.pins()) {
-      ModuleNetId net = create_module_source_pin_net(
-        module_manager, sb_module, sb_module, 0, above_chan_input_port_id, pin);
-      input_port_to_module_nets[ModulePinInfo(above_chan_input_port_id, pin)] = net;
-    }
+  //   /* Cache the input net */
+  //   for (const size_t& pin : above_chan_input_port.pins()) {
+  //     ModuleNetId net = create_module_source_pin_net(
+  //       module_manager, sb_module, sb_module, 0, above_chan_input_port_id, pin);
+  //     input_port_to_module_nets[ModulePinInfo(above_chan_input_port_id, pin)] = net;
+  //   }
 
-    std::string above_chan_output_port_name = "above_out_TSV";
-    BasicPort above_chan_output_port(above_chan_output_port_name, output_chan_width);
-    ModulePortId above_chan_output_port_id = module_manager.add_port(
-      sb_module, above_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
-    /* Add side to the port */
-    module_manager.set_port_side(sb_module, above_chan_output_port_id,
-                                 NUM_2D_SIDES);
-  } else if (layer == grids.get_num_layers()-1){ // only below vertical channels
+  //   std::string above_chan_output_port_name = "above_out_TSV";
+  //   BasicPort above_chan_output_port(above_chan_output_port_name, output_chan_width);
+  //   ModulePortId above_chan_output_port_id = module_manager.add_port(
+  //     sb_module, above_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
+  //   /* Add side to the port */
+  //   module_manager.set_port_side(sb_module, above_chan_output_port_id,
+  //                                NUM_2D_SIDES);
+  // } else if (layer == grids.get_num_layers()-1){ // only below vertical channels
 
-    std::string below_chan_input_port_name = "below_in_TSV";
-    BasicPort below_chan_input_port(below_chan_input_port_name, input_chan_width);
-    ModulePortId below_chan_input_port_id = module_manager.add_port(
-      sb_module, below_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
-    /* Add side to the port */
-    module_manager.set_port_side(sb_module, below_chan_input_port_id,
-                                 NUM_2D_SIDES);
+  //   std::string below_chan_input_port_name = "below_in_TSV";
+  //   BasicPort below_chan_input_port(below_chan_input_port_name, input_chan_width);
+  //   ModulePortId below_chan_input_port_id = module_manager.add_port(
+  //     sb_module, below_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
+  //   /* Add side to the port */
+  //   module_manager.set_port_side(sb_module, below_chan_input_port_id,
+  //                                NUM_2D_SIDES);
                           
-    /* Cache the input net */
-    for (const size_t& pin : below_chan_input_port.pins()) {
-      ModuleNetId net = create_module_source_pin_net(
-        module_manager, sb_module, sb_module, 0, below_chan_input_port_id, pin);
-      input_port_to_module_nets[ModulePinInfo(below_chan_input_port_id, pin)] = net;
-    }
+  //   /* Cache the input net */
+  //   for (const size_t& pin : below_chan_input_port.pins()) {
+  //     ModuleNetId net = create_module_source_pin_net(
+  //       module_manager, sb_module, sb_module, 0, below_chan_input_port_id, pin);
+  //     input_port_to_module_nets[ModulePinInfo(below_chan_input_port_id, pin)] = net;
+  //   }
 
-    std::string below_chan_output_port_name = "below_out_TSV";
-    BasicPort below_chan_output_port(below_chan_output_port_name, output_chan_width);
-    ModulePortId below_chan_output_port_id = module_manager.add_port(
-      sb_module, below_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
-    /* Add side to the port */
-    module_manager.set_port_side(sb_module, below_chan_output_port_id,
-                                 NUM_2D_SIDES);
-  } else{ // both above and below vertical channels
+  //   std::string below_chan_output_port_name = "below_out_TSV";
+  //   BasicPort below_chan_output_port(below_chan_output_port_name, output_chan_width);
+  //   ModulePortId below_chan_output_port_id = module_manager.add_port(
+  //     sb_module, below_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
+  //   /* Add side to the port */
+  //   module_manager.set_port_side(sb_module, below_chan_output_port_id,
+  //                                NUM_2D_SIDES);
+  // } else{ // both above and below vertical channels
     
-    /* Add the above vertical channel */
+  //   /* Add the above vertical channel */
 
-    std::string above_chan_input_port_name = "above_in_TSV";
-    BasicPort above_chan_input_port(above_chan_input_port_name, input_chan_width);
-    ModulePortId above_chan_input_port_id = module_manager.add_port(
-      sb_module, above_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
-    /* Add side to the port */
-    module_manager.set_port_side(sb_module, above_chan_input_port_id,
-                                 NUM_2D_SIDES);
+  //   std::string above_chan_input_port_name = "above_in_TSV";
+  //   BasicPort above_chan_input_port(above_chan_input_port_name, input_chan_width);
+  //   ModulePortId above_chan_input_port_id = module_manager.add_port(
+  //     sb_module, above_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
+  //   /* Add side to the port */
+  //   module_manager.set_port_side(sb_module, above_chan_input_port_id,
+  //                                NUM_2D_SIDES);
                           
-    /* Cache the input net */
-    for (const size_t& pin : above_chan_input_port.pins()) {
-      ModuleNetId net = create_module_source_pin_net(
-        module_manager, sb_module, sb_module, 0, above_chan_input_port_id, pin);
-      input_port_to_module_nets[ModulePinInfo(above_chan_input_port_id, pin)] = net;
-    }
+  //   /* Cache the input net */
+  //   for (const size_t& pin : above_chan_input_port.pins()) {
+  //     ModuleNetId net = create_module_source_pin_net(
+  //       module_manager, sb_module, sb_module, 0, above_chan_input_port_id, pin);
+  //     input_port_to_module_nets[ModulePinInfo(above_chan_input_port_id, pin)] = net;
+  //   }
 
-    std::string above_chan_output_port_name = "above_out_TSV";
-    BasicPort above_chan_output_port(above_chan_output_port_name, output_chan_width);
-    ModulePortId above_chan_output_port_id = module_manager.add_port(
-      sb_module, above_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
-    /* Add side to the port */
-    module_manager.set_port_side(sb_module, above_chan_output_port_id,
-                                 NUM_2D_SIDES);
+  //   std::string above_chan_output_port_name = "above_out_TSV";
+  //   BasicPort above_chan_output_port(above_chan_output_port_name, output_chan_width);
+  //   ModulePortId above_chan_output_port_id = module_manager.add_port(
+  //     sb_module, above_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
+  //   /* Add side to the port */
+  //   module_manager.set_port_side(sb_module, above_chan_output_port_id,
+  //                                NUM_2D_SIDES);
 
-    /* Add the below vertical channel */
+  //   /* Add the below vertical channel */
 
-    std::string below_chan_input_port_name = "below_in_TSV";
-    BasicPort below_chan_input_port(below_chan_input_port_name, input_chan_width);
-    ModulePortId below_chan_input_port_id = module_manager.add_port(
-      sb_module, below_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
-    /* Add side to the port */
-    module_manager.set_port_side(sb_module, below_chan_input_port_id,
-                                 NUM_2D_SIDES);
+  //   std::string below_chan_input_port_name = "below_in_TSV";
+  //   BasicPort below_chan_input_port(below_chan_input_port_name, input_chan_width);
+  //   ModulePortId below_chan_input_port_id = module_manager.add_port(
+  //     sb_module, below_chan_input_port, ModuleManager::MODULE_INPUT_PORT);
+  //   /* Add side to the port */
+  //   module_manager.set_port_side(sb_module, below_chan_input_port_id,
+  //                                NUM_2D_SIDES);
                           
-    /* Cache the input net */
-    for (const size_t& pin : below_chan_input_port.pins()) {
-      ModuleNetId net = create_module_source_pin_net(
-        module_manager, sb_module, sb_module, 0, below_chan_input_port_id, pin);
-      input_port_to_module_nets[ModulePinInfo(below_chan_input_port_id, pin)] = net;
-    }
+  //   /* Cache the input net */
+  //   for (const size_t& pin : below_chan_input_port.pins()) {
+  //     ModuleNetId net = create_module_source_pin_net(
+  //       module_manager, sb_module, sb_module, 0, below_chan_input_port_id, pin);
+  //     input_port_to_module_nets[ModulePinInfo(below_chan_input_port_id, pin)] = net;
+  //   }
 
-    std::string below_chan_output_port_name = "below_out_TSV";
-    BasicPort below_chan_output_port(below_chan_output_port_name, output_chan_width);
-    ModulePortId below_chan_output_port_id = module_manager.add_port(
-      sb_module, below_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
-    /* Add side to the port */
-    module_manager.set_port_side(sb_module, below_chan_output_port_id,
-                                 NUM_2D_SIDES);
-  }
+  //   std::string below_chan_output_port_name = "below_out_TSV";
+  //   BasicPort below_chan_output_port(below_chan_output_port_name, output_chan_width);
+  //   ModulePortId below_chan_output_port_id = module_manager.add_port(
+  //     sb_module, below_chan_output_port, ModuleManager::MODULE_OUTPUT_PORT);
+  //   /* Add side to the port */
+  //   module_manager.set_port_side(sb_module, below_chan_output_port_id,
+  //                                NUM_2D_SIDES);
+  // }
 
-
+  
   /* Add routing multiplexers as child modules */
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
     SideManager side_manager(side);
+    if (side == 4){
+      side_manager.set_side(e_side::ABOVE);
+    }
+    else if (side == 5){
+      side_manager.set_side(e_side::UNDER);
+    }
     for (size_t itrack = 0;
          itrack < rr_gsb.get_chan_width(side_manager.get_side()); ++itrack) {
       /* We care OUTPUT tracks at this time only */
@@ -866,33 +881,33 @@ void build_3d_switch_block_module(
   // NOT WORKING YET - NEED TO ADD SUPPORT IN INTERC FUNCTION
 
   /* Add routing multiplexers for vertical channels */
-  if (layer == 0){ // only above vertical channels outputs
-    for (size_t itrack = 0; itrack < output_chan_width; itrack++){
-      build_3d_switch_block_vertical_interc_modules(
-        module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
-        circuit_lib, NUM_2D_SIDES, itrack,
-        input_port_to_module_nets, group_config_block, "above", layer);
-    }
-  } else if (layer == grids.get_num_layers()-1){ // only below vertical channels
-    for (size_t itrack = 0; itrack < output_chan_width; itrack++){  
-      build_3d_switch_block_vertical_interc_modules(
-        module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
-        circuit_lib, NUM_2D_SIDES, itrack,
-        input_port_to_module_nets, group_config_block, "below", layer);
-    }
-  } else{ // both above and below vertical channels
-    for (size_t itrack = 0; itrack < output_chan_width; itrack++){
-      build_3d_switch_block_vertical_interc_modules(
-        module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
-        circuit_lib, NUM_2D_SIDES, itrack,
-        input_port_to_module_nets, group_config_block, "above", layer);
+  // if (layer == 0){ // only above vertical channels outputs
+  //   for (size_t itrack = 0; itrack < output_chan_width; itrack++){
+  //     build_3d_switch_block_vertical_interc_modules(
+  //       module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
+  //       circuit_lib, NUM_2D_SIDES, itrack,
+  //       input_port_to_module_nets, group_config_block, "above", layer);
+  //   }
+  // } else if (layer == grids.get_num_layers()-1){ // only below vertical channels
+  //   for (size_t itrack = 0; itrack < output_chan_width; itrack++){  
+  //     build_3d_switch_block_vertical_interc_modules(
+  //       module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
+  //       circuit_lib, NUM_2D_SIDES, itrack,
+  //       input_port_to_module_nets, group_config_block, "below", layer);
+  //   }
+  // } else{ // both above and below vertical channels
+  //   for (size_t itrack = 0; itrack < output_chan_width; itrack++){
+  //     build_3d_switch_block_vertical_interc_modules(
+  //       module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
+  //       circuit_lib, NUM_2D_SIDES, itrack,
+  //       input_port_to_module_nets, group_config_block, "above", layer);
         
-      build_3d_switch_block_vertical_interc_modules(
-        module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
-        circuit_lib, NUM_2D_SIDES, itrack,
-        input_port_to_module_nets, group_config_block, "below", layer);
-    }
-  }
+  //     build_3d_switch_block_vertical_interc_modules(
+  //       module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
+  //       circuit_lib, NUM_2D_SIDES, itrack,
+  //       input_port_to_module_nets, group_config_block, "below", layer);
+  //   }
+  // }
 
   /* Build a physical memory block */
   if (group_config_block) {
