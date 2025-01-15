@@ -345,6 +345,9 @@ static int build_top_module_tile_nets_between_sb_and_pb(
   /* Connect grid output pins (OPIN) to switch block grid pins */
   for (size_t side = 0; side < module_sb.get_num_sides(); ++side) {
     SideManager side_manager(side);
+
+    if (side > 3) break; // OPINs are only connected on the 2D sides
+
     for (size_t inode = 0;
          inode < module_sb.get_num_opin_nodes(side_manager.get_side());
          ++inode) {
@@ -797,6 +800,9 @@ static int build_top_module_tile_nets_between_sb_and_cb(
   /* Connect grid output pins (OPIN) to switch block grid pins */
   for (size_t side = 0; side < module_sb.get_num_sides(); ++side) {
     SideManager side_manager(side);
+
+    if (side > 3) break; // CBs are only connected on the 2D sides
+
     /* Iterate over the routing tracks on this side */
     /* Early skip: if there is no routing tracks at this side */
     if (0 == module_sb.get_chan_width(side_manager.get_side())) {

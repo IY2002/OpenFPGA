@@ -19,10 +19,26 @@
 /* begin namespace openfpga */
 namespace openfpga {
 
+// Function to get the source node for a vertical channel node
+RRNodeId get_src_node(const RRGraphView& rr_graph, RRNodeId node_id){
+  for (auto edge : rr_graph.node_in_edges(node_id)){
+    if (rr_graph.edge_sink_node((RREdgeId) edge) == node_id) return rr_graph.edge_src_node((RREdgeId) edge);
+  }
+  return (RRNodeId)rr_graph.num_nodes();
+}
+
+// Function to get the sink node for a vertical channel node
+RRNodeId get_sink_node(const RRGraphView& rr_graph, RRNodeId node_id){
+  for (auto edge : rr_graph.edge_range(node_id)){
+    if (rr_graph.edge_src_node((RREdgeId) edge) == node_id) return rr_graph.edge_sink_node((RREdgeId) edge);
+  }
+  return (RRNodeId) rr_graph.num_nodes();
+}
+
 /* Build a RRChan Object with the given channel type and coorindators */
 static RRChan build_one_rr_chan(const DeviceContext& vpr_device_ctx,
                                 const t_rr_type& chan_type, const size_t& layer,
-                                vtr::Point<size_t>& chan_coord) {
+                                vtr::Point<size_t>& chan_coord, const vtr::Point<size_t>& sb_coord) {
   std::vector<RRNodeId> chan_rr_nodes;
 
   /* Create a rr_chan object and check if it is unique in the graph */
@@ -36,10 +52,47 @@ static RRChan build_one_rr_chan(const DeviceContext& vpr_device_ctx,
   /* Fill the rr_chan */
   for (const RRNodeId& chan_rr_node : chan_rr_nodes) {
 
-    // only add non vertical rr_nodes
-    if (vpr_device_ctx.rr_graph.is_node_on_specific_side(chan_rr_node, e_side::TOP) || vpr_device_ctx.rr_graph.is_node_on_specific_side(chan_rr_node, e_side::BOTTOM)) {
+    // // input to layer, so the relevant node to determine location is this node's sink
+    // if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_DEC || vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_INC){ 
+    //   RRNodeId sink_node = get_sink_node(vpr_device_ctx.rr_graph, chan_rr_node);
+    //   // if x and y coords are same as sb and the chan is inc then its an input to the SB
+    //   if (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y()){
+    //     if (vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC){
+    //       continue;
+    //     }
+    //   }
+    //   // if the x or y coord is off by 1 and the chan is dec then its an input to the SB
+    //   else if ((vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y())
+    //           || (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() + 1)){
+    //     if (vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::DEC){
+    //       continue;
+    //     }
+    //   }
+    // }
+    // // output of layer, so the relevant node to determine location is this node's source
+    // else if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_INC || vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_DEC){
+    //   RRNodeId source_node = get_src_node(vpr_device_ctx.rr_graph, chan_rr_node);
+    //   // if x and y coords are same as sb and the chan is dec then its an output of the SB
+    //   if (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y()){
+    //     if (vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC){
+    //       continue;
+    //     }
+    //   }
+    //   // if the x or y coord is off by 1 and the chan is inc then its an output of the SB
+    //   else if ((vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y())
+    //           || (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() + 1)){
+    //     if (vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::INC){
+    //       continue;
+    //     }
+    //   }
+    // }
+    
+    // do not include vertical nodes in channel
+    if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_DEC || vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_INC ||
+        vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_INC || vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_DEC){
       continue;
     }
+
     rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
                      vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
   }
@@ -49,26 +102,121 @@ static RRChan build_one_rr_chan(const DeviceContext& vpr_device_ctx,
 
 /* Build a RRChan Object with the given channel type and coorindators */
 static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
-                                const t_rr_type& chan_type, const size_t& layer,
-                                vtr::Point<size_t>& chan_coord, e_side side) {
+                                const size_t& layer, const vtr::Point<size_t>& chan_coord, 
+                                e_side side, const vtr::Point<size_t>& sb_coord) {
   std::vector<RRNodeId> chan_rr_nodes;
 
   /* Create a rr_chan object and check if it is unique in the graph */
   RRChan rr_chan;
   /* Fill the information */
-  rr_chan.set_type(chan_type);
+  rr_chan.set_type(CHANX);
 
-  /* Collect rr_nodes for this channel */
-  chan_rr_nodes = find_rr_graph_chan_nodes(
-    vpr_device_ctx.rr_graph, layer, chan_coord.x(), chan_coord.y(), chan_type);
-  /* Fill the rr_chan */
-  for (const RRNodeId& chan_rr_node : chan_rr_nodes) {
+  //get both CHANX and CHANY nodes since vertically there's no difference between them
+  for (size_t type = 0; type < 2; type++){
+    t_rr_type cur_type;
+    if(type == 0) cur_type = CHANX;
+    else cur_type = CHANY;
+    // Get all vertical channels from each side. And group them together into 1 channel
+    for (size_t cur_side = 0; cur_side < 4; cur_side++){/* 0 = TOP, 1 = RIGHT, 2 = BOTTOM, 3 = LEFT*/
+      vtr::Point<size_t> cur_coord;
+      cur_coord.set_x(chan_coord.x());
+      cur_coord.set_y(chan_coord.y());
+      if (cur_side == 0){
+        cur_coord.set_y(chan_coord.y() + 1);
+      }
+      else if (cur_side == 1){
+        cur_coord.set_x(chan_coord.x() + 1);
+      }
 
-    // only add interlayer rr_nodes
-    if ((vpr_device_ctx.rr_graph.is_node_on_specific_side(chan_rr_node, e_side::TOP) && side == e_side::ABOVE) || 
-          (vpr_device_ctx.rr_graph.is_node_on_specific_side(chan_rr_node, e_side::BOTTOM) && side == e_side::UNDER)) {
-      rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
-                     vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+      chan_rr_nodes = find_rr_graph_chan_nodes(
+        vpr_device_ctx.rr_graph, layer, cur_coord.x(), cur_coord.y(), cur_type);
+
+      /* Fill the rr_chan */
+      for (const RRNodeId& chan_rr_node : chan_rr_nodes) {
+        // only want vertical nodes
+        if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::INC || vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::DEC){
+          continue;
+        }
+
+        if (side == e_side::UNDER){
+          // output of layer
+          if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_INC){ 
+            RRNodeId sink_node = get_sink_node(vpr_device_ctx.rr_graph, chan_rr_node);
+            // if x and y coords are same as sb and the chan is inc then its an input to the SB
+            if (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::DEC){
+                rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                          vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+            }
+            // if the x or y coord is off by 1 and the chan is dec then its an input to the SB
+            else if ((vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && 
+                      vpr_device_ctx.rr_graph.node_type(sink_node) == CHANX && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC)
+                      || (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() + 1 && 
+                      vpr_device_ctx.rr_graph.node_type(sink_node) == CHANY && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC)){
+              rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                          vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+            }
+          }
+
+          else if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_DEC){
+            RRNodeId source_node = get_src_node(vpr_device_ctx.rr_graph, chan_rr_node);
+            // if x and y coords are same as sb and the chan is dec then its an output of the SB
+            if (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::INC){
+                rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                          vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+            }
+            // if the x or y coord is off by 1 and the chan is inc then its an output of the SB
+            else if ((vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && 
+                      vpr_device_ctx.rr_graph.node_type(source_node) == CHANX && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC)
+                      || (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() + 1 && 
+                      vpr_device_ctx.rr_graph.node_type(source_node) == CHANY && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC)){
+              rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                          vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+            }
+          }
+          
+        }
+        
+        else{
+          VTR_ASSERT(side == e_side::ABOVE);
+        
+          // input to layer, so the relevant node to determine location is this node's sink
+          if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_DEC){ 
+            RRNodeId sink_node = get_sink_node(vpr_device_ctx.rr_graph, chan_rr_node);
+            // if x and y coords are same as sb and the chan is inc then its an input to the SB
+            if (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::DEC){
+                rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                          vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+            }
+            // if the x or y coord is off by 1 and the chan is dec then its an input to the SB
+            else if ((vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && 
+                      vpr_device_ctx.rr_graph.node_type(sink_node) == CHANX && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC)
+                      || (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() + 1 && 
+                      vpr_device_ctx.rr_graph.node_type(sink_node) == CHANY && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC)){
+              rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                          vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+            }
+          }
+
+          // output of layer, so the relevant node to determine location is this node's source
+          else if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_INC){
+            RRNodeId source_node = get_src_node(vpr_device_ctx.rr_graph, chan_rr_node);
+            // if x and y coords are same as sb and the chan is dec then its an output of the SB
+            if (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::INC){
+                rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                          vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+            }
+            // if the x or y coord is off by 1 and the chan is inc then its an output of the SB
+            else if ((vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && 
+                      vpr_device_ctx.rr_graph.node_type(source_node) ==  CHANX && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC)
+                      || (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() + 1 && 
+                      vpr_device_ctx.rr_graph.node_type(source_node) == CHANY && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC)){
+              rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                          vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+            }
+          }
+          
+        }
+      }
     }
   }
 
@@ -226,7 +374,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
         /* Routing channels*/
         /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
         /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANY, layer, coordinate);
+        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANY, layer, coordinate, gsb_coord);
         chan_dir_to_port_dir_mapping[0] =
           OUT_PORT; /* INC_DIRECTION => OUT_PORT */
         chan_dir_to_port_dir_mapping[1] =
@@ -269,7 +417,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
         /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
         /* Collect rr_nodes for Tracks for top: chany[x][y+1] */
         /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANX, layer, coordinate);
+        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANX, layer, coordinate, gsb_coord);
         chan_dir_to_port_dir_mapping[0] =
           OUT_PORT; /* INC_DIRECTION => OUT_PORT */
         chan_dir_to_port_dir_mapping[1] =
@@ -312,7 +460,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
         /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
         /* Collect rr_nodes for Tracks for bottom: chany[x][y] */
         /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANY, layer, coordinate);
+        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANY, layer, coordinate, gsb_coord);
         chan_dir_to_port_dir_mapping[0] =
           IN_PORT; /* INC_DIRECTION => IN_PORT */
         chan_dir_to_port_dir_mapping[1] =
@@ -354,7 +502,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
         /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
         /* Collect rr_nodes for Tracks for left: chanx[x][y] */
         /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANX, layer, coordinate);
+        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANX, layer, coordinate, gsb_coord);
         chan_dir_to_port_dir_mapping[0] =
           IN_PORT; /* INC_DIRECTION => IN_PORT */
         chan_dir_to_port_dir_mapping[1] =
@@ -636,17 +784,7 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
   /* Coordinator initialization */
   rr_gsb.set_coordinate(gsb_coord.x(), gsb_coord.y());
 
-  size_t num_sides = 6;
-
-  // // Check if there are layers above
-  // if (vpr_device_ctx.grid.get_num_layers() - 1 > layer){
-  //   num_sides += 1;
-  // }
-
-  // // Check if there are layers below
-  // if (0 < layer){
-  //   num_sides += 1;
-  // }
+  size_t num_sides = 6; // 6 sides: TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER
 
   /* Set the number of sides of the GSB */
   rr_gsb.init_num_sides(num_sides);
@@ -657,21 +795,7 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     /* Local variables inside this for loop */
     SideManager side_manager(side);
 
-    if (side == 4 && num_sides == 6){
-      side_manager.set_side(ABOVE);
-    } 
-    // else if (side == 4 && num_sides == 5){ // there are only 2 scenarios where num_sides = 5, the first layer and the last layer
-    //   if (layer == 0){ // first layer, only has above side
-    //     side_manager.set_side(ABOVE);
-    //   }
-    //   if (layer == vpr_device_ctx.grid.get_num_layers() - 1){ // last layer, only has below side
-    //     side_manager.set_side(UNDER);
-    //   }
-    // }
 
-    if (side == 5 && num_sides == 6){
-      side_manager.set_side(UNDER);
-    }
 
     vtr::Point<size_t> coordinate = gsb_coord;
     RRChan rr_chan;
@@ -694,7 +818,7 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
         /* Routing channels*/
         /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
         /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANY, layer, coordinate);
+        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANY, layer, coordinate, gsb_coord);
         chan_dir_to_port_dir_mapping[0] =
           OUT_PORT; /* INC_DIRECTION => OUT_PORT */
         chan_dir_to_port_dir_mapping[1] =
@@ -726,7 +850,7 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
         /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
         /* Collect rr_nodes for Tracks for top: chany[x][y+1] */
         /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANX, layer, coordinate);
+        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANX, layer, coordinate, gsb_coord);
         chan_dir_to_port_dir_mapping[0] =
           OUT_PORT; /* INC_DIRECTION => OUT_PORT */
         chan_dir_to_port_dir_mapping[1] =
@@ -759,7 +883,7 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
         /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
         /* Collect rr_nodes for Tracks for bottom: chany[x][y] */
         /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANY, layer, coordinate);
+        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANY, layer, coordinate, gsb_coord);
         chan_dir_to_port_dir_mapping[0] =
           IN_PORT; /* INC_DIRECTION => IN_PORT */
         chan_dir_to_port_dir_mapping[1] =
@@ -791,7 +915,7 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
         /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
         /* Collect rr_nodes for Tracks for left: chanx[x][y] */
         /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANX, layer, coordinate);
+        rr_chan = build_one_rr_chan(vpr_device_ctx, CHANX, layer, coordinate, gsb_coord);
         chan_dir_to_port_dir_mapping[0] =
           IN_PORT; /* INC_DIRECTION => IN_PORT */
         chan_dir_to_port_dir_mapping[1] =
@@ -811,40 +935,6 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
         break;
-
-      case e_side::ABOVE: /* ABOVE = 5 */
-        // if (gsb_coord.y() == gsb_range.y() || gsb_coord.x() == gsb_range.x()) {
-        //   rr_gsb.clear_one_side(side_manager.get_side());
-        //   break;
-        // }
-        /* Routing channels*/
-        /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-        /* Collect rr_nodes for Tracks for left: chanx[x][y] */
-        /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_interlayer_rr_chan(vpr_device_ctx, CHANX, layer, coordinate, (e_side)side);
-        chan_dir_to_port_dir_mapping[0] =
-          OUT_PORT; /* INC_DIRECTION => OUT_PORT */
-        chan_dir_to_port_dir_mapping[1] =
-          IN_PORT; /* DEC_DIRECTION => IN_PORT */
-
-        break;
-
-      case e_side::UNDER: /* UNDER = 7 */
-        // if (gsb_coord.y() == gsb_range.y() || gsb_coord.x() == gsb_range.x()) {
-        //   rr_gsb.clear_one_side(side);
-        //   break;
-        // }
-        /* Routing channels*/
-        /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-        /* Collect rr_nodes for Tracks for left: chanx[x][y] */
-        /* Create a rr_chan object and check if it is unique in the graph */
-        rr_chan = build_one_interlayer_rr_chan(vpr_device_ctx, CHANX, layer, coordinate, (e_side) side);
-        chan_dir_to_port_dir_mapping[0] =
-          IN_PORT; /* INC_DIRECTION => IN_PORT */
-        chan_dir_to_port_dir_mapping[1] =
-          OUT_PORT; /* DEC_DIRECTION => OUT_PORT */
-
-        break;
       default:
         VTR_LOG_ERROR("Invalid side index!\n");
         exit(1);
@@ -860,14 +950,21 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
         if (Direction::INC ==
             vpr_device_ctx.rr_graph.node_direction(rr_chan.get_node(itrack))) {
           rr_chan_dir[itrack] = chan_dir_to_port_dir_mapping[0];
-        } else {
-          VTR_ASSERT(Direction::DEC == vpr_device_ctx.rr_graph.node_direction(
-                                         rr_chan.get_node(itrack)));
+        } else if (Direction::DEC == vpr_device_ctx.rr_graph.node_direction(rr_chan.get_node(itrack))) {
           rr_chan_dir[itrack] = chan_dir_to_port_dir_mapping[1];
+        } else if (Direction::ABOVE_INC == vpr_device_ctx.rr_graph.node_direction(rr_chan.get_node(itrack)) || 
+                    Direction::UNDER_DEC == vpr_device_ctx.rr_graph.node_direction(rr_chan.get_node(itrack))) {
+          rr_chan_dir[itrack] = OUT_PORT;
+        } else if (Direction::ABOVE_DEC == vpr_device_ctx.rr_graph.node_direction(rr_chan.get_node(itrack)) || 
+                    Direction::UNDER_INC == vpr_device_ctx.rr_graph.node_direction(rr_chan.get_node(itrack))) {
+          rr_chan_dir[itrack] = IN_PORT;
+        } else {
+          VTR_LOG_ERROR("Invalid directionality for a channel rr_node!\n");
+          exit(1);
         }
       }
       /* Fill chan_rr_nodes */
-      rr_gsb.add_chan_node((e_side) side, rr_chan, rr_chan_dir);
+      rr_gsb.add_chan_node(side_manager.get_side(), rr_chan, rr_chan_dir);
     }
 
     /* Fill opin_rr_nodes */
@@ -906,6 +1003,47 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     opin_grid_side[1] = NUM_2D_SIDES;
   }
 
+  // Add vertical channels to the GSB
+  RRChan above_rr_chan = build_one_interlayer_rr_chan(vpr_device_ctx, layer, gsb_coord, e_side::ABOVE, gsb_coord);
+
+  if (0 < above_rr_chan.get_chan_width()) {
+    std::vector<enum PORTS> rr_chan_dir;
+    rr_chan_dir.resize(above_rr_chan.get_chan_width());
+    for (size_t itrack = 0; itrack < above_rr_chan.get_chan_width(); ++itrack) {
+      /* Identify the directionality, record it in rr_node_direction */
+      if (Direction::ABOVE_DEC ==
+          vpr_device_ctx.rr_graph.node_direction(above_rr_chan.get_node(itrack))) {
+        rr_chan_dir[itrack] = IN_PORT;
+      } else {
+        VTR_ASSERT(Direction::ABOVE_INC == vpr_device_ctx.rr_graph.node_direction(
+                                       above_rr_chan.get_node(itrack)));
+        rr_chan_dir[itrack] = OUT_PORT;
+      }
+    }
+    /* Fill chan_rr_nodes */
+    rr_gsb.add_chan_node(e_side::ABOVE, above_rr_chan, rr_chan_dir);
+  }
+
+  RRChan under_rr_chan = build_one_interlayer_rr_chan(vpr_device_ctx, layer, gsb_coord, e_side::UNDER, gsb_coord);
+
+  if (0 < under_rr_chan.get_chan_width()) {
+    std::vector<enum PORTS> rr_chan_dir;
+    rr_chan_dir.resize(under_rr_chan.get_chan_width());
+    for (size_t itrack = 0; itrack < under_rr_chan.get_chan_width(); ++itrack) {
+      /* Identify the directionality, record it in rr_node_direction */
+      if (Direction::UNDER_INC ==
+          vpr_device_ctx.rr_graph.node_direction(under_rr_chan.get_node(itrack))) {
+        rr_chan_dir[itrack] = IN_PORT;
+      } else {
+        VTR_ASSERT(Direction::UNDER_DEC == vpr_device_ctx.rr_graph.node_direction(
+                                       under_rr_chan.get_node(itrack)));
+        rr_chan_dir[itrack] = OUT_PORT;
+      }
+    }
+    /* Fill chan_rr_nodes */
+    rr_gsb.add_chan_node(e_side::UNDER, under_rr_chan, rr_chan_dir);
+  }
+
   /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
     // only consider the 4 sides of the GSB that are not interlayer
@@ -915,11 +1053,12 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
 
     /* Local variables inside this for loop */
     SideManager side_manager(side);
-    if (side == 4){
-      side_manager.set_side(ABOVE);
-    } else if (side == 5){
-      side_manager.set_side(UNDER);
-    }
+    if (side > 3) break;
+    // if (side == 4){
+    //   side_manager.set_side(ABOVE);
+    // } else if (side == 5){
+    //   side_manager.set_side(UNDER);
+    // }
     size_t ix;
     size_t iy;
     enum e_side chan_side;
@@ -1435,22 +1574,6 @@ bool is_vertical_node(const RRGraphView& rr_graph, RRNodeId node_id){
   return false;
 }
 
-// Function to get the source node for a vertical channel node
-RRNodeId get_src_node(const RRGraphView& rr_graph, RRNodeId node_id){
-  for (auto edge : rr_graph.node_in_edges(node_id)){
-    if (rr_graph.edge_sink_node((RREdgeId) edge) == node_id) return rr_graph.edge_src_node((RREdgeId) edge);
-  }
-  return (RRNodeId)rr_graph.num_nodes();
-}
-
-// Function to get the sink node for a vertical channel node
-RRNodeId get_sink_node(const RRGraphView& rr_graph, RRNodeId node_id){
-  for (auto edge : rr_graph.edge_range(node_id)){
-    if (rr_graph.edge_src_node((RREdgeId) edge) == node_id) return rr_graph.edge_sink_node((RREdgeId) edge);
-  }
-  return (RRNodeId) rr_graph.num_nodes();
-}
-
 
 /** 
  * Function to label the side and direction of vertical channel nodes
@@ -1490,7 +1613,6 @@ void annotate_interlayer_channels(RRGraphBuilder& rr_graph_builder, const RRGrap
       bool vertical_node = is_vertical_node(rr_graph, node_id);
 
       if(!vertical_node) {
-        rr_graph_builder.add_node_side(node_id, e_side::NUM_2D_SIDES);
         continue;
       }
 
@@ -1519,14 +1641,14 @@ void annotate_interlayer_channels(RRGraphBuilder& rr_graph_builder, const RRGrap
         if (src_layer > node_layer){
           // node is an input from layer above so set side and direction according to table above
           // rr_graph_builder.add_node_side(node_id, e_side::ABOVE);
-          rr_graph_builder.add_node_side(node_id, e_side::TOP); // Adding Top instead of Above since the node storage only uses the 2D sides not the 3D sides
-          rr_graph_builder.set_node_direction(node_id, Direction::DEC);
+          // rr_graph_builder.add_node_side(node_id, e_side::TOP); // Adding Top instead of Above since the node storage only uses the 2D sides not the 3D sides
+          rr_graph_builder.set_node_direction(node_id, Direction::ABOVE_DEC);
         }
         else {
           // node is an input from layer below so set side and direction according to table above
           // rr_graph_builder.add_node_side(node_id, e_side::UNDER);
-          rr_graph_builder.add_node_side(node_id, e_side::BOTTOM); // Adding Bottom instead of Under since the node storage only uses the 2D sides not the 3D sides
-          rr_graph_builder.set_node_direction(node_id, Direction::INC);
+          // rr_graph_builder.add_node_side(node_id, e_side::BOTTOM); // Adding Bottom instead of Under since the node storage only uses the 2D sides not the 3D sides
+          rr_graph_builder.set_node_direction(node_id, Direction::UNDER_INC);
         }
 
       } else{
@@ -1536,14 +1658,14 @@ void annotate_interlayer_channels(RRGraphBuilder& rr_graph_builder, const RRGrap
         if (sink_layer > node_layer){
           // node is an output from layer above so set side and direction according to table above
           // rr_graph_builder.add_node_side(node_id, e_side::ABOVE);
-          rr_graph_builder.add_node_side(node_id, e_side::TOP); // Adding Top instead of Above since the node storage only uses the 2D sides not the 3D sides
-          rr_graph_builder.set_node_direction(node_id, Direction::INC);
+          // rr_graph_builder.add_node_side(node_id, e_side::TOP); // Adding Top instead of Above since the node storage only uses the 2D sides not the 3D sides
+          rr_graph_builder.set_node_direction(node_id, Direction::ABOVE_INC);
         }
         else {
           // node is an output from layer below so set side and direction according to table above
           // rr_graph_builder.add_node_side(node_id, e_side::UNDER);
-          rr_graph_builder.add_node_side(node_id, e_side::BOTTOM); // Adding Bottom instead of Under since the node storage only uses the 2D sides not the 3D sides
-          rr_graph_builder.set_node_direction(node_id, Direction::DEC);
+          // rr_graph_builder.add_node_side(node_id, e_side::BOTTOM); // Adding Bottom instead of Under since the node storage only uses the 2D sides not the 3D sides
+          rr_graph_builder.set_node_direction(node_id, Direction::UNDER_DEC);
         }
       }
   }

@@ -78,8 +78,12 @@ size_t SideManager::to_size_t() const {
       return 2;
     case LEFT:
       return 3;
-    default:
+    case ABOVE:
       return 4;
+    case UNDER:
+      return 5;
+    default:
+      return 6;
   }
 }
 
@@ -114,6 +118,12 @@ std::string SideManager::to_string() const {
       break;
     case LEFT:
       ret.assign("left");
+      break;
+    case ABOVE:
+      ret.assign("above");
+      break;
+    case UNDER:
+      ret.assign("under");
       break;
     default:
       ret.assign("invalid_side");

@@ -109,7 +109,11 @@ static void add_top_module_nets_connect_grids_and_sb(
 
   /* Connect grid output pins (OPIN) to switch block grid pins */
   for (size_t side = 0; side < module_sb.get_num_sides(); ++side) {
+    
     SideManager side_manager(side);
+    
+    if (side > 3) break; // OPINS are only connected on the 2D sides
+    
     for (size_t inode = 0;
          inode < module_sb.get_num_opin_nodes(side_manager.get_side());
          ++inode) {
@@ -297,6 +301,9 @@ static void add_top_module_nets_connect_grids_and_sb_with_duplicated_pins(
   /* Connect grid output pins (OPIN) to switch block grid pins */
   for (size_t side = 0; side < module_sb.get_num_sides(); ++side) {
     SideManager side_manager(side);
+
+    if (side > 3) break; // OPINS are only connected on the 2D sides
+
     for (size_t inode = 0;
          inode < module_sb.get_num_opin_nodes(side_manager.get_side());
          ++inode) {
@@ -773,6 +780,9 @@ static void add_top_module_nets_connect_sb_and_cb(
   /* Connect grid output pins (OPIN) to switch block grid pins */
   for (size_t side = 0; side < module_sb.get_num_sides(); ++side) {
     SideManager side_manager(side);
+
+    if (side > 3) break; // CBs are only connected on the 2D sides
+
     /* Iterate over the routing tracks on this side */
     /* Early skip: if there is no routing tracks at this side */
     if (0 == module_sb.get_chan_width(side_manager.get_side())) {
@@ -861,6 +871,17 @@ static void add_top_module_nets_connect_sb_and_cb(
 
     for (size_t itrack = 0;
          itrack < module_sb.get_chan_width(side_manager.get_side()); ++itrack) {
+      
+      // get the RRNodeId of the track
+      RRNodeId track_node = module_sb.get_chan_node(side_manager.get_side(), itrack);
+
+      // Vertical connections are not part of the CB so we skip them
+      if ((rr_graph.node_type(track_node) == CHANX || rr_graph.node_type(track_node) == CHANY) &&
+          (rr_graph.node_direction(track_node) == Direction::ABOVE_DEC || rr_graph.node_direction(track_node) == Direction::ABOVE_INC ||
+           rr_graph.node_direction(track_node) == Direction::UNDER_DEC || rr_graph.node_direction(track_node) == Direction::UNDER_INC)) {
+        continue;
+      }
+      
       std::string sb_port_name = generate_sb_module_track_port_name(
         rr_graph.node_type(
           module_sb.get_chan_node(side_manager.get_side(), itrack)),
@@ -1002,10 +1023,10 @@ void add_top_module_nets_connect_grids_and_gsbs(
           module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
           sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, ilayer);
 
-        if (num_layers > 1 && !is_3d_cb){
-          add_top_module_nets_connect_sb_and_sb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
-            sb_instance_ids, compact_routing_hierarchy, ilayer);
-        }
+        // if (num_layers > 1 && !is_3d_cb){
+          // add_top_module_nets_connect_sb_and_sb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
+        //     sb_instance_ids, compact_routing_hierarchy, ilayer);
+        // }
       }
     }
   }

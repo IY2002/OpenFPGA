@@ -388,10 +388,15 @@ std::string generate_sb_module_track_port_name(const t_rr_type& chan_type,
   /* Create a map between chan_type and module_prefix */
   std::map<t_rr_type, std::string> module_prefix_map;
   /* TODO: use a constexpr string to replace the fixed name? */
+
   module_prefix_map[CHANX] = std::string("chanx");
   module_prefix_map[CHANY] = std::string("chany");
 
   std::string port_name = module_prefix_map[chan_type];
+
+  if (module_side == e_side::ABOVE || module_side == e_side::UNDER){
+    port_name = std::string("chanx");
+  }
   port_name += std::string("_");
 
   SideManager side_manager(module_side);
