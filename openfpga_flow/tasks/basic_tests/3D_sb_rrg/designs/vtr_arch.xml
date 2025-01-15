@@ -82,8 +82,6 @@
       </sub_tile>
     </tile>
   </tiles>
-  <!-- ODIN II specific config ends -->
-  <!-- Physical descriptions begin -->
   <layout>
     <fixed_layout name="2x2" width="3" height="3">
         <layer die="0">
@@ -108,7 +106,6 @@
 
     </fixed_layout>
   </layout>
-
   <device>
     <!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 
 			     models. We are modifying the delay values however, to include metal C and R, which allows more architecture
@@ -137,7 +134,6 @@
     <switch_block type="custom"/>
     <connection_block input_switch_name="ipin_cblock" input_inter_die_switch_name="ipin_cblock"/>
   </device>
-
   <switchlist>
     <!-- VB: the mux_trans_size and buf_size data below is in minimum width transistor *areas*, assuming the purple
 	       book area formula. This means the mux transistors are about 5x minimum drive strength.
