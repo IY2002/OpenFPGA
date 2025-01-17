@@ -223,8 +223,10 @@ static void build_switch_block_bitstream(
   const VprRoutingAnnotation& routing_annotation, const RRGraphView& rr_graph,
   const RRGSB& rr_gsb, const bool& verbose, const bool is_3d_cb) {
   /* Iterate over all the multiplexers */
-  for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
+  for (size_t side = 0; side < rr_gsb.get_num_sides(true); ++side) {
     SideManager side_manager(side);
+    if (side == 4) side_manager.set_side(e_side::ABOVE); // side 4 is top
+    else if (side == 5) side_manager.set_side(e_side::UNDER); // side 5 is bottom
     for (size_t itrack = 0;
          itrack < rr_gsb.get_chan_width(side_manager.get_side()); ++itrack) {
       VTR_ASSERT((CHANX == rr_graph.node_type(rr_gsb.get_chan_node(

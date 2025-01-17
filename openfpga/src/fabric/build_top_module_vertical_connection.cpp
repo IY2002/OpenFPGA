@@ -64,7 +64,14 @@ namespace openfpga {
 
             size_t sb_instance_id = sb_instance_ids[layer][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()];
 
-            if (layer == 0){ // only worry about "above_out_TSV"
+            // ASSUMPTION BEING MADE:
+            // 1. Every Switch Block has an above and under port
+            // 2. The Switch in the other layer is directly above or below the current switch block
+            // 3. That switch block has the same port size as the current switch block
+
+            // TODO: Add a check for the above assumptions, and skip the SB if they are not met
+
+            if (layer == 0){ // only worry about "above_out"
                 vtr::Point<size_t> above_sb_coordinate = rr_gsb.get_sb_coordinate();
                 
                 if(true == compact_routing_hierarchy){
@@ -76,22 +83,22 @@ namespace openfpga {
                 const RRGSB& above_sb = device_rr_gsb.get_gsb(above_sb_coordinate, layer + 1);
 
                 std::string above_sb_module_name = generate_switch_block_module_name(above_sb_coordinate, layer + 1);
-                
-                std::string above_port_name = "above_out_TSV";
 
-                std::string input_below_port_name = "below_in_TSV";
+                std::string above_output_port_name = generate_sb_module_track_port_name(CHANX, e_side::ABOVE, PORTS::OUT_PORT);
+
+                std::string under_input_port_name = generate_sb_module_track_port_name(CHANX, e_side::UNDER, PORTS::IN_PORT);
 
                 ModuleId above_sb_module_id = module_manager.find_module(above_sb_module_name);
 
                 size_t above_sb_instance_id = sb_instance_ids[layer + 1][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()];
 
-                ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, above_port_name);
+                ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, above_output_port_name);
 
                 BasicPort sb_port = module_manager.module_port(sb_module_id, sb_port_id);
 
-                ModulePortId above_sb_port_id = module_manager.find_module_port(above_sb_module_id, input_below_port_name);
+                ModulePortId above_sb_port_id = module_manager.find_module_port(above_sb_module_id, under_input_port_name);
 
-                // connect the source SB to the sink SB (above_out_TSV to below_in_TSV)
+                // connect the source SB to the sink SB (above_out to under_in)
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
                     ModuleNetId net =
                         create_module_source_pin_net(module_manager, top_module, sb_module_id,
@@ -100,44 +107,44 @@ namespace openfpga {
                                                     above_sb_instance_id, above_sb_port_id, itrack);
                 }
 
-            } else if (layer == device_rr_gsb.get_gsb_layers() - 1){ // only worry about "below_out_TSV"
+            } else if (layer == device_rr_gsb.get_gsb_layers() - 1){ // only worry about "under_out"
 
-                vtr::Point<size_t> below_sb_coordinate = rr_gsb.get_sb_coordinate();
+                vtr::Point<size_t> under_sb_coordinate = rr_gsb.get_sb_coordinate();
 
                 if(true == compact_routing_hierarchy){
-                    const RRGSB& below_sb_instance = device_rr_gsb.get_sb_unique_module(below_sb_coordinate, layer - 1);
-                    below_sb_coordinate.set_x(below_sb_instance.get_sb_x());
-                    below_sb_coordinate.set_y(below_sb_instance.get_sb_y());
+                    const RRGSB& under_sb_instance = device_rr_gsb.get_sb_unique_module(under_sb_coordinate, layer - 1);
+                    under_sb_coordinate.set_x(under_sb_instance.get_sb_x());
+                    under_sb_coordinate.set_y(under_sb_instance.get_sb_y());
                 }
 
-                const RRGSB& below_sb = device_rr_gsb.get_gsb(below_sb_coordinate, layer - 1);
-                std::string below_sb_module_name = generate_switch_block_module_name(below_sb_coordinate, layer - 1);
+                const RRGSB& under_sb = device_rr_gsb.get_gsb(under_sb_coordinate, layer - 1);
+                std::string under_sb_module_name = generate_switch_block_module_name(under_sb_coordinate, layer - 1);
 
-                std::string below_port_name = "below_out_TSV";
+                std::string under_output_port_name = generate_sb_module_track_port_name(CHANX, e_side::UNDER, PORTS::OUT_PORT);
 
-                std::string input_above_port_name = "above_in_TSV";
+                std::string above_input_port_name = generate_sb_module_track_port_name(CHANX, e_side::ABOVE, PORTS::IN_PORT);
 
-                ModuleId below_sb_module_id = module_manager.find_module(below_sb_module_name);
+                ModuleId under_sb_module_id = module_manager.find_module(under_sb_module_name);
 
-                size_t below_sb_instance_id = sb_instance_ids[layer - 1][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()];
+                size_t under_sb_instance_id = sb_instance_ids[layer - 1][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()];
 
-                ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, below_port_name);
+                ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, under_output_port_name);
 
                 BasicPort sb_port = module_manager.module_port(sb_module_id, sb_port_id);
 
-                ModulePortId below_sb_port_id = module_manager.find_module_port(below_sb_module_id, input_above_port_name); 
+                ModulePortId under_sb_port_id = module_manager.find_module_port(under_sb_module_id, above_input_port_name); 
 
-                // connect the source SB to the sink SB (below_out_TSV to above_in_TSV)
+                // connect the source SB to the sink SB (under_out to above_in)
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
                     ModuleNetId net =
                         create_module_source_pin_net(module_manager, top_module, sb_module_id,
                                                     sb_instance_id, sb_port_id, itrack);
-                    module_manager.add_module_net_sink(top_module, net, below_sb_module_id,
-                                                    below_sb_instance_id, below_sb_port_id, itrack);
+                    module_manager.add_module_net_sink(top_module, net, under_sb_module_id,
+                                                    under_sb_instance_id, under_sb_port_id, itrack);
                 }
 
 
-            } else{ // worry about both "above_out_TSV" and "below_out_TSV"
+            } else{ // worry about both "above_out" and "under_out"
 
                 vtr::Point<size_t> above_sb_coordinate = rr_gsb.get_sb_coordinate();
 
@@ -147,39 +154,39 @@ namespace openfpga {
                     above_sb_coordinate.set_y(above_sb_instance.get_sb_y());
                 }
 
-                vtr::Point<size_t> below_sb_coordinate = rr_gsb.get_sb_coordinate();
+                vtr::Point<size_t> under_sb_coordinate = rr_gsb.get_sb_coordinate();
 
                 if(true == compact_routing_hierarchy){
-                    const RRGSB& below_sb_instance = device_rr_gsb.get_sb_unique_module(below_sb_coordinate, layer - 1);
-                    below_sb_coordinate.set_x(below_sb_instance.get_sb_x());
-                    below_sb_coordinate.set_y(below_sb_instance.get_sb_y());
+                    const RRGSB& under_sb_instance = device_rr_gsb.get_sb_unique_module(under_sb_coordinate, layer - 1);
+                    under_sb_coordinate.set_x(under_sb_instance.get_sb_x());
+                    under_sb_coordinate.set_y(under_sb_instance.get_sb_y());
                 }
 
                 const RRGSB& above_sb = device_rr_gsb.get_gsb(above_sb_coordinate, layer + 1);
                 std::string above_sb_module_name = generate_switch_block_module_name(above_sb_coordinate, layer + 1);
 
-                const RRGSB& below_sb = device_rr_gsb.get_gsb(below_sb_coordinate, layer - 1);
-                std::string below_sb_module_name = generate_switch_block_module_name(below_sb_coordinate, layer - 1);
+                const RRGSB& under_sb = device_rr_gsb.get_gsb(under_sb_coordinate, layer - 1);
+                std::string under_sb_module_name = generate_switch_block_module_name(under_sb_coordinate, layer - 1);
 
-                std::string above_port_name = "above_out_TSV";
-                std::string below_port_name = "below_out_TSV";
+                std::string above_output_port_name = generate_sb_module_track_port_name(CHANX, e_side::ABOVE, PORTS::OUT_PORT);
+                std::string under_output_port_name = generate_sb_module_track_port_name(CHANX, e_side::UNDER, PORTS::OUT_PORT);
 
-                std::string input_below_port_name = "below_in_TSV";
-                std::string input_above_port_name = "above_in_TSV";
+                std::string above_input_port_name = generate_sb_module_track_port_name(CHANX, e_side::ABOVE, PORTS::IN_PORT);;
+                std::string under_input_port_name = generate_sb_module_track_port_name(CHANX, e_side::UNDER, PORTS::IN_PORT);
 
                 ModuleId above_sb_module_id = module_manager.find_module(above_sb_module_name);
-                ModuleId below_sb_module_id = module_manager.find_module(below_sb_module_name);
+                ModuleId under_sb_module_id = module_manager.find_module(under_sb_module_name);
 
                 size_t above_sb_instance_id = sb_instance_ids[layer + 1][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()];
-                size_t below_sb_instance_id = sb_instance_ids[layer - 1][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()];
+                size_t under_sb_instance_id = sb_instance_ids[layer - 1][rr_gsb.get_sb_x()][rr_gsb.get_sb_y()];
 
-                ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, above_port_name);
+                ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, above_output_port_name);
 
                 BasicPort sb_port = module_manager.module_port(sb_module_id, sb_port_id);
 
-                ModulePortId above_sb_port_id = module_manager.find_module_port(above_sb_module_id, input_below_port_name);
+                ModulePortId above_sb_port_id = module_manager.find_module_port(above_sb_module_id, under_input_port_name);
 
-                // connect the source SB to the sink SB (above_out_TSV to below_in_TSV)
+                // connect the source SB to the sink SB (above_out to under_in)
 
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
                     ModuleNetId net =
@@ -189,19 +196,19 @@ namespace openfpga {
                                                     above_sb_instance_id, above_sb_port_id, itrack);
                 }
 
-                sb_port_id = module_manager.find_module_port(sb_module_id, below_port_name);
+                sb_port_id = module_manager.find_module_port(sb_module_id, under_output_port_name);
 
                 sb_port = module_manager.module_port(sb_module_id, sb_port_id);
 
-                ModulePortId below_sb_port_id = module_manager.find_module_port(below_sb_module_id, input_above_port_name);
+                ModulePortId under_sb_port_id = module_manager.find_module_port(under_sb_module_id, above_input_port_name);
 
-                // connect the source SB to the sink SB (below_out_TSV to above_in_TSV)
+                // connect the source SB to the sink SB (under_out to above_in)
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
                     ModuleNetId net =
                         create_module_source_pin_net(module_manager, top_module, sb_module_id,
                                                     sb_instance_id, sb_port_id, itrack);
-                    module_manager.add_module_net_sink(top_module, net, below_sb_module_id,
-                                                    below_sb_instance_id, below_sb_port_id, itrack);
+                    module_manager.add_module_net_sink(top_module, net, under_sb_module_id,
+                                                    under_sb_instance_id, under_sb_port_id, itrack);
                 }
 
             }

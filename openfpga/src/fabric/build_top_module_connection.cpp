@@ -1023,10 +1023,10 @@ void add_top_module_nets_connect_grids_and_gsbs(
           module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
           sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, ilayer);
 
-        // if (num_layers > 1 && !is_3d_cb){
-          // add_top_module_nets_connect_sb_and_sb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
-        //     sb_instance_ids, compact_routing_hierarchy, ilayer);
-        // }
+        if (num_layers > 1 && !is_3d_cb){
+          add_top_module_nets_connect_sb_and_sb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
+            sb_instance_ids, compact_routing_hierarchy, ilayer);
+        }
       }
     }
   }

@@ -38,7 +38,7 @@ namespace openfpga{
             module_manager.find_module_port(sb_module, chan_port_name);
         VTR_ASSERT(true ==
                     module_manager.valid_module_port_id(sb_module, chan_port_id));
-        return ModulePinInfo(chan_port_id, index / 2);
+        return ModulePinInfo(chan_port_id, index / 2); // PROBLEM for the SB index finder starts here
     }
 
     /*********************************************************************
