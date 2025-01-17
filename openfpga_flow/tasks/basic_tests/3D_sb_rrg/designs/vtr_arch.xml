@@ -131,7 +131,7 @@
       <x distr="uniform" peak="1.000000"/>
       <y distr="uniform" peak="1.000000"/>
     </chan_width_distr>
-    <switch_block type="custom"/>
+    <switch_block type="wilton" fs="3"/>
     <connection_block input_switch_name="ipin_cblock" input_inter_die_switch_name="ipin_cblock"/>
   </device>
   <switchlist>
@@ -322,8 +322,8 @@
     </pb_type>
     <!-- Define general purpose logic block (CLB) ends -->
   </complexblocklist>
-  <switchblocklist>
-      <switchblock name="3d_wilton_straight" type="unidir">
+  <!-- <switchblocklist> -->
+      <!-- <switchblock name="3d_wilton_straight" type="unidir">
         <switchblock_location type="EVERYWHERE"/>
             <switchfuncs>
         
@@ -354,7 +354,7 @@
             </switchfuncs>
           
             <wireconn num_conns="to" from_type="L4" from_switchpoint="0" to_type="L4" to_switchpoint="0"/>
-        </switchblock>
+        </switchblock> -->
 
         <!-- <switchblock name="3d_wilton_straight" type="unidir">
         <switchblock_location type="PERIMETER"/>
@@ -388,5 +388,5 @@
           
             <wireconn num_conns="to" from_type="L4" from_switchpoint="0" to_type="L4" to_switchpoint="0"/>
         </switchblock> -->
-  </switchblocklist>
+  <!-- </switchblocklist> -->
 </architecture>

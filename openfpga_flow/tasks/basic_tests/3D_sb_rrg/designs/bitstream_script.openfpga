@@ -1,6 +1,6 @@
 # Run VPR for the 'and' design
 #--write_rr_graph example_rr_graph.xml
-vpr ${VPR_ARCH_FILE} ${VPR_TESTBENCH_BLIF} --clock_modeling route --read_rr_graph /home/Ismael/OpenFPGA/openfpga_flow/tasks/basic_tests/3D_sb_rrg/designs/rr_graph.xml --route_chan_width 2
+vpr ${VPR_ARCH_FILE} ${VPR_TESTBENCH_BLIF} --clock_modeling route --write_rr_graph rr_graph.xml --read_rr_graph /home/Ismael/OpenFPGA/openfpga_flow/tasks/basic_tests/3D_sb_rrg/designs/rr_graph_3x3.xml --route_chan_width 4
 
 # Read OpenFPGA architecture definition
 read_openfpga_arch -f ${OPENFPGA_ARCH_FILE}
@@ -43,7 +43,7 @@ build_architecture_bitstream --verbose --write_file fabric_independent_bitstream
 build_fabric_bitstream --verbose
 
 # Write fabric-dependent bitstream
-write_fabric_bitstream --file fabric_bitstream.bit --format plain_text
+write_fabric_bitstream --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/SRC/fabric_bitstream.bit --format plain_text
 
 # Write the Verilog testbench for FPGA fabric
 #  - We suggest the use of same output directory as fabric Verilog netlists
@@ -51,7 +51,7 @@ write_fabric_bitstream --file fabric_bitstream.bit --format plain_text
 #  - Enable top-level testbench which is a full verification including programming circuit and core logic of FPGA
 #  - Enable pre-configured top-level testbench which is a fast verification skipping programming phase
 #  - Simulation ini file is optional and is needed only when you need to interface different HDL simulators using openfpga flow-run scripts
-write_full_testbench --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/SRC --reference_benchmark_file_path ${REFERENCE_VERILOG_TESTBENCH} --explicit_port_mapping --include_signal_init --fabric_netlist_file_path ${OPENFPGA_FABRIC_VERILOG_NETLIST} --bitstream fabric_bitstream.bit
+write_full_testbench --file ${OPENFPGA_VERILOG_OUTPUT_DIR}/SRC --reference_benchmark_file_path ${REFERENCE_VERILOG_TESTBENCH} --explicit_port_mapping --include_signal_init --fabric_netlist_file_path ${OPENFPGA_FABRIC_VERILOG_NETLIST} --bitstream ${OPENFPGA_VERILOG_OUTPUT_DIR}/SRC/fabric_bitstream.bit
 
 # Write the SDC to run timing analysis for a mapped FPGA fabric
 write_analysis_sdc --file ./SDC_analysis
