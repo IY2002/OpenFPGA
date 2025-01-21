@@ -590,7 +590,7 @@ void print_verilog_timeout_and_vcd(
     fp << "\t$display(\"Simulation Succeed\");" << std::endl;
   }
 
-  fp << "\t$finish;" << std::endl;
+  // fp << "\t$finish;" << std::endl;
   fp << "end" << std::endl;
 
   /* Add an empty line as splitter */

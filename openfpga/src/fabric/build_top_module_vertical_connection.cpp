@@ -72,6 +72,11 @@ namespace openfpga {
             // TODO: Add a check for the above assumptions, and skip the SB if they are not met
 
             if (layer == 0){ // only worry about "above_out"
+
+                if (rr_gsb.get_chan_width(e_side::ABOVE) == 0){
+                    return;
+                }
+
                 vtr::Point<size_t> above_sb_coordinate = rr_gsb.get_sb_coordinate();
                 
                 if(true == compact_routing_hierarchy){
@@ -109,6 +114,10 @@ namespace openfpga {
 
             } else if (layer == device_rr_gsb.get_gsb_layers() - 1){ // only worry about "under_out"
 
+                if (rr_gsb.get_chan_width(e_side::UNDER) == 0){
+                    return;
+                }
+
                 vtr::Point<size_t> under_sb_coordinate = rr_gsb.get_sb_coordinate();
 
                 if(true == compact_routing_hierarchy){
@@ -145,6 +154,10 @@ namespace openfpga {
 
 
             } else{ // worry about both "above_out" and "under_out"
+
+                if (rr_gsb.get_chan_width(e_side::ABOVE) == 0 && rr_gsb.get_chan_width(e_side::UNDER) == 0){
+                    return;
+                }
 
                 vtr::Point<size_t> above_sb_coordinate = rr_gsb.get_sb_coordinate();
 

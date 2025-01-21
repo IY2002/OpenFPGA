@@ -647,7 +647,7 @@ void write_verilog_module_to_file(std::fstream& fp,
 
   print_verilog_comment(
     fp, std::string("----- BEGIN Local output short connections -----"));
-  print_verilog_module_output_short_connections(fp, module_manager, module_id);
+  print_verilog_module_output_short_connections(fp, module_manager, module_id); // Useful for DFF as scan chain configuration memory
 
   print_verilog_comment(
     fp, std::string("----- END Local output short connections -----"));
