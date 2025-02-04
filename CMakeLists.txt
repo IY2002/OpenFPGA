@@ -16,7 +16,8 @@ if (${CMAKE_VERSION} VERSION_GREATER "3.8")
 endif()
 
 # Set the build type to Debug to include debug information
-set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 ## Set the default build type if not specified
 if(NOT CMAKE_BUILD_TYPE)
