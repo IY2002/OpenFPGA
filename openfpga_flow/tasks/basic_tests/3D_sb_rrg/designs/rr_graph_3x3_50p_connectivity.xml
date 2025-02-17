@@ -1,0 +1,519 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rr_graph tool_comment="Generated from arch file /home/Ismael/OpenFPGA/openfpga_flow/tasks/basic_tests/3D_sb_rrg/designs/vtr_arch.xml" tool_name="vpr" tool_version="8.1.0-dev+v8.0.0-11944-g1e3bd15fb">
+<channels>
+<channel chan_width_max="4" x_max="4" x_min="4" y_max="4" y_min="4"/>
+<x_list index="0" info="4"/>
+<x_list index="1" info="4"/>
+<x_list index="2" info="4"/>
+<y_list index="0" info="4"/>
+<y_list index="1" info="4"/>
+<y_list index="2" info="4"/>
+</channels>
+<switches>
+<switch id="0" name="__vpr_delayless_switch__" type="mux"><timing/>
+<sizing buf_size="0" mux_trans_size="0"/>
+</switch>
+<switch id="1" name="ipin_cblock" type="mux"><timing Cin="1.46999995e-15" R="2231.5" Tdel="7.24700022e-11"/>
+<sizing buf_size="6.3607688" mux_trans_size="1.22226"/>
+</switch>
+<switch id="2" name="0" type="mux"><timing Cin="7.70000012e-16" Cout="4.00000001e-15" R="551" Tdel="5.80000006e-11"/>
+<sizing buf_size="27.6459007" mux_trans_size="2.63073993"/>
+</switch>
+</switches>
+<segments>
+<segment id="0" length="1" name="L4" res_type="GENERAL"><timing C_per_meter="2.25000005e-14" R_per_meter="101"/>
+</segment>
+</segments>
+<block_types>
+<block_type height="1" id="0" name="EMPTY" width="1"/>
+<block_type height="1" id="1" name="io" width="1"><pin_class type="INPUT"><pin ptc="0">io.outpad[0]</pin>
+</pin_class>
+<pin_class type="OUTPUT"><pin ptc="1">io.inpad[0]</pin>
+</pin_class>
+</block_type>
+<block_type height="1" id="2" name="clb" width="1"><pin_class type="INPUT"><pin ptc="0">clb.I[0]</pin>
+<pin ptc="1">clb.I[1]</pin>
+<pin ptc="2">clb.I[2]</pin>
+<pin ptc="3">clb.I[3]</pin>
+</pin_class>
+<pin_class type="OUTPUT"><pin ptc="4">clb.O[0]</pin>
+</pin_class>
+<pin_class type="INPUT"><pin ptc="5">clb.clk[0]</pin>
+</pin_class>
+</block_type>
+</block_types>
+<grid>
+<grid_loc block_type_id="0" height_offset="0" layer="0" width_offset="0" x="0" y="0"/>
+<grid_loc block_type_id="1" height_offset="0" layer="0" width_offset="0" x="0" y="1"/>
+<grid_loc block_type_id="0" height_offset="0" layer="0" width_offset="0" x="0" y="2"/>
+<grid_loc block_type_id="1" height_offset="0" layer="0" width_offset="0" x="1" y="0"/>
+<grid_loc block_type_id="2" height_offset="0" layer="0" width_offset="0" x="1" y="1"/>
+<grid_loc block_type_id="1" height_offset="0" layer="0" width_offset="0" x="1" y="2"/>
+<grid_loc block_type_id="0" height_offset="0" layer="0" width_offset="0" x="2" y="0"/>
+<grid_loc block_type_id="1" height_offset="0" layer="0" width_offset="0" x="2" y="1"/>
+<grid_loc block_type_id="0" height_offset="0" layer="0" width_offset="0" x="2" y="2"/>
+<grid_loc block_type_id="0" height_offset="0" layer="1" width_offset="0" x="0" y="0"/>
+<grid_loc block_type_id="1" height_offset="0" layer="1" width_offset="0" x="0" y="1"/>
+<grid_loc block_type_id="0" height_offset="0" layer="1" width_offset="0" x="0" y="2"/>
+<grid_loc block_type_id="1" height_offset="0" layer="1" width_offset="0" x="1" y="0"/>
+<grid_loc block_type_id="2" height_offset="0" layer="1" width_offset="0" x="1" y="1"/>
+<grid_loc block_type_id="1" height_offset="0" layer="1" width_offset="0" x="1" y="2"/>
+<grid_loc block_type_id="0" height_offset="0" layer="1" width_offset="0" x="2" y="0"/>
+<grid_loc block_type_id="1" height_offset="0" layer="1" width_offset="0" x="2" y="1"/>
+<grid_loc block_type_id="0" height_offset="0" layer="1" width_offset="0" x="2" y="2"/>
+</grid>
+<rr_nodes>
+<node capacity="1" id="0" type="SINK"><loc layer="0" ptc="0" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="1" type="SOURCE"><loc layer="0" ptc="1" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="2" type="IPIN"><loc layer="0" ptc="0" side="RIGHT" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="3" type="OPIN"><loc layer="0" ptc="1" side="RIGHT" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="4" type="SINK"><loc layer="0" ptc="0" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="5" type="SOURCE"><loc layer="0" ptc="1" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="6" type="IPIN"><loc layer="0" ptc="0" side="TOP" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="7" type="OPIN"><loc layer="0" ptc="1" side="TOP" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="4" id="8" type="SINK"><loc layer="0" ptc="0" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="9" type="SOURCE"><loc layer="0" ptc="1" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="10" type="SINK"><loc layer="0" ptc="2" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="11" type="IPIN"><loc layer="0" ptc="0" side="LEFT" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="12" type="IPIN"><loc layer="0" ptc="1" side="BOTTOM" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="13" type="IPIN"><loc layer="0" ptc="2" side="RIGHT" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="14" type="IPIN"><loc layer="0" ptc="3" side="TOP" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="15" type="OPIN"><loc layer="0" ptc="4" side="BOTTOM" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="16" type="IPIN"><loc layer="0" ptc="5" side="LEFT" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="17" type="SINK"><loc layer="0" ptc="0" xhigh="1" xlow="1" yhigh="2" ylow="2"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="18" type="SOURCE"><loc layer="0" ptc="1" xhigh="1" xlow="1" yhigh="2" ylow="2"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="19" type="IPIN"><loc layer="0" ptc="0" side="BOTTOM" xhigh="1" xlow="1" yhigh="2" ylow="2"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="20" type="OPIN"><loc layer="0" ptc="1" side="BOTTOM" xhigh="1" xlow="1" yhigh="2" ylow="2"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="21" type="SINK"><loc layer="0" ptc="0" xhigh="2" xlow="2" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="22" type="SOURCE"><loc layer="0" ptc="1" xhigh="2" xlow="2" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="23" type="IPIN"><loc layer="0" ptc="0" side="LEFT" xhigh="2" xlow="2" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="24" type="OPIN"><loc layer="0" ptc="1" side="LEFT" xhigh="2" xlow="2" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="25" type="SINK"><loc layer="1" ptc="0" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="26" type="SOURCE"><loc layer="1" ptc="1" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="27" type="IPIN"><loc layer="1" ptc="0" side="RIGHT" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="28" type="OPIN"><loc layer="1" ptc="1" side="RIGHT" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="29" type="SINK"><loc layer="1" ptc="0" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="30" type="SOURCE"><loc layer="1" ptc="1" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="31" type="IPIN"><loc layer="1" ptc="0" side="TOP" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="32" type="OPIN"><loc layer="1" ptc="1" side="TOP" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="4" id="33" type="SINK"><loc layer="1" ptc="0" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="34" type="SOURCE"><loc layer="1" ptc="1" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="35" type="SINK"><loc layer="1" ptc="2" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="36" type="IPIN"><loc layer="1" ptc="0" side="LEFT" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="37" type="IPIN"><loc layer="1" ptc="1" side="BOTTOM" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="38" type="IPIN"><loc layer="1" ptc="2" side="RIGHT" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="39" type="IPIN"><loc layer="1" ptc="3" side="TOP" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="40" type="OPIN"><loc layer="1" ptc="4" side="BOTTOM" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="41" type="IPIN"><loc layer="1" ptc="5" side="LEFT" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="42" type="SINK"><loc layer="1" ptc="0" xhigh="1" xlow="1" yhigh="2" ylow="2"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="43" type="SOURCE"><loc layer="1" ptc="1" xhigh="1" xlow="1" yhigh="2" ylow="2"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="44" type="IPIN"><loc layer="1" ptc="0" side="BOTTOM" xhigh="1" xlow="1" yhigh="2" ylow="2"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="45" type="OPIN"><loc layer="1" ptc="1" side="BOTTOM" xhigh="1" xlow="1" yhigh="2" ylow="2"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="46" type="SINK"><loc layer="1" ptc="0" xhigh="2" xlow="2" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="47" type="SOURCE"><loc layer="1" ptc="1" xhigh="2" xlow="2" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="48" type="IPIN"><loc layer="1" ptc="0" side="LEFT" xhigh="2" xlow="2" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" id="49" type="OPIN"><loc layer="1" ptc="1" side="LEFT" xhigh="2" xlow="2" yhigh="1" ylow="1"/>
+<timing C="0" R="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="50" type="CHANX"><loc layer="0" ptc="0" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="51" type="CHANX"><loc layer="0" ptc="1" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="52" type="CHANX"><loc layer="0" ptc="2" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="53" type="CHANX"><loc layer="0" ptc="3" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="54" type="CHANX"><loc layer="0" ptc="0" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="55" type="CHANX"><loc layer="0" ptc="1" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="56" type="CHANX"><loc layer="0" ptc="2" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="57" type="CHANX"><loc layer="0" ptc="3" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="58" type="CHANX"><loc layer="1" ptc="0" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="59" type="CHANX"><loc layer="1" ptc="1" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="60" type="CHANX"><loc layer="1" ptc="2" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="61" type="CHANX"><loc layer="1" ptc="3" xhigh="1" xlow="1" yhigh="0" ylow="0"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="62" type="CHANX"><loc layer="1" ptc="0" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="63" type="CHANX"><loc layer="1" ptc="1" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="64" type="CHANX"><loc layer="1" ptc="2" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="65" type="CHANX"><loc layer="1" ptc="3" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="66" type="CHANY"><loc layer="0" ptc="0" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="3.16800012e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="67" type="CHANY"><loc layer="0" ptc="1" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="3.16800012e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="68" type="CHANY"><loc layer="0" ptc="2" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="3.16800012e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="69" type="CHANY"><loc layer="0" ptc="3" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="3.16800012e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="70" type="CHANY"><loc layer="0" ptc="0" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="71" type="CHANY"><loc layer="0" ptc="1" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="72" type="CHANY"><loc layer="0" ptc="2" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="73" type="CHANY"><loc layer="0" ptc="3" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="74" type="CHANY"><loc layer="1" ptc="0" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="3.16800012e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="75" type="CHANY"><loc layer="1" ptc="1" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="3.16800012e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="76" type="CHANY"><loc layer="1" ptc="2" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="3.16800012e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="77" type="CHANY"><loc layer="1" ptc="3" xhigh="0" xlow="0" yhigh="1" ylow="1"/>
+<timing C="3.16800012e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="78" type="CHANY"><loc layer="1" ptc="0" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="79" type="CHANY"><loc layer="1" ptc="1" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="INC_DIR" id="80" type="CHANY"><loc layer="1" ptc="2" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="DEC_DIR" id="81" type="CHANY"><loc layer="1" ptc="3" xhigh="1" xlow="1" yhigh="1" ylow="1"/>
+<timing C="3.02100027e-14" R="101"/>
+<segment segment_id="0"/>
+</node>
+<node capacity="1" direction="NONE" id="82" type="CHANX"><loc layer="0" ptc="4" xhigh="0" xlow="0" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="83" type="CHANX"><loc layer="1" ptc="4" xhigh="0" xlow="0" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="84" type="CHANX"><loc layer="0" ptc="5" xhigh="0" xlow="0" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="85" type="CHANX"><loc layer="1" ptc="5" xhigh="0" xlow="0" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="86" type="CHANX"><loc layer="1" ptc="6" xhigh="0" xlow="0" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="87" type="CHANX"><loc layer="0" ptc="6" xhigh="0" xlow="0" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="88" type="CHANX"><loc layer="1" ptc="7" xhigh="0" xlow="0" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="89" type="CHANX"><loc layer="0" ptc="7" xhigh="0" xlow="0" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="90" type="CHANX"><loc layer="0" ptc="4" xhigh="1" xlow="1" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="91" type="CHANX"><loc layer="1" ptc="4" xhigh="1" xlow="1" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="92" type="CHANX"><loc layer="0" ptc="5" xhigh="1" xlow="1" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="93" type="CHANX"><loc layer="1" ptc="5" xhigh="1" xlow="1" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="94" type="CHANX"><loc layer="1" ptc="6" xhigh="1" xlow="1" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="95" type="CHANX"><loc layer="0" ptc="6" xhigh="1" xlow="1" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="96" type="CHANX"><loc layer="1" ptc="7" xhigh="1" xlow="1" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node><node capacity="1" direction="NONE" id="97" type="CHANX"><loc layer="0" ptc="7" xhigh="1" xlow="1" yhigh="1" ylow="1"/><timing C="0" R="0"/><segment segment_id="0"/></node></rr_nodes>
+<rr_edges>
+<edge sink_node="3" src_node="1" switch_id="0"/>
+<edge sink_node="0" src_node="2" switch_id="0"/>
+<edge sink_node="66" src_node="3" switch_id="2"/>
+<edge sink_node="67" src_node="3" switch_id="2"/>
+<edge sink_node="68" src_node="3" switch_id="2"/>
+<edge sink_node="69" src_node="3" switch_id="2"/>
+<edge sink_node="7" src_node="5" switch_id="0"/>
+<edge sink_node="4" src_node="6" switch_id="0"/>
+<edge sink_node="50" src_node="7" switch_id="2"/>
+<edge sink_node="51" src_node="7" switch_id="2"/>
+<edge sink_node="52" src_node="7" switch_id="2"/>
+<edge sink_node="53" src_node="7" switch_id="2"/>
+<edge sink_node="15" src_node="9" switch_id="0"/>
+<edge sink_node="8" src_node="11" switch_id="0"/>
+<edge sink_node="8" src_node="12" switch_id="0"/>
+<edge sink_node="8" src_node="13" switch_id="0"/>
+<edge sink_node="8" src_node="14" switch_id="0"/>
+<edge sink_node="50" src_node="15" switch_id="2"/>
+<edge sink_node="51" src_node="15" switch_id="2"/>
+<edge sink_node="52" src_node="15" switch_id="2"/>
+<edge sink_node="53" src_node="15" switch_id="2"/>
+<edge sink_node="10" src_node="16" switch_id="0"/>
+<edge sink_node="20" src_node="18" switch_id="0"/>
+<edge sink_node="17" src_node="19" switch_id="0"/>
+<edge sink_node="54" src_node="20" switch_id="2"/>
+<edge sink_node="55" src_node="20" switch_id="2"/>
+<edge sink_node="56" src_node="20" switch_id="2"/>
+<edge sink_node="57" src_node="20" switch_id="2"/>
+<edge sink_node="24" src_node="22" switch_id="0"/>
+<edge sink_node="21" src_node="23" switch_id="0"/>
+<edge sink_node="70" src_node="24" switch_id="2"/>
+<edge sink_node="71" src_node="24" switch_id="2"/>
+<edge sink_node="72" src_node="24" switch_id="2"/>
+<edge sink_node="73" src_node="24" switch_id="2"/>
+<edge sink_node="28" src_node="26" switch_id="0"/>
+<edge sink_node="25" src_node="27" switch_id="0"/>
+<edge sink_node="74" src_node="28" switch_id="2"/>
+<edge sink_node="75" src_node="28" switch_id="2"/>
+<edge sink_node="76" src_node="28" switch_id="2"/>
+<edge sink_node="77" src_node="28" switch_id="2"/>
+<edge sink_node="32" src_node="30" switch_id="0"/>
+<edge sink_node="29" src_node="31" switch_id="0"/>
+<edge sink_node="58" src_node="32" switch_id="2"/>
+<edge sink_node="59" src_node="32" switch_id="2"/>
+<edge sink_node="60" src_node="32" switch_id="2"/>
+<edge sink_node="61" src_node="32" switch_id="2"/>
+<edge sink_node="40" src_node="34" switch_id="0"/>
+<edge sink_node="33" src_node="36" switch_id="0"/>
+<edge sink_node="33" src_node="37" switch_id="0"/>
+<edge sink_node="33" src_node="38" switch_id="0"/>
+<edge sink_node="33" src_node="39" switch_id="0"/>
+<edge sink_node="58" src_node="40" switch_id="2"/>
+<edge sink_node="59" src_node="40" switch_id="2"/>
+<edge sink_node="60" src_node="40" switch_id="2"/>
+<edge sink_node="61" src_node="40" switch_id="2"/>
+<edge sink_node="35" src_node="41" switch_id="0"/>
+<edge sink_node="45" src_node="43" switch_id="0"/>
+<edge sink_node="42" src_node="44" switch_id="0"/>
+<edge sink_node="62" src_node="45" switch_id="2"/>
+<edge sink_node="63" src_node="45" switch_id="2"/>
+<edge sink_node="64" src_node="45" switch_id="2"/>
+<edge sink_node="65" src_node="45" switch_id="2"/>
+<edge sink_node="49" src_node="47" switch_id="0"/>
+<edge sink_node="46" src_node="48" switch_id="0"/>
+<edge sink_node="78" src_node="49" switch_id="2"/>
+<edge sink_node="79" src_node="49" switch_id="2"/>
+<edge sink_node="80" src_node="49" switch_id="2"/>
+<edge sink_node="81" src_node="49" switch_id="2"/>
+<edge sink_node="6" src_node="50" switch_id="1"/>
+<edge sink_node="12" src_node="50" switch_id="1"/>
+<edge sink_node="70" src_node="50" switch_id="2"/>
+<edge sink_node="6" src_node="51" switch_id="1"/>
+<edge sink_node="12" src_node="51" switch_id="1"/>
+<edge sink_node="68" src_node="51" switch_id="2"/>
+<edge sink_node="6" src_node="52" switch_id="1"/>
+<edge sink_node="12" src_node="52" switch_id="1"/>
+<edge sink_node="72" src_node="52" switch_id="2"/>
+<edge sink_node="6" src_node="53" switch_id="1"/>
+<edge sink_node="12" src_node="53" switch_id="1"/>
+<edge sink_node="66" src_node="53" switch_id="2"/>
+<edge sink_node="14" src_node="54" switch_id="1"/>
+<edge sink_node="19" src_node="54" switch_id="1"/>
+<edge sink_node="73" src_node="54" switch_id="2"/>
+<edge sink_node="14" src_node="55" switch_id="1"/>
+<edge sink_node="19" src_node="55" switch_id="1"/>
+<edge sink_node="67" src_node="55" switch_id="2"/>
+<edge sink_node="14" src_node="56" switch_id="1"/>
+<edge sink_node="19" src_node="56" switch_id="1"/>
+<edge sink_node="71" src_node="56" switch_id="2"/>
+<edge sink_node="14" src_node="57" switch_id="1"/>
+<edge sink_node="19" src_node="57" switch_id="1"/>
+<edge sink_node="69" src_node="57" switch_id="2"/>
+<edge sink_node="31" src_node="58" switch_id="1"/>
+<edge sink_node="37" src_node="58" switch_id="1"/>
+<edge sink_node="78" src_node="58" switch_id="2"/>
+<edge sink_node="31" src_node="59" switch_id="1"/>
+<edge sink_node="37" src_node="59" switch_id="1"/>
+<edge sink_node="76" src_node="59" switch_id="2"/>
+<edge sink_node="31" src_node="60" switch_id="1"/>
+<edge sink_node="37" src_node="60" switch_id="1"/>
+<edge sink_node="80" src_node="60" switch_id="2"/>
+<edge sink_node="31" src_node="61" switch_id="1"/>
+<edge sink_node="37" src_node="61" switch_id="1"/>
+<edge sink_node="74" src_node="61" switch_id="2"/>
+<edge sink_node="39" src_node="62" switch_id="1"/>
+<edge sink_node="44" src_node="62" switch_id="1"/>
+<edge sink_node="81" src_node="62" switch_id="2"/>
+<edge sink_node="39" src_node="63" switch_id="1"/>
+<edge sink_node="44" src_node="63" switch_id="1"/>
+<edge sink_node="75" src_node="63" switch_id="2"/>
+<edge sink_node="39" src_node="64" switch_id="1"/>
+<edge sink_node="44" src_node="64" switch_id="1"/>
+<edge sink_node="79" src_node="64" switch_id="2"/>
+<edge sink_node="39" src_node="65" switch_id="1"/>
+<edge sink_node="44" src_node="65" switch_id="1"/>
+<edge sink_node="77" src_node="65" switch_id="2"/>
+<edge sink_node="2" src_node="66" switch_id="1"/>
+<edge sink_node="11" src_node="66" switch_id="1"/>
+<edge sink_node="16" src_node="66" switch_id="1"/>
+<edge sink_node="54" src_node="66" switch_id="2"/>
+<edge sink_node="2" src_node="67" switch_id="1"/>
+<edge sink_node="11" src_node="67" switch_id="1"/>
+<edge sink_node="16" src_node="67" switch_id="1"/>
+<edge sink_node="52" src_node="67" switch_id="2"/>
+<edge sink_node="2" src_node="68" switch_id="1"/>
+<edge sink_node="11" src_node="68" switch_id="1"/>
+<edge sink_node="16" src_node="68" switch_id="1"/>
+<edge sink_node="56" src_node="68" switch_id="2"/>
+<edge sink_node="2" src_node="69" switch_id="1"/>
+<edge sink_node="11" src_node="69" switch_id="1"/>
+<edge sink_node="16" src_node="69" switch_id="1"/>
+<edge sink_node="50" src_node="69" switch_id="2"/>
+<edge sink_node="13" src_node="70" switch_id="1"/>
+<edge sink_node="23" src_node="70" switch_id="1"/>
+<edge sink_node="57" src_node="70" switch_id="2"/>
+<edge sink_node="13" src_node="71" switch_id="1"/>
+<edge sink_node="23" src_node="71" switch_id="1"/>
+<edge sink_node="51" src_node="71" switch_id="2"/>
+<edge sink_node="13" src_node="72" switch_id="1"/>
+<edge sink_node="23" src_node="72" switch_id="1"/>
+<edge sink_node="55" src_node="72" switch_id="2"/>
+<edge sink_node="13" src_node="73" switch_id="1"/>
+<edge sink_node="23" src_node="73" switch_id="1"/>
+<edge sink_node="53" src_node="73" switch_id="2"/>
+<edge sink_node="27" src_node="74" switch_id="1"/>
+<edge sink_node="36" src_node="74" switch_id="1"/>
+<edge sink_node="41" src_node="74" switch_id="1"/>
+<edge sink_node="62" src_node="74" switch_id="2"/>
+<edge sink_node="27" src_node="75" switch_id="1"/>
+<edge sink_node="36" src_node="75" switch_id="1"/>
+<edge sink_node="41" src_node="75" switch_id="1"/>
+<edge sink_node="60" src_node="75" switch_id="2"/>
+<edge sink_node="27" src_node="76" switch_id="1"/>
+<edge sink_node="36" src_node="76" switch_id="1"/>
+<edge sink_node="41" src_node="76" switch_id="1"/>
+<edge sink_node="64" src_node="76" switch_id="2"/>
+<edge sink_node="27" src_node="77" switch_id="1"/>
+<edge sink_node="36" src_node="77" switch_id="1"/>
+<edge sink_node="41" src_node="77" switch_id="1"/>
+<edge sink_node="58" src_node="77" switch_id="2"/>
+<edge sink_node="38" src_node="78" switch_id="1"/>
+<edge sink_node="48" src_node="78" switch_id="1"/>
+<edge sink_node="65" src_node="78" switch_id="2"/>
+<edge sink_node="38" src_node="79" switch_id="1"/>
+<edge sink_node="48" src_node="79" switch_id="1"/>
+<edge sink_node="59" src_node="79" switch_id="2"/>
+<edge sink_node="38" src_node="80" switch_id="1"/>
+<edge sink_node="48" src_node="80" switch_id="1"/>
+<edge sink_node="63" src_node="80" switch_id="2"/>
+<edge sink_node="38" src_node="81" switch_id="1"/>
+<edge sink_node="48" src_node="81" switch_id="1"/>
+<edge sink_node="61" src_node="81" switch_id="2"/>
+<edge sink_node="82" src_node="66" switch_id="2"/><edge sink_node="82" src_node="55" switch_id="2"/><edge sink_node="75" src_node="83" switch_id="2"/><edge sink_node="62" src_node="83" switch_id="2"/><edge sink_node="83" src_node="82" switch_id="2"/><edge sink_node="84" src_node="68" switch_id="2"/><edge sink_node="84" src_node="57" switch_id="2"/><edge sink_node="77" src_node="85" switch_id="2"/><edge sink_node="64" src_node="85" switch_id="2"/><edge sink_node="85" src_node="84" switch_id="2"/><edge sink_node="86" src_node="74" switch_id="2"/><edge sink_node="86" src_node="63" switch_id="2"/><edge sink_node="67" src_node="87" switch_id="2"/><edge sink_node="54" src_node="87" switch_id="2"/><edge sink_node="87" src_node="86" switch_id="2"/><edge sink_node="88" src_node="76" switch_id="2"/><edge sink_node="88" src_node="65" switch_id="2"/><edge sink_node="69" src_node="89" switch_id="2"/><edge sink_node="56" src_node="89" switch_id="2"/><edge sink_node="89" src_node="88" switch_id="2"/><edge sink_node="90" src_node="54" switch_id="2"/><edge sink_node="90" src_node="70" switch_id="2"/><edge sink_node="63" src_node="91" switch_id="2"/><edge sink_node="79" src_node="91" switch_id="2"/><edge sink_node="91" src_node="90" switch_id="2"/><edge sink_node="92" src_node="56" switch_id="2"/><edge sink_node="92" src_node="72" switch_id="2"/><edge sink_node="65" src_node="93" switch_id="2"/><edge sink_node="81" src_node="93" switch_id="2"/><edge sink_node="93" src_node="92" switch_id="2"/><edge sink_node="94" src_node="62" switch_id="2"/><edge sink_node="94" src_node="78" switch_id="2"/><edge sink_node="55" src_node="95" switch_id="2"/><edge sink_node="71" src_node="95" switch_id="2"/><edge sink_node="95" src_node="94" switch_id="2"/><edge sink_node="96" src_node="64" switch_id="2"/><edge sink_node="96" src_node="80" switch_id="2"/><edge sink_node="57" src_node="97" switch_id="2"/><edge sink_node="73" src_node="97" switch_id="2"/><edge sink_node="97" src_node="96" switch_id="2"/></rr_edges>
+</rr_graph>
