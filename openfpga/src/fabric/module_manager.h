@@ -16,6 +16,12 @@
 /* begin namespace openfpga */
 namespace openfpga {
 
+struct IOPointWithLayer{
+  vtr::Point<int> coordinates;
+  size_t layer;
+};
+  
+
 /******************************************************************************
  * This files includes data structures for module management.
  * It keeps a list of modules that have been generated, the port map of the
@@ -211,7 +217,7 @@ class ModuleManager {
   /* Find all the instances of I/O child modules under a parent module */
   std::vector<size_t> io_child_instances(const ModuleId& parent_module) const;
   /* Find the coordindate of an I/O child module under a parent module */
-  std::vector<vtr::Point<int>> io_child_coordinates(
+  std::vector<IOPointWithLayer> io_child_coordinates(
     const ModuleId& parent_module) const;
 
   /* Find the source ids of modules */
@@ -444,7 +450,7 @@ class ModuleManager {
    */
   void add_io_child(const ModuleId& module, const ModuleId& child_module,
                     const size_t& child_instance,
-                    const vtr::Point<int> coord = vtr::Point<int>(-1, -1));
+                    const vtr::Point<int> coord = vtr::Point<int>(-1, -1), const size_t& layer = 0);
   /** @brief Reserved a number of I/O children for memory efficiency */
   void reserve_io_child(const ModuleId& module, const size_t& num_children);
 
@@ -627,7 +633,7 @@ class ModuleManager {
    */
   vtr::vector<ModuleId, std::vector<ModuleId>> io_children_;
   vtr::vector<ModuleId, std::vector<size_t>> io_child_instances_;
-  vtr::vector<ModuleId, std::vector<vtr::Point<int>>> io_child_coordinates_;
+  vtr::vector<ModuleId, std::vector<IOPointWithLayer>> io_child_coordinates_;
 
   /* Port-level data */
   vtr::vector<ModuleId, vtr::vector<ModulePortId, ModulePortId>>

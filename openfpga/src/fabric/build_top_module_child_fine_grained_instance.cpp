@@ -371,7 +371,7 @@ static void add_top_module_io_children(
         /* Add a I/O children to top_module*/
         module_manager.add_io_child(top_module, grid_module,
                                     grid_instance_ids[ilayer][io_coord.x()][io_coord.y()],
-                                    vtr::Point<int>(io_coord.x(), io_coord.y()));
+                                    vtr::Point<int>(io_coord.x(), io_coord.y()), ilayer);
       }
     }
 
@@ -443,7 +443,7 @@ static void add_top_module_io_children(
       /* Add a I/O children to top_module*/
       module_manager.add_io_child(top_module, grid_module,
                                   grid_instance_ids[ilayer][coord.x()][coord.y()],
-                                  vtr::Point<int>(coord.x(), coord.y()));
+                                  vtr::Point<int>(coord.x(), coord.y()), ilayer);
     }
   }
 }

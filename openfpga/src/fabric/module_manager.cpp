@@ -159,7 +159,7 @@ std::vector<size_t> ModuleManager::io_child_instances(
   return io_child_instances_[parent_module];
 }
 
-std::vector<vtr::Point<int>> ModuleManager::io_child_coordinates(
+std::vector<IOPointWithLayer> ModuleManager::io_child_coordinates(
   const ModuleId& parent_module) const {
   /* Validate the module_id */
   VTR_ASSERT(valid_module_id(parent_module));
@@ -1166,7 +1166,8 @@ void ModuleManager::add_configurable_child_to_region(
 void ModuleManager::add_io_child(const ModuleId& parent_module,
                                  const ModuleId& child_module,
                                  const size_t& child_instance,
-                                 const vtr::Point<int> coord) {
+                                 const vtr::Point<int> coord,
+                                 const size_t& layer) {
   /* Validate the id of both parent and child modules */
   VTR_ASSERT(valid_module_id(parent_module));
   VTR_ASSERT(valid_module_id(child_module));
@@ -1175,7 +1176,12 @@ void ModuleManager::add_io_child(const ModuleId& parent_module,
 
   io_children_[parent_module].push_back(child_module);
   io_child_instances_[parent_module].push_back(child_instance);
-  io_child_coordinates_[parent_module].push_back(coord);
+
+  IOPointWithLayer coord_with_layer;
+  coord_with_layer.coordinates = coord;
+  coord_with_layer.layer = layer;
+
+  io_child_coordinates_[parent_module].push_back(coord_with_layer);
 }
 
 void ModuleManager::reserve_io_child(const ModuleId& parent_module,

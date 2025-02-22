@@ -196,7 +196,7 @@ static void add_top_module_tile_io_children(
       /* Add a I/O children to top_module*/
       module_manager.add_io_child(top_module, tile_module,
                                   tile_instance_ids[layer][io_coord.x()][io_coord.y()],
-                                  vtr::Point<int>(io_coord.x(), io_coord.y()));
+                                  vtr::Point<int>(io_coord.x(), io_coord.y()), layer);
     }
   }
 
@@ -260,7 +260,7 @@ static void add_top_module_tile_io_children(
     /* Add a I/O children to top_module*/
     module_manager.add_io_child(top_module, tile_module,
                                 tile_instance_ids[layer][coord.x()][coord.y()],
-                                vtr::Point<int>(coord.x(), coord.y()));
+                                vtr::Point<int>(coord.x(), coord.y()), layer);
   }
 }
 

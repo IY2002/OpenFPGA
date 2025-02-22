@@ -1518,6 +1518,7 @@ static int build_tile_module(
   for (PointWithLayer grid_coord_point :
        fabric_tile.pb_coordinates(fabric_tile_id)) {
     vtr::Point<size_t> grid_coord = grid_coord_point.coordinates;
+    size_t grid_layer = grid_coord_point.layer;
     t_physical_tile_type_ptr phy_tile = grids.get_physical_type(
       t_physical_tile_loc(grid_coord.x(), grid_coord.y(), layer));
     VTR_LOGV(verbose, "Try to find pb at [%lu][%lu][%lu]\n", layer, grid_coord.x(),
@@ -1560,7 +1561,7 @@ static int build_tile_module(
       /* Add a custom I/O child with the grid */
       module_manager.add_io_child(
         tile_module, pb_module, pb_instance,
-        vtr::Point<int>(grid_coord.x(), grid_coord.y()));
+        vtr::Point<int>(grid_coord.x(), grid_coord.y()), grid_layer);
     }
   }
 

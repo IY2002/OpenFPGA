@@ -32,8 +32,7 @@ namespace openfpga {
  *(x, y, z) coordinate to the actual indices
  *******************************************************************/
 static IoLocationMap build_fabric_fine_grained_io_location_map(
-  const ModuleManager& module_manager, const DeviceGrid& grids,
-  const size_t& layer) {
+  const ModuleManager& module_manager, const DeviceGrid& grids) {
   vtr::ScopedStartFinishTimer timer(
     "Create I/O location mapping for top module");
 
@@ -50,7 +49,8 @@ static IoLocationMap build_fabric_fine_grained_io_location_map(
        ichild < module_manager.io_children(top_module).size(); ++ichild) {
     ModuleId child = module_manager.io_children(top_module)[ichild];
     vtr::Point<int> coord =
-      module_manager.io_child_coordinates(top_module)[ichild];
+      module_manager.io_child_coordinates(top_module)[ichild].coordinates;
+    size_t layer = module_manager.io_child_coordinates(top_module)[ichild].layer;
     t_physical_tile_loc phy_tile_loc(coord.x(), coord.y(), layer);
     t_physical_tile_type_ptr phy_tile_type =
       grids.get_physical_type(phy_tile_loc);
@@ -96,7 +96,9 @@ static IoLocationMap build_fabric_fine_grained_io_location_map(
        */
       ModuleId subchild = module_manager.io_children(child)[isubchild];
       vtr::Point<int> subchild_coord =
-        module_manager.io_child_coordinates(child)[isubchild];
+        module_manager.io_child_coordinates(child)[isubchild].coordinates;
+      size_t subchild_layer =
+        module_manager.io_child_coordinates(child)[isubchild].layer;
 
       for (const ModuleManager::e_module_port_type& module_io_port_type :
            MODULE_IO_PORT_TYPES) {
@@ -155,8 +157,7 @@ static IoLocationMap build_fabric_fine_grained_io_location_map(
  *(x, y, z) coordinate to the actual indices
  *******************************************************************/
 static IoLocationMap build_fabric_tiled_io_location_map(
-  const ModuleManager& module_manager, const DeviceGrid& grids,
-  const size_t& layer) {
+  const ModuleManager& module_manager, const DeviceGrid& grids) {
   vtr::ScopedStartFinishTimer timer(
     "Create I/O location mapping for top module");
 
@@ -173,7 +174,8 @@ static IoLocationMap build_fabric_tiled_io_location_map(
        ichild < module_manager.io_children(top_module).size(); ++ichild) {
     ModuleId child = module_manager.io_children(top_module)[ichild];
     vtr::Point<int> coord =
-      module_manager.io_child_coordinates(top_module)[ichild];
+      module_manager.io_child_coordinates(top_module)[ichild].coordinates;
+    size_t layer = module_manager.io_child_coordinates(top_module)[ichild].layer;
     t_physical_tile_loc phy_tile_loc(coord.x(), coord.y(), layer);
     t_physical_tile_type_ptr phy_tile_type =
       grids.get_physical_type(phy_tile_loc);
@@ -222,7 +224,9 @@ static IoLocationMap build_fabric_tiled_io_location_map(
            ++isubchild) {
         ModuleId subchild = module_manager.io_children(tile_child)[isubchild];
         vtr::Point<int> subchild_coord =
-          module_manager.io_child_coordinates(tile_child)[isubchild];
+          module_manager.io_child_coordinates(tile_child)[isubchild].coordinates;
+        size_t subchild_layer =
+          module_manager.io_child_coordinates(tile_child)[isubchild].layer;
 
         for (const ModuleManager::e_module_port_type& module_io_port_type :
              MODULE_IO_PORT_TYPES) {
@@ -284,9 +288,9 @@ IoLocationMap build_fabric_io_location_map(const ModuleManager& module_manager,
                                            const DeviceGrid& grids,
                                            const bool& tiled_fabric) {
   if (tiled_fabric) {
-    return build_fabric_tiled_io_location_map(module_manager, grids, 0);
+    return build_fabric_tiled_io_location_map(module_manager, grids);
   }
-  return build_fabric_fine_grained_io_location_map(module_manager, grids, 0);
+  return build_fabric_fine_grained_io_location_map(module_manager, grids);
 }
 
 } /* end namespace openfpga */
