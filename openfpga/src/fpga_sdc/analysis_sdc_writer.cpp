@@ -123,7 +123,8 @@ static void print_analysis_sdc_io_delays(
         place_ctx.block_locs()[atom_ctx.lookup.atom_clb(atom_blk)].loc.x,
         place_ctx.block_locs()[atom_ctx.lookup.atom_clb(atom_blk)].loc.y,
         place_ctx.block_locs()[atom_ctx.lookup.atom_clb(atom_blk)].loc.sub_tile,
-        module_io_port.get_name());
+        module_io_port.get_name(),
+        place_ctx.block_locs()[atom_ctx.lookup.atom_clb(atom_blk)].loc.layer);
 
       if (size_t(-1) == io_index) {
         continue;

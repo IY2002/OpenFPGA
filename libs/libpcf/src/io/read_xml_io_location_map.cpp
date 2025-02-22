@@ -36,13 +36,14 @@ static void read_xml_one_io_location(pugi::xml_node& xml_io,
   int x_coord = get_attribute(xml_io, "x", loc_data).as_int();
   int y_coord = get_attribute(xml_io, "y", loc_data).as_int();
   int z_coord = get_attribute(xml_io, "z", loc_data).as_int();
+  int layer_coord = get_attribute(xml_io, "layer", loc_data).as_int();
 
   /* Sanity checks */
-  if (x_coord < 0 || y_coord < 0 || z_coord < 0) {
+  if (x_coord < 0 || y_coord < 0 || z_coord < 0 || layer_coord < 0) {
     archfpga_throw(loc_data.filename_c_str(), loc_data.line(xml_io),
-                   "Invalid coordinate (x, y, z) = (%d, %d, %d)! Expect zero "
+                   "Invalid coordinate (layer, x, y, z) = (%d, %d, %d, %d)! Expect zero "
                    "or a positive integer!\n",
-                   x_coord, y_coord, z_coord);
+                   layer_coord, x_coord, y_coord, z_coord);
   }
   if (port_parser.port().get_width() != 1) {
     archfpga_throw(loc_data.filename_c_str(), loc_data.line(xml_io),
@@ -51,7 +52,7 @@ static void read_xml_one_io_location(pugi::xml_node& xml_io,
   }
   io_location_map.set_io_index(size_t(x_coord), size_t(y_coord),
                                size_t(z_coord), port_parser.port().get_name(),
-                               port_parser.port().get_lsb());
+                               port_parser.port().get_lsb(), size_t(layer_coord));
 }
 
 /********************************************************************

@@ -20,8 +20,9 @@ namespace openfpga {
  *************************************************/
 size_t IoLocationMap::io_index(const size_t& x, const size_t& y,
                                const size_t& z,
-                               const std::string& io_port_name) const {
-  std::array<size_t, 3> coord = {x, y, z};
+                               const std::string& io_port_name, 
+                               const size_t& layer) const {
+  std::array<size_t, 4> coord = {layer,x, y, z};
   auto result = io_indices_.find(coord);
   if (result == io_indices_.end()) {
     return size_t(-1);
@@ -44,7 +45,7 @@ size_t IoLocationMap::io_x(const BasicPort& io_port) const {
   for (auto pair : io_indices_) {
     for (const BasicPort& candidate : pair.second) {
       if (candidate == io_port) {
-        return pair.first[0];
+        return pair.first[1];
       }
     }
   }
@@ -55,7 +56,7 @@ size_t IoLocationMap::io_y(const BasicPort& io_port) const {
   for (auto pair : io_indices_) {
     for (const BasicPort& candidate : pair.second) {
       if (candidate == io_port) {
-        return pair.first[1];
+        return pair.first[2];
       }
     }
   }
@@ -66,7 +67,18 @@ size_t IoLocationMap::io_z(const BasicPort& io_port) const {
   for (auto pair : io_indices_) {
     for (const BasicPort& candidate : pair.second) {
       if (candidate == io_port) {
-        return pair.first[2];
+        return pair.first[3];
+      }
+    }
+  }
+  return size_t(-1);
+}
+
+size_t IoLocationMap::io_layer(const BasicPort& io_port) const {
+  for (auto pair : io_indices_) {
+    for (const BasicPort& candidate : pair.second) {
+      if (candidate == io_port) {
+        return pair.first[0];
       }
     }
   }
@@ -76,8 +88,9 @@ size_t IoLocationMap::io_z(const BasicPort& io_port) const {
 void IoLocationMap::set_io_index(const size_t& x, const size_t& y,
                                  const size_t& z,
                                  const std::string& io_port_name,
-                                 const size_t& io_index) {
-  std::array<size_t, 3> coord = {x, y, z};
+                                 const size_t& io_index,
+                                 const size_t& layer) {
+  std::array<size_t, 4> coord = {layer, x, y, z};
   BasicPort port_to_add(io_port_name, io_index, io_index);
   auto result = io_indices_.find(coord);
   if (result != io_indices_.end()) {
@@ -85,9 +98,9 @@ void IoLocationMap::set_io_index(const size_t& x, const size_t& y,
                                                  io_indices_.at(coord).end(),
                                                  port_to_add)) {
       VTR_LOG_WARN(
-        "Attempt to add duplicated io '%s[%lu]' to coordinate (%lu, %lu, %lu)! "
+        "Attempt to add duplicated io '%s[%lu]' to coordinate (%lu, %lu, %lu) at layer %lu! "
         "Skip to save memory\n",
-        io_port_name.c_str(), io_index, x, y, z);
+        io_port_name.c_str(), io_index, x, y, z, layer);
     }
   }
 
@@ -147,11 +160,13 @@ int IoLocationMap::write_to_xml_file(const std::string& fname,
          << "<io pad=\"" << port.get_name().c_str() << "[" << port.get_lsb()
          << "]\"";
       fp << " "
-         << "x=\"" << pair.first[0] << "\"";
+         << "layer=\"" << pair.first[0] << "\"";
       fp << " "
-         << "y=\"" << pair.first[1] << "\"";
+         << "x=\"" << pair.first[1] << "\"";
       fp << " "
-         << "z=\"" << pair.first[2] << "\"";
+         << "y=\"" << pair.first[2] << "\"";
+      fp << " "
+         << "z=\"" << pair.first[3] << "\"";
       fp << "/>";
       fp << "\n";
       io_cnt++;

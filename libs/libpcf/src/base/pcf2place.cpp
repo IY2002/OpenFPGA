@@ -20,6 +20,8 @@ namespace openfpga {
  *
  * Return 0 if successful
  * Return 1 if there are serious errors
+ * 
+ * TODO: This function is not complete yet for 3D, need to account for layer
  *******************************************************************/
 int pcf2place(const PcfData& pcf_data,
               const std::vector<std::string>& input_nets,
@@ -94,12 +96,13 @@ int pcf2place(const PcfData& pcf_data,
     size_t x = io_location_map.io_x(int_pin);
     size_t y = io_location_map.io_y(int_pin);
     size_t z = io_location_map.io_z(int_pin);
+    size_t layer = io_location_map.io_layer(int_pin);
     /* Sanity check */
-    if (size_t(-1) == x || size_t(-1) == y || size_t(-1) == z) {
+    if (size_t(-1) == x || size_t(-1) == y || size_t(-1) == z || size_t(-1) == layer) {
       VTR_LOG_ERROR(
-        "Invalid coordinate (%ld, %ld, %ld) found for net '%s' mapped to an "
+        "Invalid coordinate (%ld, %ld, %ld) on layer %ld found for net '%s' mapped to an "
         "external pin '%s[%lu]' through an internal pin '%s[%lu]'!\n",
-        x, y, z, net.c_str(), ext_pin.get_name().c_str(), ext_pin.get_lsb(),
+        x, y, z, layer, net.c_str(), ext_pin.get_name().c_str(), ext_pin.get_lsb(),
         int_pin.get_name().c_str(), int_pin.get_lsb());
       continue;
     }

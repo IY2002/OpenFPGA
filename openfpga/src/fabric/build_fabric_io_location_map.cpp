@@ -118,7 +118,7 @@ static IoLocationMap build_fabric_fine_grained_io_location_map(
           }
           io_location_map.set_io_index(coord.x(), coord.y(), subchild_coord.x(),
                                        gpio_port.get_name(),
-                                       io_counter[gpio_port.get_name()]);
+                                       io_counter[gpio_port.get_name()], layer);
           io_counter[gpio_port.get_name()]++;
         }
       }
@@ -245,7 +245,7 @@ static IoLocationMap build_fabric_tiled_io_location_map(
             /* This is a dirty hack! */
             io_location_map.set_io_index(
               coord.x(), coord.y(), subchild_coord.x(), gpio_port.get_name(),
-              io_counter[gpio_port.get_name()]);
+              io_counter[gpio_port.get_name()], layer);
             io_counter[gpio_port.get_name()]++;
           }
         }

@@ -35,14 +35,15 @@ namespace openfpga {
 class IoLocationMap {
  public: /* Public aggregators */
   size_t io_index(const size_t& x, const size_t& y, const size_t& z,
-                  const std::string& io_port_name) const;
+                  const std::string& io_port_name, const size_t& layer) const;
   size_t io_x(const BasicPort& io_port) const;
   size_t io_y(const BasicPort& io_port) const;
   size_t io_z(const BasicPort& io_port) const;
+  size_t io_layer(const BasicPort& io_port) const;
 
  public: /* Public mutators */
   void set_io_index(const size_t& x, const size_t& y, const size_t& z,
-                    const std::string& io_port_name, const size_t& io_index);
+                    const std::string& io_port_name, const size_t& io_index, const size_t& layer);
 
  public: /* Public writer */
   int write_to_xml_file(const std::string& fname,
@@ -50,10 +51,10 @@ class IoLocationMap {
                         const bool& verbose) const;
 
  private: /* Internal Data */
-  /* I/O index fast lookup by [x][y][z] location
+  /* I/O index fast lookup by [layer][x][y][z] location
    * Note that multiple I/Os may be assigned to the same coordinate!
    */
-  std::map<std::array<size_t, 3>, std::vector<BasicPort>> io_indices_;
+  std::map<std::array<size_t, 4>, std::vector<BasicPort>> io_indices_;
 };
 
 } /* End namespace openfpga*/

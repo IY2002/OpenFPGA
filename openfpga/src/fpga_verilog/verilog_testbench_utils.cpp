@@ -386,7 +386,8 @@ void print_verilog_testbench_connect_fpga_ios(
         place_ctx.block_locs()[atom_ctx.lookup.atom_clb(atom_blk)].loc.x,
         place_ctx.block_locs()[atom_ctx.lookup.atom_clb(atom_blk)].loc.y,
         place_ctx.block_locs()[atom_ctx.lookup.atom_clb(atom_blk)].loc.sub_tile,
-        module_io_port.get_name());
+        module_io_port.get_name(),
+        place_ctx.block_locs()[atom_ctx.lookup.atom_clb(atom_blk)].loc.layer);
 
       /* Bypass invalid index (not mapped to this GPIO port) */
       if (size_t(-1) == temp_io_index) {
