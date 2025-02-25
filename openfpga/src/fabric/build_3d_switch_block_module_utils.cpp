@@ -111,6 +111,8 @@ namespace openfpga{
             physical_tile, pin_id);
         VTR_ASSERT(OPEN != subtile_index && subtile_index < physical_tile->capacity);
 
+        prefix += std::string("_layer_") + std::to_string(rr_graph.node_layer(rr_node));
+
         return prefix + std::string("_") +
                 generate_routing_module_grid_port_name(
                 pin_width_offset, pin_height_offset, subtile_index, pin_side,

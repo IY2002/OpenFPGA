@@ -23,7 +23,7 @@ bool connection_block_contain_only_routing_tracks(const RRGSB& rr_gsb,
 
 std::vector<RRNodeId> get_rr_gsb_chan_node_configurable_driver_nodes(
   const RRGraphView& rr_graph, const RRGSB& rr_gsb, const e_side& chan_side,
-  const size_t& track_id, bool is_3d_cb=false);
+  const size_t& track_id);
 
 bool is_sb_mirror(const RRGraphView& rr_graph,
                   const VprDeviceAnnotation& device_annotation,

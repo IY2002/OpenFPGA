@@ -175,12 +175,15 @@ static void add_top_module_nets_connect_grids_and_sb(
         module_manager.module_port(src_grid_module, src_grid_port_id);
 
 
+      // 3D Outputs issue, there is no name for the possibilty of multiple outputs on the same side
       std::string sink_sb_port_name = generate_sb_module_grid_port_name(
         side_manager.get_side(),
         get_rr_graph_single_node_side(
           rr_graph, module_sb.get_opin_node(side_manager.get_side(), inode)),
         grids, vpr_device_annotation, rr_graph,
         module_sb.get_opin_node(side_manager.get_side(), inode));
+
+      VTR_LOG("%s -> %s\n", src_grid_port_name.c_str(), sink_sb_port_name.c_str());
 
       ModulePortId sink_sb_port_id =
         module_manager.find_module_port(sink_sb_module, sink_sb_port_name);
@@ -983,7 +986,7 @@ void add_top_module_nets_connect_grids_and_gsbs(
   const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
   const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
   const std::map<t_rr_type, vtr::NdMatrix<size_t, 3>>& cb_instance_ids,
-  const bool& compact_routing_hierarchy, const bool& duplicate_grid_pin, const bool is_3d_cb) {
+  const bool& compact_routing_hierarchy, const bool& duplicate_grid_pin) {
   vtr::ScopedStartFinishTimer timer("Add module nets between grids and GSBs");
 
   vtr::Point<size_t> gsb_range = device_rr_gsb.get_gsb_range();
@@ -1023,7 +1026,7 @@ void add_top_module_nets_connect_grids_and_gsbs(
           module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
           sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, ilayer);
 
-        if (num_layers > 1 && !is_3d_cb){
+        if (num_layers > 1){
           add_top_module_nets_connect_sb_and_sb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
             sb_instance_ids, compact_routing_hierarchy, ilayer);
         }

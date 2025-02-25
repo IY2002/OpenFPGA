@@ -123,7 +123,6 @@ class OpenfpgaContext : public Context {
   }
 
   const bool& is_3d_sb() const {return is_3d_sb_; }
-  const bool& is_3d_cb() const {return is_3d_cb_; }
 
  public: /* Public mutators */
   openfpga::Arch& mutable_arch() { return arch_; }
@@ -187,7 +186,6 @@ class OpenfpgaContext : public Context {
   openfpga::NetlistManager& mutable_spice_netlists() { return spice_netlists_; }
 
   bool& mutable_is_3d_sb() {return is_3d_sb_; }
-  bool& mutable_is_3d_cb() {return is_3d_cb_; }
 
  private: /* Internal data */
   /* Data structure to store information from read_openfpga_arch library */
@@ -253,8 +251,7 @@ class OpenfpgaContext : public Context {
   /* Flow status */
   openfpga::FlowManager flow_manager_;
 
-  /* Booleans to indicate if the RRG being used has 3D CBs or 3D SBs*/
-  bool is_3d_cb_;
+  /* Booleans to indicate if the RRG being used has 3D SBs*/
   bool is_3d_sb_;
 };
 

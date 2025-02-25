@@ -99,9 +99,17 @@ namespace openfpga {
 
                 ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, above_output_port_name);
 
+                if (sb_port_id == ModulePortId::INVALID()){
+                    return;
+                }
+
                 BasicPort sb_port = module_manager.module_port(sb_module_id, sb_port_id);
 
                 ModulePortId above_sb_port_id = module_manager.find_module_port(above_sb_module_id, under_input_port_name);
+
+                if (above_sb_port_id == ModulePortId::INVALID()){
+                    VTR_ERROR_H("Invalid port id for port %s in module %s, the SB on the layer above has vertical connections while this module doesn't accept vertical connections.", under_input_port_name.c_str(), above_sb_module_name.c_str());
+                }
 
                 // connect the source SB to the sink SB (above_out to under_in)
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
@@ -139,9 +147,17 @@ namespace openfpga {
 
                 ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, under_output_port_name);
 
+                if (sb_port_id == ModulePortId::INVALID()){
+                    return;
+                }
+
                 BasicPort sb_port = module_manager.module_port(sb_module_id, sb_port_id);
 
                 ModulePortId under_sb_port_id = module_manager.find_module_port(under_sb_module_id, above_input_port_name); 
+
+                if (under_sb_port_id == ModulePortId::INVALID()){
+                    VTR_ERROR_H("Invalid port id for port %s in module %s, the SB on the layer below has vertical connections while this module doesn't accept vertical connections.", above_input_port_name.c_str(), under_sb_module_name.c_str());
+                }
 
                 // connect the source SB to the sink SB (under_out to above_in)
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {
@@ -195,9 +211,17 @@ namespace openfpga {
 
                 ModulePortId sb_port_id = module_manager.find_module_port(sb_module_id, above_output_port_name);
 
+                if (sb_port_id == ModulePortId::INVALID()){
+                    return;
+                }
+
                 BasicPort sb_port = module_manager.module_port(sb_module_id, sb_port_id);
 
                 ModulePortId above_sb_port_id = module_manager.find_module_port(above_sb_module_id, under_input_port_name);
+
+                if (above_sb_port_id == ModulePortId::INVALID()){
+                    VTR_ERROR_H("Invalid port id for port %s in module %s, the SB on the layer below has vertical connections while this module doesn't accept vertical connections.", under_input_port_name.c_str(), above_sb_module_name.c_str());
+                }
 
                 // connect the source SB to the sink SB (above_out to under_in)
 
@@ -211,9 +235,17 @@ namespace openfpga {
 
                 sb_port_id = module_manager.find_module_port(sb_module_id, under_output_port_name);
 
+                if (sb_port_id == ModulePortId::INVALID()){
+                    return;
+                }
+
                 sb_port = module_manager.module_port(sb_module_id, sb_port_id);
 
                 ModulePortId under_sb_port_id = module_manager.find_module_port(under_sb_module_id, above_input_port_name);
+
+                if (under_sb_port_id == ModulePortId::INVALID()){
+                    VTR_ERROR_H("Invalid port id for port %s in module %s, the SB on the layer above has vertical connections while this module doesn't accept vertical connections.", above_input_port_name.c_str(), under_sb_module_name.c_str());
+                }
 
                 // connect the source SB to the sink SB (under_out to above_in)
                 for (size_t itrack = 0; itrack < sb_port.get_width(); ++itrack) {

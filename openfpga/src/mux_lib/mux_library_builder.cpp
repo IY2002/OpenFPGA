@@ -28,7 +28,7 @@ namespace openfpga {
  *******************************************************************/
 static void build_routing_arch_mux_library(
   const RRGraphView& rr_graph, const CircuitLibrary& circuit_lib,
-  const VprDeviceAnnotation& vpr_device_annotation, MuxLibrary& mux_lib, const DeviceGrid& grids, const bool is_3d_cb) {
+  const VprDeviceAnnotation& vpr_device_annotation, MuxLibrary& mux_lib, const DeviceGrid& grids) {
   /* The routing path is.
    * OPIN ----> CHAN ----> ... ----> CHAN ----> IPIN
    * Each edge is a switch, for IPIN, the switch is a connection block,
@@ -67,43 +67,45 @@ static void build_routing_arch_mux_library(
         /* Add the mux to mux_library */
         std::vector<RREdgeId> in_edges = rr_graph.node_in_edges(node);
 
-        if (is_3d_cb){
-          mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
-                        in_edges.size());
-        }
+        
 
         // use an iterator to remove edges since the vector is modified during the loop
-        for(auto it = in_edges.begin(); it != in_edges.end();) {
-          RRNodeId src_node = rr_graph.edge_src_node(*it);
-          RRNodeId sink_node = rr_graph.edge_sink_node(*it);
+        // Not sure how much this is needed but idea is if I have a mixed 3D and 2D CBs, I need to account for the 2D inputs and the extra inputs of 3D
+        // But if not 3D the graph shouldn't have this edge so idk if this is needed (commented out rn for testing this hypothesis)
+        // for(auto it = in_edges.begin(); it != in_edges.end();) {
+        //   RRNodeId src_node = rr_graph.edge_src_node(*it);
+        //   RRNodeId sink_node = rr_graph.edge_sink_node(*it);
 
-          // if an edge is across 2 different layers, remove it
-          if (rr_graph.node_layer(src_node) != rr_graph.node_layer(sink_node)) {
-            it = in_edges.erase(it);
-          } else {
-            ++it;
-          }
-        }
+        //   // if an edge is across 2 different layers, remove it
+        //   if (rr_graph.node_layer(src_node) != rr_graph.node_layer(sink_node)) {
+        //     it = in_edges.erase(it);
+        //   } else {
+        //     ++it;
+        //   }
+        // }
 
         if (in_edges.size() < 2 ) break;
         mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
                         in_edges.size());
 
+
+        /* NOTE: Old way of me doing this, the rrg didn't include the representation of the 3D sb as nodes and edges so I had to add these artifical edges. 
+            Commented out right now for testing whether or not this is needed now. Making extra muxes doesn't hurt but I think it's not needed.*/
         // 3D SBs have extra inputs to muxes, inlcude both the top and bottom layer
         // 2 MUXes are added to library since we could want to have a mix of 3D and 2D SBs,
         // also CBs aren't 3D so we need to account for that as well
-        if (grids.get_num_layers() > 1) { // Need to build muxes to account for 3D SBs
-          if (rr_graph.node_layer(node) == 0 || rr_graph.node_layer(node) == grids.get_num_layers() - 1) { // if top or bottom layer there is only 1 extra input to mux (above or below)
-            // push invalid edge to represent the extra input, in_edges is only used for size calculation
-            in_edges.push_back(RREdgeId::INVALID()); 
-          } else { // else there are 2 extra inputs to mux (above and below)
-            // push invalid edges to represent the extra input, in_edges is only used for size calculation
-            in_edges.push_back(RREdgeId::INVALID());
-            in_edges.push_back(RREdgeId::INVALID());
-          }
-        }
-        mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
-                        in_edges.size());
+        // if (grids.get_num_layers() > 1) { // Need to build muxes to account for 3D SBs
+        //   if (rr_graph.node_layer(node) == 0 || rr_graph.node_layer(node) == grids.get_num_layers() - 1) { // if top or bottom layer there is only 1 extra input to mux (above or below)
+        //     // push invalid edge to represent the extra input, in_edges is only used for size calculation
+        //     in_edges.push_back(RREdgeId::INVALID()); 
+        //   } else { // else there are 2 extra inputs to mux (above and below)
+        //     // push invalid edges to represent the extra input, in_edges is only used for size calculation
+        //     in_edges.push_back(RREdgeId::INVALID());
+        //     in_edges.push_back(RREdgeId::INVALID());
+        //   }
+        // }
+        // mux_lib.add_mux(circuit_lib, rr_switch_circuit_model,
+        //                 in_edges.size());
         break;
       }
       default:
@@ -238,8 +240,7 @@ static void build_lut_mux_library(MuxLibrary& mux_lib,
  * list, as a return value
  */
 MuxLibrary build_device_mux_library(const DeviceContext& vpr_device_ctx,
-                                    const OpenfpgaContext& openfpga_ctx,
-                                    const bool is_3d_cb) {
+                                    const OpenfpgaContext& openfpga_ctx) {
   vtr::ScopedStartFinishTimer timer("Build a library of physical multiplexers");
 
   /* MuxLibrary to store the information of Multiplexers*/
@@ -249,7 +250,7 @@ MuxLibrary build_device_mux_library(const DeviceContext& vpr_device_ctx,
    * architecture.*/
   build_routing_arch_mux_library(vpr_device_ctx.rr_graph,
                                  openfpga_ctx.arch().circuit_lib,
-                                 openfpga_ctx.vpr_device_annotation(), mux_lib, vpr_device_ctx.grid, is_3d_cb);
+                                 openfpga_ctx.vpr_device_annotation(), mux_lib, vpr_device_ctx.grid);
 
   /* Step 2: Count the sizes of multiplexers in complex logic blocks */
   for (const t_logical_block_type& lb_type :

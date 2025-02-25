@@ -250,6 +250,45 @@ static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
   return rr_chan;
 }
 
+/**
+ * Function to check if a node is connected to a layer, to determine whether to include as a part of the SB or not
+ */
+bool is_node_connected_to_layer(const RRGraphView& rr_graph, RRNodeId& node_to_check, const size_t& layer, const t_rr_type& rr_type){
+
+  // Loop over the out edges of the node, if any of the sinks are not on the same layer, return true
+  // else false
+  if (rr_type == t_rr_type::OPIN){
+
+    for (t_edge_size edge_out : rr_graph.node_out_edges(node_to_check)){
+      RRNodeId sink_node = rr_graph.edge_sink_node(node_to_check, edge_out);    
+
+      //sanity check
+      VTR_ASSERT(sink_node != RRNodeId::INVALID());
+      VTR_ASSERT(sink_node != node_to_check);
+
+      if (rr_graph.node_layer(sink_node) != layer){
+        return true;
+      }
+    }
+  }
+  if (rr_type == t_rr_type::IPIN){
+    for (RREdgeId edge_in: rr_graph.node_in_edges(node_to_check)){
+      RRNodeId source_node = rr_graph.edge_src_node(edge_in);
+
+      //sanity check
+      VTR_ASSERT(source_node != RRNodeId::INVALID());
+      VTR_ASSERT(source_node != node_to_check);
+
+      if (rr_graph.node_layer(source_node) != layer){
+        return true;
+      }
+    }
+  }
+
+  return false;
+
+}
+
 /** 
  * Helper function to get all opin nodes on other layers for 3D CB option
  * TODO: Only get OPIN nodes that are connected to this channel, not all OPIN nodes 
@@ -301,7 +340,10 @@ std::vector<RRNodeId> find_interlayer_rr_graph_grid_nodes(const RRGraphView& rr_
           /* Try to find the rr node */
           RRNodeId rr_node_index = rr_graph.node_lookup().find_node(ilayer, x, y, rr_type, pin, side);
           if (rr_node_index != RRNodeId::INVALID()) {
-              indices.push_back(rr_node_index);
+              // need to check if this node has any edges connected to this layer if not don't add it
+              if (is_node_connected_to_layer(rr_graph, rr_node_index, layer, rr_type)){
+                indices.push_back(rr_node_index);
+              }
           }
       }
     }
@@ -365,8 +407,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
                           const vtr::Point<size_t>& gsb_range,
                           const size_t& layer,
                           const vtr::Point<size_t>& gsb_coord,
-                          const bool& perimeter_cb, const bool& include_clock,
-                          const bool is_3d_cb) {
+                          const bool& perimeter_cb, const bool& include_clock) {
   /* Create an object to return */
   RRGSB rr_gsb;
 
@@ -388,6 +429,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
       rr_gsb.get_side_block_coordinate(side_manager.get_side());
     RRChan rr_chan;
     std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes(2);
+    std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
     enum e_side opin_grid_side[2] = {NUM_2D_SIDES, NUM_2D_SIDES};
     enum PORTS chan_dir_to_port_dir_mapping[2] = {
       OUT_PORT, IN_PORT}; /* 0: INC_DIRECTION => ?; 1: DEC_DIRECTION => ? */
@@ -422,17 +464,17 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer,
           gsb_coord.x() + 1, gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
 
-        if (true == is_3d_cb){
-          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
-          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
-            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
-          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
-            gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
-          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
-          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
-        }
+
+        // Check if there are any interlayer connections needed for 3D CB, need to check if these nodes are connected though since if the CB is 2D that is not the case
+        temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+          gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+        temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+          gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
+        temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+        temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+      
 
         break;
       case RIGHT: /* RIGHT = 1 */
@@ -465,18 +507,17 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
         temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer,
           gsb_coord.x() + 1, gsb_coord.y(), OPIN, opin_grid_side[1]);
-
-        if (true == is_3d_cb){
-          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
-          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
-            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
-          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
-            gsb_coord.y(), OPIN, opin_grid_side[1]);
-          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
-          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
-        }
+        
+          // Needed for 3D CB, adding the OPIN nodes from the other layers which will become inputs to the SBs
+        temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+          gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+        temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+          gsb_coord.y(), OPIN, opin_grid_side[1]);
+        temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+        temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+        
         break;
       case BOTTOM: /* BOTTOM = 2*/
         if (!perimeter_cb && gsb_coord.y() == 0) {
@@ -508,17 +549,16 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
 
-        if (true == is_3d_cb){
-          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
-          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
-            gsb_coord.y(), OPIN, opin_grid_side[0]);
-          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
-            gsb_coord.y(), OPIN, opin_grid_side[1]);
-          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
-          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
-        }
+        // Needed for 3D CB, adding the OPIN nodes from the other layers which will become inputs to the SBs
+        temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+          gsb_coord.y(), OPIN, opin_grid_side[0]);
+        temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+          gsb_coord.y(), OPIN, opin_grid_side[1]);
+        temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+        temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+
         break;
       case LEFT: /* LEFT = 3 */
         if (!perimeter_cb && gsb_coord.x() == 0) {
@@ -549,17 +589,16 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
         
-        if (true == is_3d_cb){
-          std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
-          temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
-            gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
-          temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
-            vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
-            gsb_coord.y(), OPIN, opin_grid_side[1]);
-          temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
-          temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
-        }
+        // Needed for 3D CB, adding the OPIN nodes from the other layers which will become inputs to the SBs
+        temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+          gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+        temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+          gsb_coord.y(), OPIN, opin_grid_side[1]);
+        temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+        temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+        
         break;
       default:
         VTR_LOG_ERROR("Invalid side index!\n");
@@ -628,6 +667,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
     size_t iy;
     enum e_side chan_side;
     std::vector<RRNodeId> temp_ipin_rr_nodes;
+    std::vector<RRNodeId> temp_ipin_rr_nodes_3d;
     enum e_side ipin_rr_node_grid_side;
 
     switch (side) {
@@ -685,11 +725,15 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
       vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN,
       ipin_rr_node_grid_side, include_clock);
 
-    if (is_3d_cb){
-      std::vector<RRNodeId> temp_ipin_rr_nodes_3d = find_interlayer_rr_graph_grid_nodes(
-        vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN, ipin_rr_node_grid_side, include_clock);
-      temp_ipin_rr_nodes.insert(temp_ipin_rr_nodes.end(), temp_ipin_rr_nodes_3d.begin(), temp_ipin_rr_nodes_3d.end());
-    }
+    // Needed for 3D CB, adding the IPIN nodes from the other layers which will become outputs to the CBs 
+    // TODO: Figure out how to make other CBs output this.
+    // IDEA: layer 1 channels -> layer 0 CB -> layer 0 CLB Input
+    // Currently not the case as to how it works. 
+
+    temp_ipin_rr_nodes_3d = find_interlayer_rr_graph_grid_nodes(
+      vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN, ipin_rr_node_grid_side, include_clock);
+    temp_ipin_rr_nodes.insert(temp_ipin_rr_nodes.end(), temp_ipin_rr_nodes_3d.begin(), temp_ipin_rr_nodes_3d.end());
+    
     /* Fill the ipin nodes of RRGSB */
     for (const RRNodeId& inode : temp_ipin_rr_nodes) {
       /* Skip those has no configurable outgoing, they should NOT appear in the
@@ -717,7 +761,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
   }
 
   /* Build OPIN node lists for connection blocks */
-  rr_gsb.build_cb_opin_nodes(vpr_device_ctx.rr_graph, is_3d_cb);
+  rr_gsb.build_cb_opin_nodes(vpr_device_ctx.rr_graph);
 
   return rr_gsb;
 }
@@ -800,8 +844,7 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
                           const vtr::Point<size_t>& gsb_range,
                           const size_t& layer,
                           const vtr::Point<size_t>& gsb_coord,
-                          const bool& perimeter_cb, const bool& include_clock,
-                          const bool is_3d_cb) {
+                          const bool& perimeter_cb, const bool& include_clock) {
   /* Create an object to return */
   RRGSB rr_gsb;
 
@@ -1191,7 +1234,7 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
   }
 
   /* Build OPIN node lists for connection blocks */
-  rr_gsb.build_cb_opin_nodes(vpr_device_ctx.rr_graph, is_3d_cb);
+  rr_gsb.build_cb_opin_nodes(vpr_device_ctx.rr_graph);
 
   return rr_gsb;
 }
@@ -1204,7 +1247,6 @@ void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
                             DeviceRRGSB& device_rr_gsb,
                             const bool& include_clock,
                             const bool& verbose_output,
-                            const bool is_3d_cb,
                             const bool is_3d_sb) {
   vtr::ScopedStartFinishTimer timer(
     "Build General Switch Block(GSB) annotation on top of routing resource "
@@ -1221,7 +1263,7 @@ void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
   device_rr_gsb.reserve(gsb_range, layers);
 
   VTR_LOGV(verbose_output, "Start annotation GSB up to [%lu][%lu][%lu]\n",
-           layers, gsb_range.x(), gsb_range.y());
+           layers - 1, gsb_range.x() - 1, gsb_range.y() - 1);
 
   size_t gsb_cnt = 0;
   /* For each switch block, determine the size of array */
@@ -1239,7 +1281,7 @@ void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
         {
           const RRGSB& rr_gsb = build_3d_rr_gsb(
             vpr_device_ctx, sub_gsb_range, ilayer, vtr::Point<size_t>(ix, iy),
-            vpr_device_ctx.arch->perimeter_cb, include_clock, is_3d_cb);
+            vpr_device_ctx.arch->perimeter_cb, include_clock);
 
           /* Add to device_rr_gsb */
           vtr::Point<size_t> gsb_coordinate = rr_gsb.get_sb_coordinate();
@@ -1256,7 +1298,7 @@ void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
         {
           const RRGSB& rr_gsb = build_rr_gsb(
             vpr_device_ctx, sub_gsb_range, ilayer, vtr::Point<size_t>(ix, iy),
-            vpr_device_ctx.arch->perimeter_cb, include_clock, is_3d_cb);
+            vpr_device_ctx.arch->perimeter_cb, include_clock);
 
           /* Add to device_rr_gsb */
           vtr::Point<size_t> gsb_coordinate = rr_gsb.get_sb_coordinate();
@@ -1283,8 +1325,7 @@ void annotate_device_rr_gsb(const DeviceContext& vpr_device_ctx,
  *******************************************************************/
 void sort_device_rr_gsb_chan_node_in_edges(const RRGraphView& rr_graph,
                                            DeviceRRGSB& device_rr_gsb,
-                                           const bool& verbose_output,
-                                           const bool is_3d_cb) {
+                                           const bool& verbose_output) {
   vtr::ScopedStartFinishTimer timer(
     "Sort incoming edges for each routing track output node of General Switch "
     "Block(GSB)");
@@ -1305,7 +1346,7 @@ void sort_device_rr_gsb_chan_node_in_edges(const RRGraphView& rr_graph,
       for (size_t iy = 0; iy < gsb_range.y(); ++iy) {
         vtr::Point<size_t> gsb_coordinate(ix, iy);
         RRGSB& rr_gsb = device_rr_gsb.get_mutable_gsb(gsb_coordinate, ilayer);
-        rr_gsb.sort_chan_node_in_edges(rr_graph, is_3d_cb);
+        rr_gsb.sort_chan_node_in_edges(rr_graph);
 
         gsb_cnt++; /* Update counter */
 

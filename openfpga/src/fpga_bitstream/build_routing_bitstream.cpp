@@ -164,7 +164,7 @@ static void build_switch_block_interc_bitstream(
   const RRGraphView& rr_graph, const AtomContext& atom_ctx,
   const VprDeviceAnnotation& device_annotation,
   const VprRoutingAnnotation& routing_annotation, const RRGSB& rr_gsb,
-  const e_side& chan_side, const size_t& chan_node_id, const bool& verbose, const bool is_3d_cb) {
+  const e_side& chan_side, const size_t& chan_node_id, const bool& verbose) {
   std::vector<RRNodeId> driver_rr_nodes;
 
   /* Get the node */
@@ -175,7 +175,7 @@ static void build_switch_block_interc_bitstream(
   if (false ==
       rr_gsb.is_sb_node_passing_wire(rr_graph, chan_side, chan_node_id)) {
     driver_rr_nodes = get_rr_gsb_chan_node_configurable_driver_nodes(
-      rr_graph, rr_gsb, chan_side, chan_node_id, is_3d_cb); // true is for is_3d_cb
+      rr_graph, rr_gsb, chan_side, chan_node_id); 
     /* Special: if there are zero-driver nodes. We skip here */
     if (0 == driver_rr_nodes.size()) {
       return;
@@ -221,7 +221,7 @@ static void build_switch_block_bitstream(
   const CircuitLibrary& circuit_lib, const MuxLibrary& mux_lib,
   const AtomContext& atom_ctx, const VprDeviceAnnotation& device_annotation,
   const VprRoutingAnnotation& routing_annotation, const RRGraphView& rr_graph,
-  const RRGSB& rr_gsb, const bool& verbose, const bool is_3d_cb) {
+  const RRGSB& rr_gsb, const bool& verbose) {
   /* Iterate over all the multiplexers */
   for (size_t side = 0; side < rr_gsb.get_num_sides(true); ++side) {
     SideManager side_manager(side);
@@ -241,7 +241,7 @@ static void build_switch_block_bitstream(
       build_switch_block_interc_bitstream(
         bitstream_manager, sb_config_block, module_manager, module_name_map,
         circuit_lib, mux_lib, rr_graph, atom_ctx, device_annotation,
-        routing_annotation, rr_gsb, side_manager.get_side(), itrack, verbose, is_3d_cb);
+        routing_annotation, rr_gsb, side_manager.get_side(), itrack, verbose);
     }
   }
 }
@@ -625,7 +625,7 @@ void build_routing_bitstream(
   const VprDeviceAnnotation& device_annotation,
   const VprRoutingAnnotation& routing_annotation, const RRGraphView& rr_graph,
   const DeviceRRGSB& device_rr_gsb, const bool& compact_routing_hierarchy,
-  const bool& verbose, const bool is_3d_cb) {
+  const bool& verbose) {
   /* Generate bitstream for each switch blocks
    * To organize the bitstream in blocks, we create a block for each switch
    * block and give names which are same as they are in top-level module
@@ -743,7 +743,7 @@ void build_routing_bitstream(
         build_switch_block_bitstream(
           bitstream_manager, sb_configurable_block, module_manager,
           module_name_map, circuit_lib, mux_lib, atom_ctx, device_annotation,
-          routing_annotation, rr_graph, rr_gsb, verbose, is_3d_cb);
+          routing_annotation, rr_graph, rr_gsb, verbose);
 
         VTR_LOGV(verbose, "\tDone\n");
       }

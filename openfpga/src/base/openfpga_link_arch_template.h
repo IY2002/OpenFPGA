@@ -51,16 +51,11 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
   CommandOptionId opt_sort_edge = cmd.option("sort_gsb_chan_node_in_edges");
   CommandOptionId opt_verbose = cmd.option("verbose");
   CommandOptionId opt_3d_sb = cmd.option("3d_sb");
-  CommandOptionId opt_3d_cb = cmd.option("3d_cb");
 
   const bool is_3d_sb = cmd_context.option_enable(cmd, opt_3d_sb);
-  const bool is_3d_cb = cmd_context.option_enable(cmd, opt_3d_cb);
 
   bool& is_3d_sb_ctx = openfpga_ctx.mutable_is_3d_sb();
   is_3d_sb_ctx = is_3d_sb;
-
-  bool& is_3d_cb_ctx = openfpga_ctx.mutable_is_3d_cb();
-  is_3d_cb_ctx = is_3d_cb;
 
   /* Build fast look-up between physical tile pin index and port information */
   build_physical_tile_pin2port_info(
@@ -152,12 +147,12 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
   annotate_device_rr_gsb(
     g_vpr_ctx.device(), openfpga_ctx.mutable_device_rr_gsb(),
     !openfpga_ctx.clock_arch().empty(), /* FIXME: consider to be more robust! */
-    cmd_context.option_enable(cmd, opt_verbose), openfpga_ctx.is_3d_cb(), openfpga_ctx.is_3d_sb());
+    cmd_context.option_enable(cmd, opt_verbose), openfpga_ctx.is_3d_sb());
 
   if (true == cmd_context.option_enable(cmd, opt_sort_edge)) {
     sort_device_rr_gsb_chan_node_in_edges(
       g_vpr_ctx.device().rr_graph, openfpga_ctx.mutable_device_rr_gsb(),
-      cmd_context.option_enable(cmd, opt_verbose), openfpga_ctx.is_3d_cb());
+      cmd_context.option_enable(cmd, opt_verbose));
     sort_device_rr_gsb_ipin_node_in_edges(
       g_vpr_ctx.device().rr_graph, openfpga_ctx.mutable_device_rr_gsb(),
       cmd_context.option_enable(cmd, opt_verbose));
@@ -165,7 +160,7 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
 
   /* Build multiplexer library */
   openfpga_ctx.mutable_mux_lib() = build_device_mux_library(
-    g_vpr_ctx.device(), const_cast<const T&>(openfpga_ctx), openfpga_ctx.is_3d_cb());
+    g_vpr_ctx.device(), const_cast<const T&>(openfpga_ctx));
 
   /* Build tile direct annotation */
   openfpga_ctx.mutable_tile_direct() = build_device_tile_direct(
