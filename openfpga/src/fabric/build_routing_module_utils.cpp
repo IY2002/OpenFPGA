@@ -126,8 +126,8 @@ std::string generate_cb_module_grid_port_name(
   int subtile_index = vpr_device_annotation.physical_tile_pin_subtile_index(
     physical_tile, pin_id);
   VTR_ASSERT(OPEN != subtile_index && subtile_index < physical_tile->capacity);
-  // prefix += std::string("_layer_") + std::to_string(rr_graph.node_layer(rr_node));
 
+  prefix += std::string("_layer_") + std::to_string(rr_graph.node_layer(rr_node));
 
   return prefix + std::string("_") +
          generate_routing_module_grid_port_name(
@@ -262,24 +262,34 @@ std::vector<ModulePinInfo> find_switch_block_module_input_ports(
 ModulePinInfo find_connection_block_module_chan_port(
   const ModuleManager& module_manager, const ModuleId& cb_module,
   const RRGraphView& rr_graph, const RRGSB& rr_gsb, const t_rr_type& cb_type,
-  const RRNodeId& chan_rr_node) {
+  const RRNodeId& chan_rr_node, const size_t& layer) {
   ModulePinInfo input_port_info;
   /* Generate the input port object */
   switch (rr_graph.node_type(chan_rr_node)) {
     case CHANX:
     case CHANY: {
-      /* Create port description for the routing track middle output */
-      int chan_node_track_id =
-        rr_gsb.get_cb_chan_node_index(cb_type, chan_rr_node);
-      /* Create a port description for the middle output */
-      std::string input_port_name = generate_cb_module_track_port_name(
-        cb_type, IN_PORT, 0 == chan_node_track_id % 2);
-      /* Must find a valid port id in the Switch Block module */
-      input_port_info.first =
-        module_manager.find_module_port(cb_module, input_port_name);
-      input_port_info.second = chan_node_track_id / 2;
-      VTR_ASSERT(true == module_manager.valid_module_port_id(
-                           cb_module, input_port_info.first));
+      if (rr_graph.node_layer(chan_rr_node) == layer) {
+        /* Create port description for the routing track middle output */
+        int chan_node_track_id =
+          rr_gsb.get_cb_chan_node_index(cb_type, chan_rr_node);
+        /* Create a port description for the middle output */
+        std::string input_port_name = generate_cb_module_track_port_name(
+          cb_type, IN_PORT, 0 == chan_node_track_id % 2);
+        /* Must find a valid port id in the Switch Block module */
+        input_port_info.first =
+          module_manager.find_module_port(cb_module, input_port_name);
+        input_port_info.second = chan_node_track_id / 2;
+        VTR_ASSERT(module_manager.valid_module_port_id(cb_module, input_port_info.first));
+      }
+      else {
+        // Check to see if it's in the CB input chan nodes (interlayer channel nodes that connect to this CB)
+        int cb_input_chan_node_index = rr_gsb.get_cb_input_chan_node_index(cb_type, chan_rr_node);
+        if (cb_input_chan_node_index != -1) {
+          input_port_info.first = module_manager.find_module_port(cb_module, generate_cb_interlayer_input_port_name(cb_type));
+          input_port_info.second = cb_input_chan_node_index;
+          VTR_ASSERT(true == module_manager.valid_module_port_id(cb_module, input_port_info.first));
+        }
+      }
       break;
     }
     default: /* OPIN, SOURCE, IPIN, SINK are invalid*/
@@ -362,7 +372,7 @@ std::vector<ModulePinInfo> find_connection_block_module_input_ports(
   const ModuleManager& module_manager, const ModuleId& cb_module,
   const DeviceGrid& grids, const VprDeviceAnnotation& vpr_device_annotation,
   const RRGraphView& rr_graph, const RRGSB& rr_gsb, const t_rr_type& cb_type,
-  const std::vector<RRNodeId>& input_rr_nodes) {
+  const std::vector<RRNodeId>& input_rr_nodes, const size_t& layer) {
   std::vector<ModulePinInfo> input_ports;
 
   for (auto input_rr_node : input_rr_nodes) {
@@ -374,7 +384,7 @@ std::vector<ModulePinInfo> find_connection_block_module_input_ports(
         0));
     } else {
       input_ports.push_back(find_connection_block_module_chan_port(
-        module_manager, cb_module, rr_graph, rr_gsb, cb_type, input_rr_node));
+        module_manager, cb_module, rr_graph, rr_gsb, cb_type, input_rr_node, layer));
     }
   }
 

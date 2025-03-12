@@ -614,7 +614,7 @@ static void build_connection_block_module_short_interc(
 
   /* Create port description for the routing track middle output */
   ModulePinInfo input_port_info = find_connection_block_module_chan_port(
-    module_manager, cb_module, rr_graph, rr_gsb, cb_type, driver_rr_node);
+    module_manager, cb_module, rr_graph, rr_gsb, cb_type, driver_rr_node, rr_graph.node_layer(driver_rr_node));
 
   /* Create port description for input pin of a CLB */
   ModulePortId ipin_port_id = find_connection_block_module_ipin_port(
@@ -662,14 +662,10 @@ static void build_connection_block_mux_module(
   
   std::vector<RRNodeId> driver_rr_nodes;
   for (const RREdgeId curr_edge : driver_rr_edges) {
-    // short src_layer = rr_graph.node_layer(rr_graph.edge_src_node(curr_edge));
-    // short sink_layer = rr_graph.node_layer(rr_graph.edge_sink_node(curr_edge));
-
-    // // Only adds nodes that are on the same layer as their sink nodes
-    // if(src_layer != sink_layer) continue;
-
     driver_rr_nodes.push_back(rr_graph.edge_src_node(curr_edge));
   }
+
+  size_t layer = rr_graph.node_layer(rr_graph.edge_sink_node(driver_rr_edges[0]));
 
   std::vector<RRSwitchId> driver_switches =
     get_rr_graph_driver_switches(rr_graph, cur_rr_node);
@@ -709,7 +705,7 @@ static void build_connection_block_mux_module(
   std::vector<ModulePinInfo> cb_input_port_ids =
     find_connection_block_module_input_ports(module_manager, cb_module, grids,
                                              device_annotation, rr_graph,
-                                             rr_gsb, cb_type, driver_rr_nodes);
+                                             rr_gsb, cb_type, driver_rr_nodes, layer);
 
   /* Link input bus port to Switch Block inputs */
   std::vector<CircuitPortId> mux_model_input_ports =
@@ -726,6 +722,7 @@ static void build_connection_block_mux_module(
   /* Check port size should match */
   VTR_ASSERT(mux_input_port.get_width() == cb_input_port_ids.size());
   for (size_t pin_id = 0; pin_id < cb_input_port_ids.size(); ++pin_id) {
+
     /* Use the exising net */
     ModuleNetId net = input_port_to_module_nets.at(cb_input_port_ids[pin_id]);
     /* No need to configure the net source since it is already done before */
@@ -1017,11 +1014,79 @@ static void build_connection_block_module(
         cb_module, module_port, ModuleManager::MODULE_OUTPUT_PORT);
       /* Add side to the port */
       module_manager.set_port_side(cb_module, module_port_id, cb_ipin_side);
+
+    }
+    // Build interlyaer CB input channels
+    
+  }
+
+    /* Create a cache (fast look up) for module nets whose source are input ports
+   */
+  std::map<ModulePinInfo, ModuleNetId> input_port_to_module_nets;
+
+  RRChan cb_input_chan = rr_gsb.cb_input_chan(cb_type);
+  size_t cb_input_channel_size = cb_input_chan.get_chan_width();
+
+  if (cb_input_channel_size > 0) {
+    std::string cb_input_port_name = generate_cb_interlayer_input_port_name(cb_type);
+
+    BasicPort cb_input_channel_port(cb_input_port_name, cb_input_channel_size);
+
+    ModulePortId cb_input_channel_port_id = module_manager.add_port(
+      cb_module, cb_input_channel_port, ModuleManager::MODULE_INPUT_PORT);
+
+    e_side cb_ipin_side;
+    if (cb_type == CHANX) {
+      cb_ipin_side = LEFT;
+    } else {
+      cb_ipin_side = BOTTOM;
+    }
+
+    module_manager.set_port_side(cb_module, cb_input_channel_port_id, cb_ipin_side);
+
+    for (size_t pin_id = 0; pin_id < cb_input_channel_port.pins().size(); ++pin_id) {
+      ModuleNetId net = create_module_source_pin_net(
+        module_manager, cb_module, cb_module, 0, cb_input_channel_port_id,
+        cb_input_channel_port.pins()[pin_id]);
+      
+      input_port_to_module_nets[ModulePinInfo(
+        cb_input_channel_port_id, cb_input_channel_port.pins()[pin_id])] = net;
     }
   }
 
+  RRChan cb_output_chan = rr_gsb.cb_output_chan(cb_type);
+
+  size_t cb_output_channel_size = cb_output_chan.get_chan_width();
+
+  // Needs to be outside of if statement for compilation. 
+  ModulePortId cb_output_channel_port_id;
+
+  if (cb_output_channel_size > 0) {
+    // IDK what the name should be tbh
+    std::string cb_output_port_name = generate_cb_interlayer_output_port_name(cb_type);
+
+    BasicPort cb_output_channel_port(cb_output_port_name, cb_output_channel_size);
+
+    cb_output_channel_port_id = module_manager.add_port(
+      cb_module, cb_output_channel_port, ModuleManager::MODULE_OUTPUT_PORT);
+
+      e_side cb_ipin_side;
+      if (cb_type == CHANX) {
+        cb_ipin_side = LEFT;
+      } else {
+        cb_ipin_side = BOTTOM;
+      }
+
+    module_manager.set_port_side(cb_module, cb_output_channel_port_id, cb_ipin_side);
+  }
+  
+  // add a port for the outputs also?
+
+
   /* Add the output pins of grids which are input ports of the connection block,
-   * if there is any */
+   * if there is any
+   * When is this ever needed? 
+  */
 
   std::vector<ModulePortId> opin_module_port_ids;
 
@@ -1051,9 +1116,10 @@ static void build_connection_block_module(
     }
   }
 
-  /* Create a cache (fast look up) for module nets whose source are input ports
-   */
-  std::map<ModulePinInfo, ModuleNetId> input_port_to_module_nets;
+  
+
+
+
 
   /* Generate short-wire connection for each routing track :
    * Each input port is short-wired to its output port
@@ -1100,11 +1166,37 @@ static void build_connection_block_module(
     input_port_to_module_nets[ModulePinInfo(opin_module_port_id, 0)] = net;
   }
 
+
+
+  for (size_t itrack = 0; itrack < cb_output_chan.get_chan_width(); ++itrack){
+
+
+    RRNodeId track_node = cb_output_chan.get_node(itrack);
+
+    // need to get the correct gsb
+    
+    // figure out what track and what track_num this node is part of
+    int node_index = rr_gsb.get_cb_chan_node_index(cb_type, track_node);
+
+    if (rr_graph.node_direction(track_node) == Direction::INC){
+      module_manager.add_module_net_sink(cb_module, input_port_to_module_nets.at(ModulePinInfo(chan_upper_input_port_id, node_index / 2)), cb_module, 0, cb_output_channel_port_id, itrack);
+    }
+
+    if (rr_graph.node_direction(track_node) == Direction::DEC){
+      module_manager.add_module_net_sink(cb_module, input_port_to_module_nets.at(ModulePinInfo(chan_lower_input_port_id, node_index / 2 )), cb_module, 0, cb_output_channel_port_id, itrack);
+    }
+
+    
+  }
+
   /* Add sub modules of routing multiplexers or direct interconnect*/
   for (size_t iside = 0; iside < cb_ipin_sides.size(); ++iside) {
     enum e_side cb_ipin_side = cb_ipin_sides[iside];
     for (size_t inode = 0; inode < rr_gsb.get_num_ipin_nodes(cb_ipin_side);
          ++inode) {
+
+      // account for the interlayer channels as well somehow
+
       build_connection_block_interc_modules(
         module_manager, cb_module, device_annotation, grids, rr_graph, rr_gsb,
         cb_type, circuit_lib, cb_ipin_side, inode, input_port_to_module_nets,

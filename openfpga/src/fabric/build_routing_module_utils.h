@@ -54,7 +54,7 @@ std::vector<ModulePinInfo> find_switch_block_module_input_ports(
 ModulePinInfo find_connection_block_module_chan_port(
   const ModuleManager& module_manager, const ModuleId& cb_module,
   const RRGraphView& rr_graph, const RRGSB& rr_gsb, const t_rr_type& cb_type,
-  const RRNodeId& chan_rr_node);
+  const RRNodeId& chan_rr_node, const size_t& layer);
 
 ModulePortId find_connection_block_module_ipin_port(
   const ModuleManager& module_manager, const ModuleId& cb_module,
@@ -72,7 +72,7 @@ std::vector<ModulePinInfo> find_connection_block_module_input_ports(
   const ModuleManager& module_manager, const ModuleId& cb_module,
   const DeviceGrid& grids, const VprDeviceAnnotation& vpr_device_annotation,
   const RRGraphView& rr_graph, const RRGSB& rr_gsb, const t_rr_type& cb_type,
-  const std::vector<RRNodeId>& input_rr_nodes);
+  const std::vector<RRNodeId>& input_rr_nodes, const size_t& layer);
 
 } /* end namespace openfpga */
 
