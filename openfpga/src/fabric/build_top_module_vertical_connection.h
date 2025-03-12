@@ -29,6 +29,12 @@ namespace openfpga{
         const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
         const RRGSB& rr_gsb, const vtr::NdMatrix<size_t, 3>& sb_instance_ids,
         const bool& compact_routing_hierarchy, const size_t& layer);
+
+    void add_top_module_nets_connect_cb_and_cb(
+        ModuleManager& module_manager, const ModuleId& top_module,
+        const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
+        const RRGSB& rr_gsb, const vtr::NdMatrix<size_t, 3>& cb_instance_ids,
+        const bool& compact_routing_hierarchy, const size_t& layer, const t_rr_type& cb_type);
 }
 
 #endif

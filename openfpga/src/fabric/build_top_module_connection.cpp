@@ -183,8 +183,6 @@ static void add_top_module_nets_connect_grids_and_sb(
         grids, vpr_device_annotation, rr_graph,
         module_sb.get_opin_node(side_manager.get_side(), inode));
 
-      VTR_LOG("%s -> %s\n", src_grid_port_name.c_str(), sink_sb_port_name.c_str());
-
       ModulePortId sink_sb_port_id =
         module_manager.find_module_port(sink_sb_module, sink_sb_port_name);
 
@@ -1029,6 +1027,14 @@ void add_top_module_nets_connect_grids_and_gsbs(
         if (num_layers > 1){
           add_top_module_nets_connect_sb_and_sb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
             sb_instance_ids, compact_routing_hierarchy, ilayer);
+
+          // Connect CBs to CBs
+          add_top_module_nets_connect_cb_and_cb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
+            cb_instance_ids.at(CHANX), compact_routing_hierarchy, ilayer, CHANX);
+          
+          add_top_module_nets_connect_cb_and_cb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
+            cb_instance_ids.at(CHANY), compact_routing_hierarchy, ilayer, CHANY);
+
         }
       }
     }
@@ -1390,7 +1396,7 @@ static int build_top_module_global_net_from_clock_arch_tree(
         cb_instance_ids.at(entry_track_type)[layer][entry_point.x()][entry_point.y()];
       ModulePinInfo des_pin_info = find_connection_block_module_chan_port(
         module_manager, cb_module, rr_graph, rr_gsb, entry_track_type,
-        entry_rr_node);
+        entry_rr_node, layer);
 
       /* Configure the net sink */
       BasicPort sink_port =

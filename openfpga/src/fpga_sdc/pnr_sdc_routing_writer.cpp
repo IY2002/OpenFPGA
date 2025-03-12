@@ -323,7 +323,7 @@ static void print_pnr_sdc_constrain_cb_mux_timing(
   std::vector<ModulePinInfo> module_input_ports =
     find_connection_block_module_input_ports(module_manager, cb_module, grids,
                                              device_annotation, rr_graph,
-                                             rr_gsb, cb_type, input_rr_nodes);
+                                             rr_gsb, cb_type, input_rr_nodes, rr_graph.node_layer(output_rr_node));
 
   /* Find timing constraints for each path (edge) */
   std::map<ModulePinInfo, float> switch_delays;

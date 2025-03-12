@@ -265,6 +265,11 @@ static void build_connection_block_mux_bitstream(
   /* Find drive_rr_nodes*/
   std::vector<RREdgeId> driver_rr_edges =
     rr_gsb.get_ipin_node_in_edges(rr_graph, cb_ipin_side, ipin_index);
+
+  std::vector<RREdgeId> driver_rr_3d_edges =
+    rr_gsb.get_ipin_node_in_3d_edges(rr_graph, cb_ipin_side, ipin_index);
+  driver_rr_edges.insert(driver_rr_edges.end(), driver_rr_3d_edges.begin(), driver_rr_3d_edges.end());
+
   size_t datapath_mux_size = driver_rr_edges.size();
 
   /* Cache input and output nets */

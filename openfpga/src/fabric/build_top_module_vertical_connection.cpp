@@ -259,4 +259,139 @@ namespace openfpga {
             }
 
     }
+
+    void add_top_module_nets_connect_cb_and_cb(
+        ModuleManager& module_manager, const ModuleId& top_module,
+        const RRGraphView& rr_graph, const DeviceRRGSB& device_rr_gsb,
+        const RRGSB& rr_gsb, const vtr::NdMatrix<size_t, 3>& cb_instance_ids,
+        const bool& compact_routing_hierarchy, const size_t& layer, const t_rr_type& cb_type) {
+    
+            /**
+             * Goal of function is to connect the vertical tracks of the connection blocks in the top module
+             * These tracks only exists if the inputs of grid locations are 3D
+             * TODO: Make function work with more than 2 layers
+             */
+
+            /* Skip those Connection blocks that do not exist */
+            if (false == rr_gsb.is_cb_exist(cb_type)) {
+                return;
+            }
+
+            /* Skip if the cb does not contain any configuration bits! */
+            if (true == connection_block_contain_only_routing_tracks(rr_gsb, cb_type)) {
+                return;
+            }
+
+            RRChan cb_input_chan = rr_gsb.cb_input_chan(cb_type);
+
+            size_t cb_input_chan_width = cb_input_chan.get_chan_width();
+
+            if (cb_input_chan_width == 0){
+                return;
+            }
+
+            /* We could have two different coordinators, one is the instance, the other is
+            * the module */
+            vtr::Point<size_t> instance_cb_coordinate(rr_gsb.get_cb_x(cb_type),
+            rr_gsb.get_cb_y(cb_type));
+
+            vtr::Point<size_t> module_gsb_coordinate(rr_gsb.get_x(), rr_gsb.get_y());
+            size_t module_gsb_layer = layer;
+
+            /* If we use compact routing hierarchy, we should find the unique module of
+            * CB, which is added to the top module */
+            if (true == compact_routing_hierarchy) {
+                vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
+                const RRGSB& unique_mirror =
+                device_rr_gsb.get_cb_unique_module(cb_type, gsb_coord, module_gsb_layer);
+                module_gsb_coordinate.set_x(unique_mirror.get_x());
+                module_gsb_coordinate.set_y(unique_mirror.get_y());
+                module_gsb_layer = device_rr_gsb.get_cb_unique_module_layer(
+                cb_type, device_rr_gsb.get_cb_unique_module_index(cb_type, gsb_coord,
+                            module_gsb_layer));
+            }
+
+            /* This is the source cb that is added to the top module */
+            const RRGSB& module_cb = device_rr_gsb.get_gsb(module_gsb_coordinate, module_gsb_layer);
+            vtr::Point<size_t> module_cb_coordinate(module_cb.get_cb_x(cb_type),
+                                                    module_cb.get_cb_y(cb_type));
+
+            /* Collect source-related information */
+            std::string cur_cb_module_name =
+                generate_connection_block_module_name(cb_type, module_cb_coordinate, module_gsb_layer);
+            ModuleId cur_cb_module = module_manager.find_module(cur_cb_module_name);
+
+            VTR_ASSERT(true == module_manager.valid_module_id(cur_cb_module));
+            /* Instance id should follow the instance cb coordinate */
+            size_t cur_cb_instance =
+              cb_instance_ids[layer][instance_cb_coordinate.x()][instance_cb_coordinate.y()];
+
+            size_t sink_layer = 0;
+
+            if (layer == 0) sink_layer = 1;
+             
+                
+            /* We could have two different coordinators, one is the instance, the other is
+            * the module */
+           
+
+            vtr::Point<size_t> sink_module_gsb_coordinate(rr_gsb.get_x(), rr_gsb.get_y());
+            size_t sink_module_gsb_layer = sink_layer;
+
+            /* If we use compact routing hierarchy, we should find the unique module of
+            * CB, which is added to the top module */
+            if (true == compact_routing_hierarchy) {
+                vtr::Point<size_t> gsb_coord(rr_gsb.get_x(), rr_gsb.get_y());
+                const RRGSB& unique_mirror =
+                device_rr_gsb.get_cb_unique_module(cb_type, gsb_coord, sink_module_gsb_layer);
+                sink_module_gsb_coordinate.set_x(unique_mirror.get_x());
+                sink_module_gsb_coordinate.set_y(unique_mirror.get_y());
+                sink_module_gsb_layer = device_rr_gsb.get_cb_unique_module_layer(
+                cb_type, device_rr_gsb.get_cb_unique_module_index(cb_type, gsb_coord,
+                            sink_module_gsb_layer));
+            }
+
+            /* This is the source cb that is added to the top module */
+            const RRGSB& sink_module_cb = device_rr_gsb.get_gsb(sink_module_gsb_coordinate, sink_module_gsb_layer);
+            vtr::Point<size_t> sink_module_cb_coordinate(sink_module_cb.get_cb_x(cb_type),
+                                                    sink_module_cb.get_cb_y(cb_type));
+
+            /* Collect source-related information */
+            std::string sink_cb_module_name =
+                generate_connection_block_module_name(cb_type, sink_module_cb_coordinate, sink_module_gsb_layer);
+            ModuleId sink_cb_module = module_manager.find_module(sink_cb_module_name);
+
+            VTR_ASSERT(true == module_manager.valid_module_id(sink_cb_module));
+            /* Instance id should follow the instance cb coordinate */
+            size_t sink_cb_instance =
+                cb_instance_ids[sink_layer][instance_cb_coordinate.x()][instance_cb_coordinate.y()];
+                
+            std::string sink_port_name = generate_cb_interlayer_input_port_name(cb_type);
+
+            std::string src_port_name = generate_cb_interlayer_output_port_name(cb_type);
+
+            ModulePortId sink_port_id = module_manager.find_module_port(sink_cb_module, sink_port_name);
+
+            VTR_ASSERT(true == module_manager.valid_module_port_id(sink_cb_module, sink_port_id));
+
+            BasicPort sink_port = module_manager.module_port(sink_cb_module, sink_port_id);
+
+            ModulePortId src_port_id = module_manager.find_module_port(cur_cb_module, src_port_name);
+
+            VTR_ASSERT(true == module_manager.valid_module_port_id(cur_cb_module, src_port_id));
+
+            BasicPort src_port = module_manager.module_port(cur_cb_module, src_port_id);
+
+            // connect the source CB to the sink CB
+            for (size_t itrack = 0; itrack < src_port.get_width(); ++itrack) {
+                ModuleNetId net =
+                    create_module_source_pin_net(module_manager, top_module, cur_cb_module,
+                                                cur_cb_instance, src_port_id, itrack);
+                module_manager.add_module_net_sink(top_module, net, sink_cb_module,
+                                                sink_cb_instance, sink_port_id, itrack);
+            }
+    
+            // ASSUMPTION BEING MADE:
+            // 1. There are only 2 layers in the grid  
+        }
 }
