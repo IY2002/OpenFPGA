@@ -173,6 +173,10 @@ std::string generate_routing_module_grid_port_name(const size_t& width,
                                                    const e_side& side,
                                                    const BasicPort& pin_info);
 
+std::string generate_cb_interlayer_input_port_name(const t_rr_type& chan_type);
+
+std::string generate_cb_interlayer_output_port_name(const t_rr_type& chan_type);
+
 std::string generate_reserved_sram_port_name(
   const e_circuit_model_port_type& port_type);
 

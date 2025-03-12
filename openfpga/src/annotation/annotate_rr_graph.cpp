@@ -24,7 +24,7 @@ RRNodeId get_src_node(const RRGraphView& rr_graph, RRNodeId node_id){
   for (auto edge : rr_graph.node_in_edges(node_id)){
     if (rr_graph.edge_sink_node((RREdgeId) edge) == node_id) return rr_graph.edge_src_node((RREdgeId) edge);
   }
-  return (RRNodeId)rr_graph.num_nodes();
+  return RRNodeId::INVALID();
 }
 
 // Function to get the sink node for a vertical channel node
@@ -32,7 +32,7 @@ RRNodeId get_sink_node(const RRGraphView& rr_graph, RRNodeId node_id){
   for (auto edge : rr_graph.edge_range(node_id)){
     if (rr_graph.edge_src_node((RREdgeId) edge) == node_id) return rr_graph.edge_sink_node((RREdgeId) edge);
   }
-  return (RRNodeId) rr_graph.num_nodes();
+  return RRNodeId::INVALID();
 }
 
 /* Build a RRChan Object with the given channel type and coorindators */
@@ -51,41 +51,6 @@ static RRChan build_one_rr_chan(const DeviceContext& vpr_device_ctx,
     vpr_device_ctx.rr_graph, layer, chan_coord.x(), chan_coord.y(), chan_type);
   /* Fill the rr_chan */
   for (const RRNodeId& chan_rr_node : chan_rr_nodes) {
-
-    // // input to layer, so the relevant node to determine location is this node's sink
-    // if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_DEC || vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_INC){ 
-    //   RRNodeId sink_node = get_sink_node(vpr_device_ctx.rr_graph, chan_rr_node);
-    //   // if x and y coords are same as sb and the chan is inc then its an input to the SB
-    //   if (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y()){
-    //     if (vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC){
-    //       continue;
-    //     }
-    //   }
-    //   // if the x or y coord is off by 1 and the chan is dec then its an input to the SB
-    //   else if ((vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y())
-    //           || (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() + 1)){
-    //     if (vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::DEC){
-    //       continue;
-    //     }
-    //   }
-    // }
-    // // output of layer, so the relevant node to determine location is this node's source
-    // else if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_INC || vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_DEC){
-    //   RRNodeId source_node = get_src_node(vpr_device_ctx.rr_graph, chan_rr_node);
-    //   // if x and y coords are same as sb and the chan is dec then its an output of the SB
-    //   if (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y()){
-    //     if (vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC){
-    //       continue;
-    //     }
-    //   }
-    //   // if the x or y coord is off by 1 and the chan is inc then its an output of the SB
-    //   else if ((vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y())
-    //           || (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() + 1)){
-    //     if (vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::INC){
-    //       continue;
-    //     }
-    //   }
-    // }
     
     // do not include vertical nodes in channel
     if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_DEC || vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_INC ||
@@ -152,6 +117,7 @@ static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
           // input of layer
           if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_INC){ 
             RRNodeId sink_node = get_sink_node(vpr_device_ctx.rr_graph, chan_rr_node);
+            VTR_ASSERT(sink_node != RRNodeId::INVALID());
             // if x and y coords are same as sb and the chan is inc then its an input to the SB
             if (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::DEC){
                 // make sure the node is not already in the vector, we don't want repeat nodes
@@ -170,6 +136,7 @@ static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
           // output of layer
           else if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_DEC){
             RRNodeId source_node = get_src_node(vpr_device_ctx.rr_graph, chan_rr_node);
+            VTR_ASSERT(source_node != RRNodeId::INVALID());
             // if x and y coords are same as sb and the chan is dec then its an output of the SB
             if (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::INC){
                 // make sure the node is not already in the vector, we don't want repeat nodes
@@ -193,6 +160,7 @@ static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
           // input to layer, so the relevant node to determine location is this node's sink
           if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_DEC){ 
             RRNodeId sink_node = get_sink_node(vpr_device_ctx.rr_graph, chan_rr_node);
+            VTR_ASSERT(sink_node != RRNodeId::INVALID());
             // if x and y coords are same as sb and the chan is inc then its an input to the SB
             if (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::DEC){
                 // make sure the node is not already in the vector, we don't want repeat nodes
@@ -211,6 +179,7 @@ static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
           // output of layer, so the relevant node to determine location is this node's source
           else if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_INC){
             RRNodeId source_node = get_src_node(vpr_device_ctx.rr_graph, chan_rr_node);
+            VTR_ASSERT(source_node != RRNodeId::INVALID());
             // if x and y coords are same as sb and the chan is dec then its an output of the SB
             if (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::INC){
               // make sure the node is not already in the vector, we don't want repeat nodes
@@ -247,6 +216,16 @@ static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
   }
   output_rr_nodes.clear();
   input_rr_nodes.clear();
+  return rr_chan;
+}
+
+static RRChan build_chan_from_nodes(const DeviceContext& vpr_device_ctx, const std::vector<RRNodeId>& rr_nodes, const t_rr_type& chan_type){
+  RRChan rr_chan;
+  rr_chan.set_type(chan_type);
+  for (const RRNodeId& chan_rr_node : rr_nodes) {
+    rr_chan.add_node(vpr_device_ctx.rr_graph, chan_rr_node,
+                     vpr_device_ctx.rr_graph.node_segment(chan_rr_node));
+  }
   return rr_chan;
 }
 
@@ -351,6 +330,82 @@ std::vector<RRNodeId> find_interlayer_rr_graph_grid_nodes(const RRGraphView& rr_
     return indices;
 }
 
+/** 
+ * Helper function to get all channel nodes on other layers connected to IPINs on this layer for 3D CB option
+ */ 
+std::vector<RRNodeId> find_interlayer_chans_connected_to_input(const RRGraphView& rr_graph, const DeviceGrid& device_grid, const size_t& layer, const int&x, const int& y, const t_rr_type& rr_type, const e_side& side){
+  size_t num_layers = device_grid.get_num_layers();
+  std::vector<RRNodeId> indices;
+
+  VTR_ASSERT(rr_type == IPIN);
+
+  /* Ensure that (x, y) is a valid location in grids */
+  if (size_t(x) > device_grid.width() - 1 || size_t(y) > device_grid.height() - 1) {
+    return indices;
+  }
+
+  t_physical_tile_loc tile_loc(x, y, layer);
+  int width_offset = device_grid.get_width_offset(tile_loc);
+  int height_offset = device_grid.get_height_offset(tile_loc);
+
+  /* Ensure we have a valid side */
+  VTR_ASSERT(side != NUM_2D_SIDES);
+
+  for (int pin = 0; pin < device_grid.get_physical_type(tile_loc)->num_pins; ++pin) {
+      /* Skip those pins have been ignored during rr_graph build-up */
+      if (true == device_grid.get_physical_type(tile_loc)->is_ignored_pin[pin]) {
+          continue;
+      }
+      
+      if (false == device_grid.get_physical_type(tile_loc)->pinloc[width_offset][height_offset][side][pin]) {
+          /* Not the pin on this side, we skip */
+          continue;
+      }
+
+      /* Get RR Node and find the channels connected to it that are interlayer */
+      RRNodeId rr_node_index = rr_graph.node_lookup().find_node(layer, x, y, rr_type, pin, side);
+      if (rr_node_index != RRNodeId::INVALID()) {
+          // check the input edges of this node and figure out which ones are not on the same layer
+          for (RREdgeId edge_in: rr_graph.node_in_edges(rr_node_index)){
+            RRNodeId source_node = rr_graph.edge_src_node(edge_in);
+            VTR_ASSERT(rr_graph.node_type(source_node) == CHANX || rr_graph.node_type(source_node) == CHANY);
+            if (rr_graph.node_layer(source_node) != layer && indices.end() == std::find(indices.begin(), indices.end(), source_node)){
+              indices.push_back(source_node);
+            }
+          }
+      }
+  }
+
+
+  return indices;
+}
+
+/** 
+ * Helper function to get all channel nodes on this layer that are connected to IPINs on other layers for 3D CB option
+ */ 
+std::vector<RRNodeId> find_interlayer_nodes_connected_to_other_layers(const RRGraphView& rr_graph, const DeviceGrid& device_grid, const size_t& layer, const RRChan& rr_chan){
+
+  std::vector<RRNodeId> indices;
+
+  for (size_t itrack = 0; itrack < rr_chan.get_chan_width(); ++itrack){
+    RRNodeId rr_node = rr_chan.get_node(itrack);
+    
+    for (auto& edge: rr_graph.node_out_edges(rr_node)){
+      RRNodeId sink_node = rr_graph.edge_sink_node(rr_node, edge);
+
+      if (rr_graph.node_type(sink_node) != IPIN) continue;
+
+      if (rr_graph.node_layer(sink_node) != layer && indices.end() == std::find(indices.begin(), indices.end(), rr_node)){
+        indices.push_back(rr_node);
+      }
+    }
+  }
+
+  return indices;
+}
+
+
+
 /* Build a General Switch Block (GSB)
  * which includes:
  * [I] A Switch Box subckt consists of following ports:
@@ -420,6 +475,9 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
   /* Basic information*/
   rr_gsb.init_num_sides(4); /* Fixed number of sides */
 
+  std::vector<RRNodeId> interlayer_cb_output_x;
+  std::vector<RRNodeId> interlayer_cb_output_y;
+
   /* Find all rr_nodes of channels */
   /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
@@ -430,6 +488,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
     RRChan rr_chan;
     std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes(2);
     std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
+    std::vector<RRNodeId> temp_cb_output_nodes;
     enum e_side opin_grid_side[2] = {NUM_2D_SIDES, NUM_2D_SIDES};
     enum PORTS chan_dir_to_port_dir_mapping[2] = {
       OUT_PORT, IN_PORT}; /* 0: INC_DIRECTION => ?; 1: DEC_DIRECTION => ? */
@@ -549,7 +608,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
 
-        // Needed for 3D CB, adding the OPIN nodes from the other layers which will become inputs to the SBs
+        // Needed for 3D CB Outputs, adding the OPIN nodes from the other layers which will become inputs to the SBs
         temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
           gsb_coord.y(), OPIN, opin_grid_side[0]);
@@ -657,7 +716,40 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
     temp_opin_rr_nodes[1].clear();
     opin_grid_side[0] = NUM_2D_SIDES;
     opin_grid_side[1] = NUM_2D_SIDES;
+
+
+    if (side == LEFT || side == BOTTOM){
+      temp_cb_output_nodes = find_interlayer_nodes_connected_to_other_layers(
+        vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, rr_chan);
+
+      // Insert found nodes into either the x or y interlayer CB outputs, ensuring no duplicates
+      if (side == LEFT){
+        for (auto& node: temp_cb_output_nodes){
+          if (interlayer_cb_output_x.end() == std::find(interlayer_cb_output_x.begin(), interlayer_cb_output_x.end(), node)){
+            interlayer_cb_output_x.push_back(node);
+          }
+        }
+      }
+      else{
+        for (auto& node: temp_cb_output_nodes){
+          if (interlayer_cb_output_y.end() == std::find(interlayer_cb_output_y.begin(), interlayer_cb_output_y.end(), node)){
+            interlayer_cb_output_y.push_back(node);
+          }
+        }
+      }
   }
+
+  }
+
+  // Add the interlayer channels to the GSB
+  RRChan interlayer_cb_output_x_chan = build_chan_from_nodes(vpr_device_ctx, interlayer_cb_output_x, CHANX);
+  RRChan interlayer_cb_output_y_chan = build_chan_from_nodes(vpr_device_ctx, interlayer_cb_output_y, CHANY);
+
+  rr_gsb.add_cb_output_chan(CHANX, interlayer_cb_output_x_chan);
+  rr_gsb.add_cb_output_chan(CHANY, interlayer_cb_output_y_chan);
+
+  std::vector<RRNodeId> interlayer_chans_cb_input_x;
+  std::vector<RRNodeId> interlayer_chans_cb_input_y;
 
   /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
@@ -667,7 +759,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
     size_t iy;
     enum e_side chan_side;
     std::vector<RRNodeId> temp_ipin_rr_nodes;
-    std::vector<RRNodeId> temp_ipin_rr_nodes_3d;
+    std::vector<RRNodeId> temp_interlayer_chans_cb_input;
     enum e_side ipin_rr_node_grid_side;
 
     switch (side) {
@@ -730,10 +822,39 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
     // IDEA: layer 1 channels -> layer 0 CB -> layer 0 CLB Input
     // Currently not the case as to how it works. 
 
-    temp_ipin_rr_nodes_3d = find_interlayer_rr_graph_grid_nodes(
-      vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN, ipin_rr_node_grid_side, include_clock);
-    temp_ipin_rr_nodes.insert(temp_ipin_rr_nodes.end(), temp_ipin_rr_nodes_3d.begin(), temp_ipin_rr_nodes_3d.end());
     
+    // This retrieves all the channel nodes on this layer that connect to IPINs on other layers and adds said IPINs as outputs of the CB
+    // Instead I want to do kinda the opposite, find all the channels on other layers that connect to this IPIN and add them as inputs to the CB
+    // Need to be sure that these nodes only enter here to be added as outputs of the CB to IPINs not to other channels, that's the SB's job 
+
+
+    temp_interlayer_chans_cb_input = find_interlayer_chans_connected_to_input(
+      vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN, ipin_rr_node_grid_side);
+
+    // Insert found nodes into either the x or y interlayer channels, ensuring no duplicates
+    if (ipin_rr_node_grid_side == TOP || ipin_rr_node_grid_side == BOTTOM){
+      for (auto& node: temp_interlayer_chans_cb_input){
+        if (interlayer_chans_cb_input_x.end() == std::find(interlayer_chans_cb_input_x.begin(), interlayer_chans_cb_input_x.end(), node)){
+          interlayer_chans_cb_input_x.push_back(node);
+        }
+      }
+    }
+    else{
+      for (auto& node: temp_interlayer_chans_cb_input){
+        if (interlayer_chans_cb_input_y.end() == std::find(interlayer_chans_cb_input_y.begin(), interlayer_chans_cb_input_y.end(), node)){
+          interlayer_chans_cb_input_y.push_back(node);
+        }
+      }
+    }
+
+    
+
+    // Instead of adding them as an output of the CB, need to send the channels that connect to that CB to the corresponding layer's CB as an input
+    // Maybe the way to do this is to look at the interlayer channels that are connected to the IPINs and add them to the CBs that are on the same layer?
+    // Admittedly this is a bit dumnb (too many vertical connections) but this is model A aka the naive model
+    // The grand idea is that the CB corresponding to this input, muxes everything into 1 signal that is sent down to this CB and then sent as input (less vertical connections)
+    // implementation of this idea is not so trivial though hence why for now we are doing this
+
     /* Fill the ipin nodes of RRGSB */
     for (const RRNodeId& inode : temp_ipin_rr_nodes) {
       /* Skip those has no configurable outgoing, they should NOT appear in the
@@ -759,6 +880,19 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
     /* Clear the temp data */
     temp_ipin_rr_nodes.clear();
   }
+
+  vtr::Point<size_t> cb_coord(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
+
+  RRChan interlayer_cb_input_x = build_chan_from_nodes(vpr_device_ctx, interlayer_chans_cb_input_x, CHANX);
+
+  // Left, Right for CBX
+  rr_gsb.add_cb_input_chan(CHANX, interlayer_cb_input_x);
+
+
+  RRChan interlayer_cb_input_y = build_chan_from_nodes(vpr_device_ctx, interlayer_chans_cb_input_y, CHANY);
+
+  // Top, Bottom for CBY
+  rr_gsb.add_cb_input_chan(CHANY, interlayer_cb_input_y);
 
   /* Build OPIN node lists for connection blocks */
   rr_gsb.build_cb_opin_nodes(vpr_device_ctx.rr_graph);
@@ -1697,6 +1831,9 @@ void annotate_interlayer_channels(RRGraphBuilder& rr_graph_builder, const RRGrap
 
       RRNodeId src_node = get_src_node(rr_graph, node_id);
       RRNodeId sink_node = get_sink_node(rr_graph, node_id);
+
+      VTR_ASSERT(src_node != RRNodeId::INVALID());
+      VTR_ASSERT(sink_node != RRNodeId::INVALID());
 
       size_t node_layer = rr_graph.node_layer(node_id);
       size_t src_layer = rr_graph.node_layer(src_node);

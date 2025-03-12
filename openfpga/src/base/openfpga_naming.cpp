@@ -499,6 +499,41 @@ std::string generate_cb_module_track_port_name(const t_rr_type& chan_type,
 }
 
 /*********************************************************************
+ * Generate the port name for 3D CB inputs
+ *********************************************************************/
+std::string generate_cb_interlayer_input_port_name(const t_rr_type& chan_type) {
+  std::string return_string("interlayer_channels_input");
+  if (CHANX == chan_type) {
+    return_string += "_x";
+  } else if (CHANY == chan_type) {
+    return_string += "_y" ;
+  } else {
+    VTR_LOG_ERROR("Invalid type of connection block!\n");
+    exit(1);
+  }
+
+  return return_string;
+}
+
+
+/*********************************************************************
+ * Generate the port name for 3D CB output
+ *********************************************************************/
+std::string generate_cb_interlayer_output_port_name(const t_rr_type& chan_type) {
+  std::string return_string("interlayer_channels_output");
+  if (CHANX == chan_type) {
+    return_string += "_x";
+  } else if (CHANY == chan_type) {
+    return_string += "_y" ;
+  } else {
+    VTR_LOG_ERROR("Invalid type of connection block!\n");
+    exit(1);
+  }
+
+  return return_string;
+}
+
+/*********************************************************************
  * Generate the middle output port name for a routing track
  * with a given coordinate
  *********************************************************************/
