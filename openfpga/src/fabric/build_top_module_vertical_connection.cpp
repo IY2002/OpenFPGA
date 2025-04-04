@@ -50,6 +50,8 @@ namespace openfpga {
              * the nets for all channels are added to the top module eventually
              */
             
+            VTR_LOG("Adding interlayer SB connections for SB[%lu][%lu][%lu] on layer %lu\n", rr_gsb.get_sb_x(), rr_gsb.get_sb_y(), layer, layer);
+
             vtr::Point<size_t> sb_coordinate = rr_gsb.get_sb_coordinate();
 
             if (true == compact_routing_hierarchy){
@@ -266,6 +268,8 @@ namespace openfpga {
         const RRGSB& rr_gsb, const vtr::NdMatrix<size_t, 3>& cb_instance_ids,
         const bool& compact_routing_hierarchy, const size_t& layer, const t_rr_type& cb_type) {
     
+            VTR_LOG("Adding interlayer CB connections for CB[%lu][%lu][%lu] on layer %lu\n", rr_gsb.get_cb_x(cb_type), rr_gsb.get_cb_y(cb_type), layer, layer);
+
             /**
              * Goal of function is to connect the vertical tracks of the connection blocks in the top module
              * These tracks only exists if the inputs of grid locations are 3D
@@ -382,11 +386,19 @@ namespace openfpga {
 
             BasicPort src_port = module_manager.module_port(cur_cb_module, src_port_id);
 
+            if (sink_port.get_width() != src_port.get_width()){
+                VTR_LOG("The source port %s in module %s has a different width than the sink port %s in module %s", src_port_name.c_str(), cur_cb_module_name.c_str(), sink_port_name.c_str(), sink_cb_module_name.c_str());
+                VTR_LOG("Source port width: %lu, Sink port width: %lu", src_port.get_width(), sink_port.get_width());
+            }
+
             // connect the source CB to the sink CB
             for (size_t itrack = 0; itrack < src_port.get_width(); ++itrack) {
                 ModuleNetId net =
                     create_module_source_pin_net(module_manager, top_module, cur_cb_module,
                                                 cur_cb_instance, src_port_id, itrack);
+
+               
+
                 module_manager.add_module_net_sink(top_module, net, sink_cb_module,
                                                 sink_cb_instance, sink_port_id, itrack);
             }

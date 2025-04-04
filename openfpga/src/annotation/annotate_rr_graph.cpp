@@ -109,44 +109,72 @@ static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
       /* Fill the rr_chan */
       for (const RRNodeId& chan_rr_node : chan_rr_nodes) {
         // only want vertical nodes
-        if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::INC || vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::DEC){
+
+        Direction chan_node_direction = vpr_device_ctx.rr_graph.node_direction(chan_rr_node);
+
+        // Only care about vertical channels (ABOVE INC, ABOVE DEC, UNDER INC, UNDER DEC)
+        if (chan_node_direction == Direction::INC || chan_node_direction == Direction::DEC){
+          continue;
+        }
+
+        short chan_node_xlow = vpr_device_ctx.rr_graph.node_xlow(chan_rr_node);
+        short chan_node_ylow = vpr_device_ctx.rr_graph.node_ylow(chan_rr_node);
+
+        // Interlayer channels only exist if the sb coords are the same as its coords
+        if (chan_node_xlow != sb_coord.x() || chan_node_ylow != sb_coord.y()){
           continue;
         }
 
         if (side == e_side::UNDER){
           // input of layer
-          if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_INC){ 
+          if (chan_node_direction == Direction::UNDER_INC){ 
             RRNodeId sink_node = get_sink_node(vpr_device_ctx.rr_graph, chan_rr_node);
             VTR_ASSERT(sink_node != RRNodeId::INVALID());
+
+            short node_xlow = vpr_device_ctx.rr_graph.node_xlow(sink_node);
+            short node_xhigh = vpr_device_ctx.rr_graph.node_xhigh(sink_node);
+            short node_ylow = vpr_device_ctx.rr_graph.node_ylow(sink_node);
+            short node_yhigh = vpr_device_ctx.rr_graph.node_yhigh(sink_node);
+
+            Direction node_direction = vpr_device_ctx.rr_graph.node_direction(sink_node);
+            t_rr_type node_type = vpr_device_ctx.rr_graph.node_type(sink_node);
+
             // if x and y coords are same as sb and the chan is inc then its an input to the SB
-            if (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::DEC){
+            if (node_xhigh == sb_coord.x() && node_yhigh == sb_coord.y() && node_direction == Direction::DEC){
                 // make sure the node is not already in the vector, we don't want repeat nodes
                 if (std::find(input_rr_nodes.begin(), input_rr_nodes.end(), chan_rr_node) == input_rr_nodes.end()) input_rr_nodes.push_back(chan_rr_node);
             }
+
             // if the x or y coord is off by 1 and the chan is dec then its an input to the SB
-            else if ((vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && 
-                      vpr_device_ctx.rr_graph.node_type(sink_node) == CHANX && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC)
-                      || (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() + 1 && 
-                      vpr_device_ctx.rr_graph.node_type(sink_node) == CHANY && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC)){
+            else if ((node_xlow == sb_coord.x() + 1 && node_ylow == sb_coord.y() && node_type == CHANX && node_direction == Direction::INC) ||
+                     (node_xlow == sb_coord.x() && node_ylow == sb_coord.y() + 1 && node_type == CHANY && node_direction == Direction::INC)){
               // make sure the node is not already in the vector, we don't want repeat nodes
               if (std::find(input_rr_nodes.begin(), input_rr_nodes.end(), chan_rr_node) == input_rr_nodes.end()) input_rr_nodes.push_back(chan_rr_node);
             }
           }
           
-          // output of layer
-          else if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::UNDER_DEC){
+          // output of layer 
+          else if (chan_node_direction == Direction::UNDER_DEC){
             RRNodeId source_node = get_src_node(vpr_device_ctx.rr_graph, chan_rr_node);
             VTR_ASSERT(source_node != RRNodeId::INVALID());
+
+            short node_xlow = vpr_device_ctx.rr_graph.node_xlow(source_node);
+            short node_xhigh = vpr_device_ctx.rr_graph.node_xhigh(source_node);
+            short node_ylow = vpr_device_ctx.rr_graph.node_ylow(source_node);
+            short node_yhigh = vpr_device_ctx.rr_graph.node_yhigh(source_node);
+
+            Direction node_direction = vpr_device_ctx.rr_graph.node_direction(source_node);
+            t_rr_type node_type = vpr_device_ctx.rr_graph.node_type(source_node);
+
+
             // if x and y coords are same as sb and the chan is dec then its an output of the SB
-            if (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::INC){
+            if (node_xhigh >= sb_coord.x() && node_yhigh >= sb_coord.y() && node_direction == Direction::INC){
                 // make sure the node is not already in the vector, we don't want repeat nodes
                 if (std::find(output_rr_nodes.begin(), output_rr_nodes.end(), chan_rr_node) == output_rr_nodes.end()) output_rr_nodes.push_back(chan_rr_node);
             }
             // if the x or y coord is off by 1 and the chan is inc then its an output of the SB
-            else if ((vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && 
-                      vpr_device_ctx.rr_graph.node_type(source_node) == CHANX && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC)
-                      || (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() + 1 && 
-                      vpr_device_ctx.rr_graph.node_type(source_node) == CHANY && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC)){
+            else if ((node_xlow <= sb_coord.x() + 1 && node_ylow == sb_coord.y() && node_type == CHANX && node_direction == Direction::DEC) ||
+                     (node_xlow == sb_coord.x() && node_ylow <= sb_coord.y() + 1 && node_type == CHANY && node_direction == Direction::DEC)){
               // make sure the node is not already in the vector, we don't want repeat nodes
               if (std::find(output_rr_nodes.begin(), output_rr_nodes.end(), chan_rr_node) == output_rr_nodes.end()) output_rr_nodes.push_back(chan_rr_node);
             }
@@ -158,38 +186,52 @@ static RRChan build_one_interlayer_rr_chan(const DeviceContext& vpr_device_ctx,
           VTR_ASSERT(side == e_side::ABOVE);
         
           // input to layer, so the relevant node to determine location is this node's sink
-          if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_DEC){ 
+          if (chan_node_direction == Direction::ABOVE_DEC){ 
             RRNodeId sink_node = get_sink_node(vpr_device_ctx.rr_graph, chan_rr_node);
             VTR_ASSERT(sink_node != RRNodeId::INVALID());
+
+            short node_xlow = vpr_device_ctx.rr_graph.node_xlow(sink_node);
+            short node_xhigh = vpr_device_ctx.rr_graph.node_xhigh(sink_node);
+            short node_ylow = vpr_device_ctx.rr_graph.node_ylow(sink_node);
+            short node_yhigh = vpr_device_ctx.rr_graph.node_yhigh(sink_node);
+
+            Direction node_direction = vpr_device_ctx.rr_graph.node_direction(sink_node);
+            t_rr_type node_type = vpr_device_ctx.rr_graph.node_type(sink_node);
+
             // if x and y coords are same as sb and the chan is inc then its an input to the SB
-            if (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::DEC){
+            if (node_xhigh == sb_coord.x() && node_yhigh == sb_coord.y() && node_direction == Direction::DEC){
                 // make sure the node is not already in the vector, we don't want repeat nodes
                 if (std::find(input_rr_nodes.begin(), input_rr_nodes.end(), chan_rr_node) == input_rr_nodes.end()) input_rr_nodes.push_back(chan_rr_node);
             }
             // if the x or y coord is off by 1 and the chan is dec then its an input to the SB
-            else if ((vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() && 
-                      vpr_device_ctx.rr_graph.node_type(sink_node) == CHANX && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC)
-                      || (vpr_device_ctx.rr_graph.node_xlow(sink_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(sink_node) == sb_coord.y() + 1 && 
-                      vpr_device_ctx.rr_graph.node_type(sink_node) == CHANY && vpr_device_ctx.rr_graph.node_direction(sink_node) == Direction::INC)){
+            else if ((node_xlow == sb_coord.x() + 1 && node_ylow == sb_coord.y() && node_type == CHANX && node_direction == Direction::INC) ||
+                     (node_xlow == sb_coord.x() && node_ylow == sb_coord.y() + 1 && node_type == CHANY && node_direction == Direction::INC)){
               // make sure the node is not already in the vector, we don't want repeat nodes
               if (std::find(input_rr_nodes.begin(), input_rr_nodes.end(), chan_rr_node) == input_rr_nodes.end()) input_rr_nodes.push_back(chan_rr_node);
             }
           }
 
           // output of layer, so the relevant node to determine location is this node's source
-          else if (vpr_device_ctx.rr_graph.node_direction(chan_rr_node) == Direction::ABOVE_INC){
+          else if (chan_node_direction == Direction::ABOVE_INC){
             RRNodeId source_node = get_src_node(vpr_device_ctx.rr_graph, chan_rr_node);
             VTR_ASSERT(source_node != RRNodeId::INVALID());
+
+            short node_xlow = vpr_device_ctx.rr_graph.node_xlow(source_node);
+            short node_xhigh = vpr_device_ctx.rr_graph.node_xhigh(source_node);
+            short node_ylow = vpr_device_ctx.rr_graph.node_ylow(source_node);
+            short node_yhigh = vpr_device_ctx.rr_graph.node_yhigh(source_node);
+
+            Direction node_direction = vpr_device_ctx.rr_graph.node_direction(source_node);
+            t_rr_type node_type = vpr_device_ctx.rr_graph.node_type(source_node);
+
             // if x and y coords are same as sb and the chan is dec then its an output of the SB
-            if (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::INC){
+            if (node_xhigh >= sb_coord.x() && node_yhigh >= sb_coord.y() && node_direction == Direction::INC){
               // make sure the node is not already in the vector, we don't want repeat nodes
               if (std::find(output_rr_nodes.begin(), output_rr_nodes.end(), chan_rr_node) == output_rr_nodes.end()) output_rr_nodes.push_back(chan_rr_node);
             }
             // if the x or y coord is off by 1 and the chan is inc then its an output of the SB
-            else if ((vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() + 1 && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() && 
-                      vpr_device_ctx.rr_graph.node_type(source_node) ==  CHANX && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC)
-                      || (vpr_device_ctx.rr_graph.node_xlow(source_node) == sb_coord.x() && vpr_device_ctx.rr_graph.node_ylow(source_node) == sb_coord.y() + 1 && 
-                      vpr_device_ctx.rr_graph.node_type(source_node) == CHANY && vpr_device_ctx.rr_graph.node_direction(source_node) == Direction::DEC)){
+            else if ((node_xlow <= sb_coord.x() + 1 && node_ylow == sb_coord.y() && node_type == CHANX && node_direction == Direction::DEC) ||
+                     (node_xlow == sb_coord.x() && node_ylow <= sb_coord.y() + 1 && node_type == CHANY && node_direction == Direction::DEC)){
               // make sure the node is not already in the vector, we don't want repeat nodes
               if (std::find(output_rr_nodes.begin(), output_rr_nodes.end(), chan_rr_node) == output_rr_nodes.end()) output_rr_nodes.push_back(chan_rr_node);
             }
@@ -368,7 +410,12 @@ std::vector<RRNodeId> find_interlayer_chans_connected_to_input(const RRGraphView
           // check the input edges of this node and figure out which ones are not on the same layer
           for (RREdgeId edge_in: rr_graph.node_in_edges(rr_node_index)){
             RRNodeId source_node = rr_graph.edge_src_node(edge_in);
-            VTR_ASSERT(rr_graph.node_type(source_node) == CHANX || rr_graph.node_type(source_node) == CHANY);
+            
+            // To account for direct connections
+            if (rr_graph.node_type(source_node) != CHANX && rr_graph.node_type(source_node) != CHANY){
+              continue;
+            }
+
             if (rr_graph.node_layer(source_node) != layer && indices.end() == std::find(indices.begin(), indices.end(), source_node)){
               indices.push_back(source_node);
             }

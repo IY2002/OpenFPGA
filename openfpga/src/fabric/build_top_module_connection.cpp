@@ -1025,6 +1025,9 @@ void add_top_module_nets_connect_grids_and_gsbs(
           sb_instance_ids, cb_instance_ids, compact_routing_hierarchy, ilayer);
 
         if (num_layers > 1){
+
+          VTR_LOG("Adding interlayer connections for layer %d at location (%d, %d)\n", ilayer, ix, iy);
+
           add_top_module_nets_connect_sb_and_sb(module_manager, top_module, rr_graph, device_rr_gsb, rr_gsb,
             sb_instance_ids, compact_routing_hierarchy, ilayer);
 
