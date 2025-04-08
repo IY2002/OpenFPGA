@@ -430,7 +430,7 @@ std::vector<RRNodeId> find_interlayer_chans_connected_to_input(const RRGraphView
 /** 
  * Helper function to get all channel nodes on this layer that are connected to IPINs on other layers for 3D CB option
  */ 
-std::vector<RRNodeId> find_interlayer_nodes_connected_to_other_layers(const RRGraphView& rr_graph, const DeviceGrid& device_grid, const size_t& layer, const RRChan& rr_chan){
+std::vector<RRNodeId> find_interlayer_nodes_connected_to_other_layers(const RRGraphView& rr_graph, const DeviceGrid& device_grid, const size_t& layer, const RRChan& rr_chan, size_t x, size_t y){
 
   std::vector<RRNodeId> indices;
 
@@ -441,6 +441,35 @@ std::vector<RRNodeId> find_interlayer_nodes_connected_to_other_layers(const RRGr
       RRNodeId sink_node = rr_graph.edge_sink_node(rr_node, edge);
 
       if (rr_graph.node_type(sink_node) != IPIN) continue;
+
+      e_side node_side = NUM_2D_SIDES;
+
+      for (const e_side& side : TOTAL_2D_SIDES){
+        if (rr_graph.is_node_on_specific_side(sink_node, side)){
+          node_side = side;
+          break;
+        }
+      }
+
+      // sanity check
+      VTR_ASSERT(node_side != NUM_2D_SIDES);
+
+      if (node_side == e_side::TOP || node_side == e_side::RIGHT){
+        if (rr_graph.node_xlow(sink_node) != x || rr_graph.node_ylow(sink_node) != y){
+          continue;
+        }
+      }
+
+      if (node_side == e_side::BOTTOM){
+        if (rr_graph.node_xlow(sink_node) != x || rr_graph.node_ylow(sink_node) != y + 1){
+          continue;
+        }
+      }
+      if (node_side == e_side::LEFT){
+        if (rr_graph.node_xlow(sink_node) != x + 1 || rr_graph.node_ylow(sink_node) != y){
+          continue;
+        }
+      }
 
       if (rr_graph.node_layer(sink_node) != layer && indices.end() == std::find(indices.begin(), indices.end(), rr_node)){
         indices.push_back(rr_node);
@@ -767,7 +796,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
 
     if (side == LEFT || side == BOTTOM){
       temp_cb_output_nodes = find_interlayer_nodes_connected_to_other_layers(
-        vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, rr_chan);
+        vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, rr_chan, gsb_coord.x(), gsb_coord.y());
 
       // Insert found nodes into either the x or y interlayer CB outputs, ensuring no duplicates
       if (side == LEFT){
@@ -787,6 +816,10 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
   }
 
   }
+
+  // sort the interlayer channels to ensure they are in the same order as the input channel in the other layer
+  std::sort(interlayer_cb_output_x.begin(), interlayer_cb_output_x.end());
+  std::sort(interlayer_cb_output_y.begin(), interlayer_cb_output_y.end());
 
   // Add the interlayer channels to the GSB
   RRChan interlayer_cb_output_x_chan = build_chan_from_nodes(vpr_device_ctx, interlayer_cb_output_x, CHANX);
@@ -894,7 +927,9 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
       }
     }
 
-    
+    // sort the interlayer channels to ensure they are in the same order as the output channel from the other layer
+    std::sort(interlayer_chans_cb_input_x.begin(), interlayer_chans_cb_input_x.end());
+    std::sort(interlayer_chans_cb_input_y.begin(), interlayer_chans_cb_input_y.end());    
 
     // Instead of adding them as an output of the CB, need to send the channels that connect to that CB to the corresponding layer's CB as an input
     // Maybe the way to do this is to look at the interlayer channels that are connected to the IPINs and add them to the CBs that are on the same layer?

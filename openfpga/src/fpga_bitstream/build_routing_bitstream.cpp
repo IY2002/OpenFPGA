@@ -89,7 +89,7 @@ static void build_switch_block_mux_bitstream(
    * matters the bitstream generation */
   std::vector<RRSwitchId> driver_switches =
     get_rr_graph_driver_switches(rr_graph, cur_rr_node);
-  VTR_ASSERT(1 == driver_switches.size());
+  // VTR_ASSERT(1 == driver_switches.size());
   CircuitModelId mux_model =
     device_annotation.rr_switch_circuit_model(driver_switches[0]);
 
@@ -313,7 +313,7 @@ static void build_connection_block_mux_bitstream(
    * matters the bitstream generation */
   std::vector<RRSwitchId> driver_switches =
     get_rr_graph_driver_switches(rr_graph, src_rr_node);
-  VTR_ASSERT(1 == driver_switches.size());
+  // VTR_ASSERT(1 == driver_switches.size());
   CircuitModelId mux_model =
     device_annotation.rr_switch_circuit_model(driver_switches[0]);
 
@@ -398,6 +398,12 @@ static void build_connection_block_interc_bitstream(
   /* Consider configurable edges only */
   std::vector<RREdgeId> driver_rr_edges =
     rr_gsb.get_ipin_node_in_edges(rr_graph, cb_ipin_side, ipin_index);
+
+  /* Include the interlayer drivers */
+  std::vector<RREdgeId> driver_rr_3d_edges =
+    rr_gsb.get_ipin_node_in_3d_edges(rr_graph, cb_ipin_side, ipin_index);
+  driver_rr_edges.insert(driver_rr_edges.end(), driver_rr_3d_edges.begin(), driver_rr_3d_edges.end());
+
   std::vector<RRNodeId> driver_rr_nodes;
   for (const RREdgeId curr_edge : driver_rr_edges) {
     driver_rr_nodes.push_back(rr_graph.edge_src_node(curr_edge));

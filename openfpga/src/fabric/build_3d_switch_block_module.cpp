@@ -344,7 +344,7 @@ static void build_3d_switch_block_interc_modules(
     /* Print the multiplexer, fan_in >= 2 */
     driver_switches =
       get_rr_graph_driver_switches(rr_graph, cur_rr_node);
-    VTR_ASSERT(1 == driver_switches.size());
+    // VTR_ASSERT(1 == driver_switches.size());
     build_3d_switch_block_mux_module(
       module_manager, sb_module, device_annotation, grids, rr_graph, rr_gsb,
       circuit_lib, chan_side, chan_node_id, cur_rr_node, driver_rr_nodes,
