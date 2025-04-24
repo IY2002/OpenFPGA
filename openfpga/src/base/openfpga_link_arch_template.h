@@ -51,11 +51,15 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
   CommandOptionId opt_sort_edge = cmd.option("sort_gsb_chan_node_in_edges");
   CommandOptionId opt_verbose = cmd.option("verbose");
   CommandOptionId opt_3d_sb = cmd.option("3d_sb");
+  CommandOptionId opt_link_routing_results =
+    cmd.option("skip_link_routing_results");
 
   const bool is_3d_sb = cmd_context.option_enable(cmd, opt_3d_sb);
 
   bool& is_3d_sb_ctx = openfpga_ctx.mutable_is_3d_sb();
   is_3d_sb_ctx = is_3d_sb;
+
+  const bool skip_link_routing_results = cmd_context.option_enable(cmd, opt_link_routing_results);
 
   /* Build fast look-up between physical tile pin index and port information */
   build_physical_tile_pin2port_info(
@@ -89,12 +93,17 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
    * - net mapping to each rr_node
    * - previous nodes driving each rr_node
    */
-  openfpga_ctx.mutable_vpr_routing_annotation().init(
-    g_vpr_ctx.device().rr_graph);
+
+
+  if (!skip_link_routing_results)
+    openfpga_ctx.mutable_vpr_routing_annotation().init(
+      g_vpr_ctx.device().rr_graph);
 
   // Incase the incoming edges are not built. This may happen when loading
   // rr_graph from an external file
   g_vpr_ctx.mutable_device().rr_graph_builder.build_in_edges();
+
+  if (!skip_link_routing_results){
   annotate_vpr_rr_node_nets(g_vpr_ctx.device(), g_vpr_ctx.clustering(),
                             g_vpr_ctx.routing(),
                             openfpga_ctx.mutable_vpr_routing_annotation(),
@@ -103,7 +112,7 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
   annotate_rr_node_previous_nodes(g_vpr_ctx.device(), g_vpr_ctx.clustering(),
                                   g_vpr_ctx.routing(),
                                   openfpga_ctx.mutable_vpr_routing_annotation(),
-                                  cmd_context.option_enable(cmd, opt_verbose));
+                                  cmd_context.option_enable(cmd, opt_verbose)); }
 
   /* Build the routing graph annotation
    * - RRGSB
@@ -167,18 +176,19 @@ int link_arch_template(T& openfpga_ctx, const Command& cmd,
     g_vpr_ctx.device(), openfpga_ctx.arch().arch_direct,
     cmd_context.option_enable(cmd, opt_verbose));
 
-  /* Annotate clustering results */
-  if (CMD_EXEC_FATAL_ERROR ==
-      annotate_post_routing_cluster_sync_results(
-        g_vpr_ctx.clustering(),
-        openfpga_ctx.mutable_vpr_clustering_annotation())) {
-    return CMD_EXEC_FATAL_ERROR;
-  }
+  if (!skip_link_routing_results){/* Annotate clustering results */
+    if (CMD_EXEC_FATAL_ERROR ==
+        annotate_post_routing_cluster_sync_results(
+          g_vpr_ctx.clustering(),
+          openfpga_ctx.mutable_vpr_clustering_annotation())) {
+      return CMD_EXEC_FATAL_ERROR;
+    }
 
-  /* Annotate placement results */
-  annotate_mapped_blocks(g_vpr_ctx.device(), g_vpr_ctx.clustering(),
-                         g_vpr_ctx.placement(),
-                         openfpga_ctx.mutable_vpr_placement_annotation());
+    /* Annotate placement results */
+    annotate_mapped_blocks(g_vpr_ctx.device(), g_vpr_ctx.clustering(),
+                          g_vpr_ctx.placement(),
+                          openfpga_ctx.mutable_vpr_placement_annotation());
+  }
 
   /* Read activity file is manadatory in the following flow-run settings
    * - When users specify that number of clock cycles

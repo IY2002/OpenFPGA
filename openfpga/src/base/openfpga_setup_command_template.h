@@ -215,6 +215,9 @@ ShellCommandId add_link_arch_command_template(
 
   shell_cmd.add_option("3d_cb", false, "Indicate if the Architecture being used has 3D CBs using VTR's default 3D FPGA");
 
+  shell_cmd.add_option("skip_link_routing_results", false,
+                       "Skip linking the routing results to the architecture");
+
   /* Add command 'link_openfpga_arch' to the Shell */
   ShellCommandId shell_cmd_id =
     shell.add_command(shell_cmd, "Bind OpenFPGA architecture to VPR", hidden);

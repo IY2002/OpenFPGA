@@ -50,7 +50,7 @@ namespace openfpga {
              * the nets for all channels are added to the top module eventually
              */
             
-            VTR_LOG("Adding interlayer SB connections for SB[%lu][%lu][%lu] on layer %lu\n", rr_gsb.get_sb_x(), rr_gsb.get_sb_y(), layer, layer);
+            // VTR_LOG("Adding interlayer SB connections for SB[%lu][%lu][%lu] on layer %lu\n", rr_gsb.get_sb_x(), rr_gsb.get_sb_y(), layer, layer);
 
             vtr::Point<size_t> sb_coordinate = rr_gsb.get_sb_coordinate();
 
@@ -268,7 +268,7 @@ namespace openfpga {
         const RRGSB& rr_gsb, const vtr::NdMatrix<size_t, 3>& cb_instance_ids,
         const bool& compact_routing_hierarchy, const size_t& layer, const t_rr_type& cb_type) {
     
-            VTR_LOG("Adding interlayer CB connections for CB[%lu][%lu][%lu] on layer %lu\n", rr_gsb.get_cb_x(cb_type), rr_gsb.get_cb_y(cb_type), layer, layer);
+            // VTR_LOG("Adding interlayer CB connections for CB[%lu][%lu][%lu] on layer %lu\n", rr_gsb.get_cb_x(cb_type), rr_gsb.get_cb_y(cb_type), layer, layer);
 
             /**
              * Goal of function is to connect the vertical tracks of the connection blocks in the top module
