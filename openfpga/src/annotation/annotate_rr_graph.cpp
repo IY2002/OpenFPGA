@@ -813,7 +813,7 @@ static RRGSB build_rr_gsb(const DeviceContext& vpr_device_ctx,
           }
         }
       }
-  }
+    }
 
   }
 
@@ -1075,6 +1075,9 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
   /* Set the number of sides of the GSB */
   rr_gsb.init_num_sides(num_sides);
 
+  std::vector<RRNodeId> interlayer_cb_output_x;
+  std::vector<RRNodeId> interlayer_cb_output_y;
+  
   /* Find all rr_nodes of horizontal channels */
   /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3*/
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
@@ -1086,6 +1089,8 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     vtr::Point<size_t> coordinate = gsb_coord;
     RRChan rr_chan;
     std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes(2);
+    std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes_3d(2);
+    std::vector<RRNodeId> temp_cb_output_nodes;
       enum e_side opin_grid_side[2] = {NUM_2D_SIDES, NUM_2D_SIDES};
 
     // set SB coordinate for horizontal (non-interlayer) channels
@@ -1125,6 +1130,17 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer,
           gsb_coord.x() + 1, gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
 
+        // Check if there are any interlayer connections needed for 3D CB, need to check if these nodes are connected though since if the CB is 2D that is not the case
+        temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+          gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+        temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+          gsb_coord.y() + 1, OPIN, opin_grid_side[1]);
+
+        temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+        temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+
         break;
 
       case e_side::RIGHT: /* RIGHT = 1 */
@@ -1158,6 +1174,17 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer,
           gsb_coord.x() + 1, gsb_coord.y(), OPIN, opin_grid_side[1]);
 
+        // Needed for 3D CB, adding the OPIN nodes from the other layers which will become inputs to the SBs
+        temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+          gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+        temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+          gsb_coord.y(), OPIN, opin_grid_side[1]);
+
+        temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+        temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+
         break;
 
       case e_side::BOTTOM: /* BOTTOM = 2*/
@@ -1190,6 +1217,17 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
 
+          // Needed for 3D CB Outputs, adding the OPIN nodes from the other layers which will become inputs to the SBs
+        temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x() + 1,
+          gsb_coord.y(), OPIN, opin_grid_side[0]);
+        temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+          gsb_coord.y(), OPIN, opin_grid_side[1]);
+
+        temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+        temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+
         break;
 
       case e_side::LEFT: /* LEFT = 3 */
@@ -1220,6 +1258,18 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
         temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(
           vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
           gsb_coord.y(), OPIN, opin_grid_side[1]);
+
+          // Needed for 3D CB, adding the OPIN nodes from the other layers which will become inputs to the SBs
+        temp_opin_rr_nodes_3d[0] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+          gsb_coord.y() + 1, OPIN, opin_grid_side[0]);
+        temp_opin_rr_nodes_3d[1] = find_interlayer_rr_graph_grid_nodes(
+          vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, gsb_coord.x(),
+          gsb_coord.y(), OPIN, opin_grid_side[1]);
+
+        temp_opin_rr_nodes[0].insert(temp_opin_rr_nodes[0].end(), temp_opin_rr_nodes_3d[0].begin(), temp_opin_rr_nodes_3d[0].end());
+        temp_opin_rr_nodes[1].insert(temp_opin_rr_nodes[1].end(), temp_opin_rr_nodes_3d[1].begin(), temp_opin_rr_nodes_3d[1].end());
+
         break;
       default:
         VTR_LOG_ERROR("Invalid side index!\n");
@@ -1287,7 +1337,40 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     temp_opin_rr_nodes[1].clear();
     opin_grid_side[0] = NUM_2D_SIDES;
     opin_grid_side[1] = NUM_2D_SIDES;
+
+    if (side == LEFT || side == BOTTOM){
+      temp_cb_output_nodes = find_interlayer_nodes_connected_to_other_layers(
+        vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, rr_chan, gsb_coord.x(), gsb_coord.y());
+
+      // Insert found nodes into either the x or y interlayer CB outputs, ensuring no duplicates
+      if (side == LEFT){
+        for (auto& node: temp_cb_output_nodes){
+          if (interlayer_cb_output_x.end() == std::find(interlayer_cb_output_x.begin(), interlayer_cb_output_x.end(), node)){
+            interlayer_cb_output_x.push_back(node);
+          }
+        }
+      }
+      else{
+        for (auto& node: temp_cb_output_nodes){
+          if (interlayer_cb_output_y.end() == std::find(interlayer_cb_output_y.begin(), interlayer_cb_output_y.end(), node)){
+            interlayer_cb_output_y.push_back(node);
+          }
+        }
+      }
+    }
+
   }
+
+  // sort the interlayer channels to ensure they are in the same order as the input channel in the other layer
+  std::sort(interlayer_cb_output_x.begin(), interlayer_cb_output_x.end());
+  std::sort(interlayer_cb_output_y.begin(), interlayer_cb_output_y.end());
+
+  // Add the interlayer channels to the GSB
+  RRChan interlayer_cb_output_x_chan = build_chan_from_nodes(vpr_device_ctx, interlayer_cb_output_x, CHANX);
+  RRChan interlayer_cb_output_y_chan = build_chan_from_nodes(vpr_device_ctx, interlayer_cb_output_y, CHANY);
+
+  rr_gsb.add_cb_output_chan(CHANX, interlayer_cb_output_x_chan);
+  rr_gsb.add_cb_output_chan(CHANY, interlayer_cb_output_y_chan);
 
   // Add vertical channels to the GSB
   RRChan above_rr_chan = build_one_interlayer_rr_chan(vpr_device_ctx, layer, gsb_coord, e_side::ABOVE, gsb_coord);
@@ -1330,6 +1413,9 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     rr_gsb.add_chan_node(e_side::UNDER, under_rr_chan, rr_chan_dir);
   }
 
+  std::vector<RRNodeId> interlayer_chans_cb_input_x;
+  std::vector<RRNodeId> interlayer_chans_cb_input_y;
+
   /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
   for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
     // only consider the 4 sides of the GSB that are not interlayer
@@ -1340,15 +1426,12 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     /* Local variables inside this for loop */
     SideManager side_manager(side);
     if (side > 3) break;
-    // if (side == 4){
-    //   side_manager.set_side(ABOVE);
-    // } else if (side == 5){
-    //   side_manager.set_side(UNDER);
-    // }
+
     size_t ix;
     size_t iy;
     enum e_side chan_side;
     std::vector<RRNodeId> temp_ipin_rr_nodes;
+    std::vector<RRNodeId> temp_interlayer_chans_cb_input;
     enum e_side ipin_rr_node_grid_side;
 
     switch (side_manager.get_side()) {
@@ -1417,11 +1500,36 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     if (0 == rr_gsb.get_chan_width(chan_side)) {
       continue;
     }
+    
     /* Collect IPIN rr_nodes*/
     temp_ipin_rr_nodes = find_rr_graph_grid_nodes(
       vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN,
       ipin_rr_node_grid_side, include_clock);
 
+    temp_interlayer_chans_cb_input = find_interlayer_chans_connected_to_input(
+      vpr_device_ctx.rr_graph, vpr_device_ctx.grid, layer, ix, iy, IPIN, ipin_rr_node_grid_side);
+
+    // Insert found nodes into either the x or y interlayer channels, ensuring no duplicates
+    if (ipin_rr_node_grid_side == TOP || ipin_rr_node_grid_side == BOTTOM){
+      for (auto& node: temp_interlayer_chans_cb_input){
+        if (interlayer_chans_cb_input_x.end() == std::find(interlayer_chans_cb_input_x.begin(), interlayer_chans_cb_input_x.end(), node)){
+          interlayer_chans_cb_input_x.push_back(node);
+        }
+      }
+    }
+    else{
+      for (auto& node: temp_interlayer_chans_cb_input){
+        if (interlayer_chans_cb_input_y.end() == std::find(interlayer_chans_cb_input_y.begin(), interlayer_chans_cb_input_y.end(), node)){
+          interlayer_chans_cb_input_y.push_back(node);
+        }
+      }
+    }
+
+    // sort the interlayer channels to ensure they are in the same order as the output channel from the other layer
+    std::sort(interlayer_chans_cb_input_x.begin(), interlayer_chans_cb_input_x.end());
+    std::sort(interlayer_chans_cb_input_y.begin(), interlayer_chans_cb_input_y.end());    
+
+    
 
     /* Fill the ipin nodes of RRGSB */
     for (const RRNodeId& inode : temp_ipin_rr_nodes) {
@@ -1448,6 +1556,19 @@ static RRGSB build_3d_rr_gsb(const DeviceContext& vpr_device_ctx,
     /* Clear the temp data */
     temp_ipin_rr_nodes.clear();
   }
+
+  vtr::Point<size_t> cb_coord(rr_gsb.get_sb_x(), rr_gsb.get_sb_y());
+
+  RRChan interlayer_cb_input_x = build_chan_from_nodes(vpr_device_ctx, interlayer_chans_cb_input_x, CHANX);
+
+  // Left, Right for CBX
+  rr_gsb.add_cb_input_chan(CHANX, interlayer_cb_input_x);
+
+
+  RRChan interlayer_cb_input_y = build_chan_from_nodes(vpr_device_ctx, interlayer_chans_cb_input_y, CHANY);
+
+  // Top, Bottom for CBY
+  rr_gsb.add_cb_input_chan(CHANY, interlayer_cb_input_y);
 
   /* Build OPIN node lists for connection blocks */
   rr_gsb.build_cb_opin_nodes(vpr_device_ctx.rr_graph);
