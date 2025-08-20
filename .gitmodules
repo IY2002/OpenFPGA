@@ -6,5 +6,5 @@
 	url = https://github.com/SymbiFlow/yosys-symbiflow-plugins
 [submodule "vtr-verilog-to-routing"]
 	path = vtr-verilog-to-routing
-	url = git@github.com:IY2002/vtr-verilog-to-routing.git
+	url = https://github.com/IY2002/vtr-verilog-to-routing.git
     branch = openfpga
